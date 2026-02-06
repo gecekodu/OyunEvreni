@@ -4,11 +4,22 @@ Bu klasör, projenizi GitHub ile otomatik senkronize eden scriptleri içerir.
 
 ## 🚀 Hızlı Başlangıç
 
-### Windows (PowerShell)
-
+### Seçenek 1: Normal Mod (Terminal Görünür)
 ```powershell
 cd "c:\Oyun Evreni\.git-automation"
 .\START.ps1
+```
+veya `START.bat` dosyasına çift tıklayın
+
+### Seçenek 2: Arka Plan Modu (Gizli Çalışır) ⭐ ÖNERİLEN
+```powershell
+cd "c:\Oyun Evreni\.git-automation"
+.\START-BACKGROUND.ps1
+```
+
+### Script'i Durdurmak
+```powershell
+.\STOP.ps1
 ```
 
 ## 📋 Ne Yapar?
