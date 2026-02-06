@@ -1,10 +1,10 @@
-# 🔄 Git Otomatik Senkronizasyon Scripti
-# Dosya değişikliklerini izler ve otomatik commit/push yapar
-# Ayrıca düzenli aralıklarla git pull çalıştırır
+# Git Otomatik Senkronizasyon Scripti
+# Dosya degisikliklerini izler ve otomatik commit/push yapar
+# Ayrica duzenli araliklarla git pull calistirir
 
 param(
-    [int]$WatchIntervalSeconds = 30,  # Dosya değişiklik kontrolü (30 saniye)
-    [int]$PullIntervalMinutes = 5     # Git pull aralığı (5 dakika)
+    [int]$WatchIntervalSeconds = 30,
+    [int]$PullIntervalMinutes = 5
 )
 
 $projectPath = "c:\Oyun Evreni"
@@ -17,25 +17,25 @@ function Write-Log {
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logMessage = "[$timestamp] $message"
     Write-Host $logMessage -ForegroundColor Cyan
-    Add-Content -Path $logFile -Value $logMessage
+    Add-Content -Path $logFile -Value $logMessage -ErrorAction SilentlyContinue
 }
 
 # Git pull fonksiyonu
 function Invoke-GitPull {
-    Write-Log "🔽 Git pull yapılıyor..."
+    Write-Log "Git pull yapiliyor..."
     try {
         Set-Location $projectPath
         $pullOutput = git pull origin main 2>&1 | Out-String
         
         if ($LASTEXITCODE -eq 0) {
-            Write-Log "✅ Pull başarılı: $($pullOutput.Trim())"
+            Write-Log "Pull basarili: $($pullOutput.Trim())"
             return $true
         } else {
-            Write-Log "⚠️ Pull hatası: $pullOutput"
+            Write-Log "Pull hatasi: $pullOutput"
             return $false
         }
     } catch {
-        Write-Log "❌ Pull exception: $_"
+        Write-Log "Pull exception: $_"
         return $false
     }
 }
@@ -44,56 +44,55 @@ function Invoke-GitPull {
 function Invoke-GitCommitPush {
     param([string]$changesSummary)
     
-    Write-Log "📤 Değişiklikler commit ediliyor..."
+    Write-Log "Degisiklikler commit ediliyor..."
     try {
         Set-Location $projectPath
         
-        # Staged dosyalar var mı kontrol et
+        # Staged dosyalar var mi kontrol et
         $status = git status --porcelain 2>&1
         if ([string]::IsNullOrWhiteSpace($status)) {
-            Write-Log "ℹ️ Commit edilecek değişiklik yok"
+            Write-Log "Commit edilecek degisiklik yok"
             return $false
         }
         
         # Add all changes
         git add -A 2>&1 | Out-Null
         
-        # Commit message oluştur
+        # Commit message olustur
         $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
         $commitMsg = "Auto-sync: $changesSummary - $timestamp"
         
         git commit -m $commitMsg 2>&1 | Out-Null
         
         if ($LASTEXITCODE -eq 0) {
-            Write-Log "✅ Commit başarılı: $commitMsg"
+            Write-Log "Commit basarili: $commitMsg"
             
             # Push
-            Write-Log "📤 Push yapılıyor..."
+            Write-Log "Push yapiliyor..."
             $pushOutput = git push origin main 2>&1 | Out-String
             
             if ($LASTEXITCODE -eq 0) {
-                Write-Log "✅ Push başarılı"
+                Write-Log "Push basarili"
                 return $true
             } else {
-                Write-Log "⚠️ Push hatası: $pushOutput"
-                # Conflict varsa pull dene
+                Write-Log "Push hatasi: $pushOutput"
                 if ($pushOutput -like "*rejected*" -or $pushOutput -like "*conflict*") {
-                    Write-Log "🔄 Conflict algılandı, pull deneniyor..."
+                    Write-Log "Conflict algilandi, pull deneniyor..."
                     Invoke-GitPull
                 }
                 return $false
             }
         } else {
-            Write-Log "⚠️ Commit hatası"
+            Write-Log "Commit hatasi"
             return $false
         }
     } catch {
-        Write-Log "❌ Commit/Push exception: $_"
+        Write-Log "Commit/Push exception: $_"
         return $false
     }
 }
 
-# Dosya değişikliklerini kontrol et
+# Dosya degisikliklerini kontrol et
 function Check-FileChanges {
     Set-Location $projectPath
     
@@ -101,31 +100,31 @@ function Check-FileChanges {
     $status = git status --porcelain 2>&1
     
     if ([string]::IsNullOrWhiteSpace($status)) {
-        return $null  # Değişiklik yok
+        return $null
     }
     
-    # Değişen dosyaları say
+    # Degisen dosyalari say
     $statusLines = $status -split "`n" | Where-Object { $_ -match '\S' }
     $changeCount = $statusLines.Count
     
-    # Değişiklik türlerini analiz et
+    # Degisiklik turlerini analiz et
     $modified = ($statusLines | Where-Object { $_ -match '^\s*M' }).Count
     $added = ($statusLines | Where-Object { $_ -match '^\s*A|\?\?' }).Count
     $deleted = ($statusLines | Where-Object { $_ -match '^\s*D' }).Count
     
     $summary = @()
-    if ($modified -gt 0) { $summary += "$modified değiştirildi" }
+    if ($modified -gt 0) { $summary += "$modified degistirildi" }
     if ($added -gt 0) { $summary += "$added eklendi" }
     if ($deleted -gt 0) { $summary += "$deleted silindi" }
     
     return ($summary -join ", ")
 }
 
-# Ana döngü
-Write-Log "🚀 Git otomatik senkronizasyon başlatıldı"
-Write-Log "📁 Proje: $projectPath"
-Write-Log "⏱️ Değişiklik kontrolü: $WatchIntervalSeconds saniye"
-Write-Log "🔽 Pull aralığı: $PullIntervalMinutes dakika"
+# Ana dongu
+Write-Log "Git otomatik senkronizasyon baslatildi"
+Write-Log "Proje: $projectPath"
+Write-Log "Degisiklik kontrolu: $WatchIntervalSeconds saniye"
+Write-Log "Pull araligi: $PullIntervalMinutes dakika"
 Write-Log "----------------------------------------"
 
 $iteration = 0
@@ -133,30 +132,29 @@ while ($true) {
     try {
         $iteration++
         
-        # Düzenli pull kontrolü
+        # Duzenli pull kontrolu
         $timeSinceLastPull = (Get-Date) - $lastPullTime
         if ($timeSinceLastPull.TotalMinutes -ge $PullIntervalMinutes) {
             Invoke-GitPull
             $lastPullTime = Get-Date
         }
         
-        # Dosya değişikliklerini kontrol et
+        # Dosya degisikliklerini kontrol et
         $changes = Check-FileChanges
         
         if ($null -ne $changes) {
-            Write-Log "📝 Değişiklikler tespit edildi: $changes"
+            Write-Log "Degisiklikler tespit edildi: $changes"
             Invoke-GitCommitPush -changesSummary $changes
         } else {
-            # Her 10 iterasyonda bir sessiz log
             if ($iteration % 10 -eq 0) {
-                Write-Log "✓ İzleniyor... (Değişiklik yok)"
+                Write-Log "Izleniyor... (Degisiklik yok)"
             }
         }
         
         Start-Sleep -Seconds $WatchIntervalSeconds
         
     } catch {
-        Write-Log "❌ Hata oluştu: $_"
+        Write-Log "Hata olustu: $_"
         Start-Sleep -Seconds 10
     }
 }

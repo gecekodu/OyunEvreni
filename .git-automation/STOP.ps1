@@ -12,7 +12,7 @@ if (Test-Path $processIdFile) {
     try {
         $process = Get-Process -Id $processId -ErrorAction Stop
         Stop-Process -Id $processId -Force
-        Write-Host "✅ Process durduruldu (ID: $processId)" -ForegroundColor Green
+        Write-Host "Process durduruldu (ID: $processId)" -ForegroundColor Green
         Remove-Item $processIdFile
     } catch {
         Write-Host "⚠️ Process bulunamadı (zaten durmuş olabilir)" -ForegroundColor Yellow
@@ -28,10 +28,10 @@ if (Test-Path $processIdFile) {
         Get-Process powershell | Where-Object { 
             $_.CommandLine -like "*auto-sync.ps1*" 
         } | Stop-Process -Force
-        Write-Host "✅ Tüm git sync processleri durduruldu" -ForegroundColor Green
+        Write-Host "Tum git sync processleri durduruldu" -ForegroundColor Green
     }
 }
 
 Write-Host ""
-Write-Host "✅ Tamamlandı!" -ForegroundColor Green
+Write-Host "Tamamlandi!" -ForegroundColor Green
 Start-Sleep -Seconds 2
