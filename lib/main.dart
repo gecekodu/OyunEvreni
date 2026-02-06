@@ -12,6 +12,8 @@ import 'features/games/data/datasources/games_remote_datasource.dart';
 import 'features/ai/data/datasources/ai_remote_datasource.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/signup_page.dart';
+import 'features/games/presentation/pages/ai_game_creator_page.dart';
+import 'features/games/presentation/pages/play_game_page.dart';
 import 'config/app_theme.dart';
 
 // GetIt - Dependency Injection
@@ -314,6 +316,7 @@ class HomeTabView extends StatelessWidget {
                   description: 'Toplama ve çıkarma öğren',
                   icon: '🔢',
                   plays: 12,
+                  gameType: 'math',
                 ),
                 _buildGameCard(
                   context,
@@ -321,6 +324,7 @@ class HomeTabView extends StatelessWidget {
                   description: 'Türkçe kelimeleri bul',
                   icon: '📝',
                   plays: 8,
+                  gameType: 'word',
                 ),
                 _buildGameCard(
                   context,
@@ -328,6 +332,7 @@ class HomeTabView extends StatelessWidget {
                   description: 'Renkleri eşleştir',
                   icon: '🎨',
                   plays: 15,
+                  gameType: 'color',
                 ),
               ]),
             ),
@@ -343,6 +348,7 @@ class HomeTabView extends StatelessWidget {
     required String description,
     required String icon,
     required int plays,
+    required String gameType,
   }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -367,7 +373,15 @@ class HomeTabView extends StatelessWidget {
           ],
         ),
         onTap: () {
-          // Oyunu aç
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PlayGamePage(
+                gameTitle: title,
+                gameType: gameType,
+              ),
+            ),
+          );
         },
       ),
     );
@@ -439,7 +453,12 @@ class CreateGamePage extends StatelessWidget {
             Card(
               child: InkWell(
                 onTap: () {
-                  // AI oyun oluşturma sayfasına git
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AIGameCreatorPage(),
+                    ),
+                  );
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(

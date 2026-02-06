@@ -241,6 +241,30 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 24),
 
+                  // Demo Mode - Firebase olmadan test için
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).pushReplacementNamed('/home');
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white, width: 2),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.explore),
+                    label: const Text(
+                      '🎮 Demo ile Devam Et',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
                   // Kayıt Ol Linki
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
