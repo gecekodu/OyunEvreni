@@ -260,5 +260,3 @@ UYARILARI:
 // 2. "Get API Key" butonuna tıkla
 // 3. Anahtarı main.dart'ta GeminiService initialize ederken kullan:
 //    GeminiService(apiKey: 'YOUR_GEMINI_API_KEY')
-
-import 'dart:convert';

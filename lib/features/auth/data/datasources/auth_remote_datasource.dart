@@ -27,7 +27,7 @@ class AuthRemoteDataSource {
 
       final firebaseUser = userCredential.user;
       if (firebaseUser == null) {
-        throw FirebaseAuthException(
+        throw AuthException(
           message: 'Kullanıcı oluşturulamadı',
           code: 'USER_CREATION_FAILED',
         );
@@ -53,12 +53,12 @@ class AuthRemoteDataSource {
 
       return userModel;
     } on FirebaseAuthException catch (e) {
-      throw FirebaseAuthException(
+      throw AuthException(
         message: _mapFirebaseError(e.code),
         code: e.code,
       );
     } catch (e) {
-      throw FirebaseAuthException(
+      throw AuthException(
         message: 'Kayıt sırasında hata: $e',
         code: 'SIGNUP_ERROR',
       );
@@ -78,7 +78,7 @@ class AuthRemoteDataSource {
 
       final firebaseUser = userCredential.user;
       if (firebaseUser == null) {
-        throw FirebaseAuthException(
+        throw AuthException(
           message: 'Giriş yapılamadı',
           code: 'SIGNIN_FAILED',
         );
@@ -91,7 +91,7 @@ class AuthRemoteDataSource {
           .get();
 
       if (!userDoc.exists) {
-        throw FirebaseAuthException(
+        throw AuthException(
           message: 'Kullanıcı profili bulunamadı',
           code: 'USER_NOT_FOUND',
         );
@@ -105,12 +105,12 @@ class AuthRemoteDataSource {
 
       return UserModel.fromFirestore(userDoc.data() as Map<String, dynamic>);
     } on FirebaseAuthException catch (e) {
-      throw FirebaseAuthException(
+      throw AuthException(
         message: _mapFirebaseError(e.code),
         code: e.code,
       );
     } catch (e) {
-      throw FirebaseAuthException(
+      throw AuthException(
         message: 'Giriş sırasında hata: $e',
         code: 'SIGNIN_ERROR',
       );
@@ -122,7 +122,7 @@ class AuthRemoteDataSource {
     try {
       await _firebaseService.auth.signOut();
     } catch (e) {
-      throw FirebaseAuthException(
+      throw AuthException(
         message: 'Çıkış sırasında hata: $e',
         code: 'SIGNOUT_ERROR',
       );
@@ -144,7 +144,7 @@ class AuthRemoteDataSource {
 
       return UserModel.fromFirestore(userDoc.data() as Map<String, dynamic>);
     } catch (e) {
-      throw FirebaseAuthException(
+      throw AuthException(
         message: 'Kullanıcı bilgisi alınamadı: $e',
         code: 'GET_USER_ERROR',
       );
@@ -156,12 +156,12 @@ class AuthRemoteDataSource {
     try {
       await _firebaseService.auth.sendPasswordResetEmail(email: email);
     } on FirebaseAuthException catch (e) {
-      throw FirebaseAuthException(
+      throw AuthException(
         message: _mapFirebaseError(e.code),
         code: e.code,
       );
     } catch (e) {
-      throw FirebaseAuthException(
+      throw AuthException(
         message: 'Şifre sıfırlama sırasında hata: $e',
         code: 'RESET_PASSWORD_ERROR',
       );

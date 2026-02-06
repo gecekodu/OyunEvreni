@@ -76,6 +76,13 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: const SplashScreen(),
+      routes: {
+        '/login': (context) => const LoginPage(),
+        '/signup': (context) => const SignupPage(),
+        '/home': (context) => const HomePage(),
+        '/createGame': (context) => const CreateGamePage(),
+        '/profile': (context) => const ProfilePage(),
+      },
     );
   }
 }
@@ -152,6 +159,73 @@ class _SplashScreenState extends State<SplashScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ======== SAYFA CLASSLAR ========
+
+// 🔐 Login Page
+class LoginPage extends StatelessWidget {
+  const LoginPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Giriş Yap')),
+      body: const Center(child: Text('Login Sayfası')),
+    );
+  }
+}
+
+// 📝 Signup Page
+class SignupPage extends StatelessWidget {
+  const SignupPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Kaydol')),
+      body: const Center(child: Text('Signup Sayfası')),
+    );
+  }
+}
+
+// 🏠 Home Page
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Ana Sayfa')),
+      body: const Center(child: Text('Home Sayfası')),
+    );
+  }
+}
+
+// ➕ Create Game Page
+class CreateGamePage extends StatelessWidget {
+  const CreateGamePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Oyun Oluştur')),
+      body: const Center(child: Text('Create Game Sayfası')),
+    );
+  }
+}
+
+// 👤 Profile Page
+class ProfilePage extends StatelessWidget {
+  const ProfilePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profil')),
+      body: const Center(child: Text('Profile Sayfası')),
     );
   }
 }

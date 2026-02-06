@@ -13,9 +13,9 @@ abstract class AppException implements Exception {
   String toString() => message;
 }
 
-// Firebase Authentication Exceptions
-class FirebaseAuthException extends AppException {
-  FirebaseAuthException({
+// Authentication Exceptions
+class AuthException extends AppException {
+  AuthException({
     required String message,
     String? code,
   }) : super(message: message, code: code);
