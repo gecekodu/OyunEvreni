@@ -1,0 +1,126 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║   🎮 OYUN EVRENİ - GIT OTOMATİK SENKRONİZASYON SİSTEMİ     ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+✅ KURULUM TAMAMLANDI!
+
+📁 Dosyalar:
+   c:\Oyun Evreni\.git-automation\
+   ├── START.bat              (Çift tıklayarak başlat - Kolay)
+   ├── START.ps1              (PowerShell ile başlat)
+   ├── START-BACKGROUND.ps1   (Arka planda başlat - ÖNERİLEN ⭐)
+   ├── STOP.ps1               (Durdur)
+   ├── auto-sync.ps1          (Ana script)
+   ├── README.md              (Detaylı kılavuz)
+   └── sync-log.txt           (Otomatik oluşturulur)
+
+🚀 BAŞLATMA SEÇENEKLERİ:
+
+┌─────────────────────────────────────────────────────────────┐
+│ Seçenek 1: Çift Tıklama (En Kolay)                         │
+│                                                             │
+│ 1. Dosya Gezgini'nde buraya gidin:                        │
+│    c:\Oyun Evreni\.git-automation                          │
+│                                                             │
+│ 2. START.bat dosyasına çift tıklayın                       │
+│                                                             │
+│ 3. Terminal penceresi açılacak ve çalışacak                │
+│    (Kapatmayın - Arka planda çalışır)                      │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ Seçenek 2: Arka Plan Modu (ÖNERİLEN ⭐)                     │
+│                                                             │
+│ PowerShell'de şu komutları çalıştırın:                     │
+│                                                             │
+│   cd "c:\Oyun Evreni\.git-automation"                      │
+│   .\START-BACKGROUND.ps1                                    │
+│                                                             │
+│ ✅ Gizli çalışır, ekranı kaplamaz                          │
+│ ✅ Bilgisayar kapanana kadar çalışır                       │
+│ ✅ İş akışınızı engellemez                                 │
+└─────────────────────────────────────────────────────────────┘
+
+⛔ DURDURMA:
+
+PowerShell'de:
+   cd "c:\Oyun Evreni\.git-automation"
+   .\STOP.ps1
+
+veya Task Manager'dan powershell process'ini durdurun
+
+───────────────────────────────────────────────────────────────
+
+📋 SİSTEM ÖZET:
+
+✓ Otomatik Commit & Push      : Aktif
+  └─ Kontrol Sıklığı           : Her 30 saniye
+  └─ Değişiklik varsa          : Otomatik push
+
+✓ Otomatik Git Pull            : Aktif
+  └─ Kontrol Sıklığı           : Her 5 dakika
+  └─ Arkadaşınızın değişiklikleri otomatik çekilir
+
+✓ Akıllı Conflict Yönetimi    : Aktif
+  └─ Push rejected olursa otomatik pull dener
+
+✓ Log Kaydı                    : Aktif
+  └─ Dosya: .git-automation\sync-log.txt
+
+───────────────────────────────────────────────────────────────
+
+⚙️ AYARLAR (İsteğe Bağlı):
+
+Daha sık/seyrek kontrol için START-BACKGROUND.ps1 dosyasını düzenle:
+
+   -WatchIntervalSeconds 60    (60 saniyede bir kontrol et)
+   -PullIntervalMinutes 10     (10 dakikada bir pull yap)
+
+───────────────────────────────────────────────────────────────
+
+💡 İPUÇLARI:
+
+1. İlk kez çalıştırıyorsanız:
+   git config credential.helper store
+   (Şifrenizi kaydeder, sürekli sormaz)
+
+2. Windows başlangıcında otomatik başlatmak için:
+   START-BACKGROUND.ps1'in kısayolunu şuraya koyun:
+   %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+
+3. Logları izlemek için:
+   cd "c:\Oyun Evreni\.git-automation"
+   Get-Content sync-log.txt -Tail 20 -Wait
+
+4. Manuel commit yapmak isterseniz:
+   - Script'i durdurun
+   - Normal git komutlarını kullanın
+   - Script'i tekrar başlatın
+
+───────────────────────────────────────────────────────────────
+
+🤝 ARKADAŞINIZla ÇALIŞMA:
+
+✅ Her 5 dakikada bir arkadaşınızın değişiklikleri çekilir
+✅ Siz değiştirince otomatik push edilir
+✅ Conflict olursa uyarı verir
+
+⚠️ Aynı dosyayı aynı anda düzenlemeyin!
+⚠️ Büyük değişiklikler öncesi senkronizasyonu kontrol edin
+
+───────────────────────────────────────────────────────────────
+
+📞 DESTEK:
+
+Sorun yaşarsanız:
+1. sync-log.txt dosyasını kontrol edin
+2. Script'i durdurup manuel git komutları deneyin
+3. README.md dosyasına bakın
+
+───────────────────────────────────────────────────────────────
+
+🎉 İYİ ÇALIŞMALAR!
+
+GitHub Repo: https://github.com/gecekodu/OyunEvreni.git
