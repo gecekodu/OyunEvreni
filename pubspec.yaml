@@ -80,6 +80,8 @@ flutter:
 
   # Assets
   assets:
+    - assets/html_games/templates/
+    - assets/html_games/shared/
     - assets/html_games/game_engine/game_engine.html
 
   # An image asset can refer to one or more resolution-specific "variants", see

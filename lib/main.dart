@@ -107,6 +107,14 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
+    // 🐛 DEBUG MODE: Direkt ana sayfaya git (geliştirme için)
+    const bool debugSkipAuth = true; // Firebase bağlantısı yoksa true yapın
+    
+    if (debugSkipAuth) {
+      Navigator.of(context).pushReplacementNamed('/home');
+      return;
+    }
+
     final firebaseService = getIt<FirebaseService>();
     if (firebaseService.isAuthenticated) {
       Navigator.of(context).pushReplacementNamed('/home');
@@ -178,7 +186,7 @@ class _HomePageState extends State<HomePage> {
 
   final List<Widget> _pages = [
     const HomeTabView(),
-    const CreateGamePage(),
+    const CreateGameFlowPage(),
     const ProfilePage(),
   ];
 
@@ -453,10 +461,11 @@ class CreateGamePage extends StatelessWidget {
             Card(
               child: InkWell(
                 onTap: () {
+                  // AI oyun oluşturma sayfasına git
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const AIGameCreatorPage(),
+                      builder: (context) => const CreateGameFlowPage(),
                     ),
                   );
                 },
