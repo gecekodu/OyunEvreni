@@ -276,9 +276,9 @@
     </div>
     
     <script>
-        // Oyun Verileri (Gemini'den gelecek)
-        const questions = {{QUESTIONS_JSON}};
-        const difficulty = "{{DIFFICULTY}}";
+        // Oyun Verileri (Gemini'den gelecek - Template Engine tarafından doldurulacak)
+        const questions = {{QUESTIONS_JSON}}; // Template: [{"question": "...", "options": [...], ...}]
+        const difficulty = "{{DIFFICULTY}}"; // Template: "easy" | "medium" | "hard"
         const encouragements = ["Harika!", "Mükemmel!", "Süpersin!", "Çok iyi!", "Bravo!"];
         const consolations = ["Tekrar dene!", "Bir sonrakinde!", "Devam et!", "Pes etme!"];
         

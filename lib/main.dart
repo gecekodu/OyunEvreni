@@ -2,7 +2,6 @@
 // Flutter + Firebase + Gemini AI + HTML Games
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:get_it/get_it.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/gemini_service.dart';
@@ -12,8 +11,8 @@ import 'features/games/data/datasources/games_remote_datasource.dart';
 import 'features/ai/data/datasources/ai_remote_datasource.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/signup_page.dart';
-import 'features/games/presentation/pages/ai_game_creator_page.dart';
-import 'features/games/presentation/pages/play_game_page.dart';
+import 'features/games/presentation/pages/create_game_flow_page.dart';
+import 'features/games/presentation/pages/social_feed_page.dart';
 import 'config/app_theme.dart';
 
 // GetIt - Dependency Injection
@@ -80,7 +79,6 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignupPage(),
         '/home': (context) => const HomePage(),
-        '/createGame': (context) => const CreateGamePage(),
         '/profile': (context) => const ProfilePage(),
       },
     );
@@ -113,13 +111,6 @@ class _SplashScreenState extends State<SplashScreen> {
     if (debugSkipAuth) {
       Navigator.of(context).pushReplacementNamed('/home');
       return;
-    }
-
-    final firebaseService = getIt<FirebaseService>();
-    if (firebaseService.isAuthenticated) {
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else {
-      Navigator.of(context).pushReplacementNamed('/login');
     }
   }
 
@@ -184,16 +175,17 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const HomeTabView(),
-    const CreateGameFlowPage(),
-    const ProfilePage(),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      const HomeTabView(),
+      const SocialFeedPage(),
+      const CreateGameFlowPage(),
+      const ProfilePage(),
+    ];
+    
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: pages[_selectedIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
@@ -208,9 +200,14 @@ class _HomePageState extends State<HomePage> {
             label: 'Ana Sayfa',
           ),
           NavigationDestination(
+            icon: Icon(Icons.public_outlined),
+            selectedIcon: Icon(Icons.public),
+            label: 'Sosyal',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.add_circle_outline),
             selectedIcon: Icon(Icons.add_circle),
-            label: 'Oyun Oluştur',
+            label: 'Oluştur',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
@@ -381,15 +378,8 @@ class HomeTabView extends StatelessWidget {
           ],
         ),
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PlayGamePage(
-                gameTitle: title,
-                gameType: gameType,
-              ),
-            ),
-          );
+          // Navigate to Social Feed to play games
+          // or implement PlayGamePage if needed
         },
       ),
     );
@@ -441,144 +431,8 @@ class _QuickActionButton extends StatelessWidget {
   }
 }
 
-// ➕ Create Game Page
-class CreateGamePage extends StatelessWidget {
-  const CreateGamePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('🎮 Oyun Oluştur'),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // AI ile Oluştur
-            Card(
-              child: InkWell(
-                onTap: () {
-                  // AI oyun oluşturma sayfasına git
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CreateGameFlowPage(),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.purple.shade50,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.auto_awesome,
-                          size: 48,
-                          color: Colors.purple,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        '🤖 AI ile Otomatik Oluştur',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Yapay zeka ile hızlıca eğitici oyun oluştur',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            const Divider(),
-            const SizedBox(height: 8),
-
-            const Text(
-              '📋 Şablonlardan Seç',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Şablonlar
-            _buildTemplateCard(
-              icon: '🔢',
-              title: 'Matematik Oyunu',
-              description: 'Toplama, çıkarma, çarpma',
-              color: Colors.blue,
-            ),
-            _buildTemplateCard(
-              icon: '📝',
-              title: 'Kelime Oyunu',
-              description: 'Harf ve kelime bulmaca',
-              color: Colors.green,
-            ),
-            _buildTemplateCard(
-              icon: '🧩',
-              title: 'Bulmaca',
-              description: 'Puzzle ve mantık oyunları',
-              color: Colors.orange,
-            ),
-            _buildTemplateCard(
-              icon: '🎨',
-              title: 'Renk Oyunu',
-              description: 'Renk eşleştirme ve boyama',
-              color: Colors.pink,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTemplateCard({
-    required String icon,
-    required String title,
-    required String description,
-    required Color color,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
-          child: Text(icon, style: const TextStyle(fontSize: 24)),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(description),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: () {
-          // Şablon detayına git
-        },
-      ),
-    );
-  }
-}
+// ➕ Create Game Page Eski versiyon - Kaldırıldı
+// CreateGameFlowPage tarafından değiştirildi
 
 // 👤 Profile Page
 class ProfilePage extends StatelessWidget {
