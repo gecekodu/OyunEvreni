@@ -141,7 +141,6 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
 
       if (!mounted) return;
       Navigator.of(context).pop(); // Dialog kapat
-      
       // ✅ Başarı mesajı
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -150,17 +149,21 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
           duration: const Duration(seconds: 2),
         ),
       );
-      
       print('✅ Oyun oluşturuldu: ID=$gameId');
       print('📝 Başlık: ${_titleController.text}');
       print('🎮 Türü: $_selectedGameType');
       print('💬 Zorluk: $_selectedDifficulty');
-      
-      // Ana sayfaya dön
+
+      // Oyun oluşturulduktan sonra HTML oyun oynama sayfasına yönlendir
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) {
-        Navigator.of(context).pop();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => PlayHtmlGamePage(gameJson: gameContent),
+          ),
+        );
       }
+    import 'play_html_game_page.dart';
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop(); // Dialog kapat

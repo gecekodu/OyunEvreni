@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "319430039491",
+    "project_id": "oyunevreni-48a7a",
+    "storage_bucket": "oyunevreni-48a7a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:319430039491:android:c35ddeec8d8f86e1188f76",
+        "android_client_info": {
+          "package_name": "com.example.oyun_olustur"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6KhuzV-Pf_j4iGaIxj7cb1IloNWb-V38"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
