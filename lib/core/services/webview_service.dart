@@ -80,7 +80,7 @@ class WebViewService {
       initializeGame();
       startGame();
     ''';
-    await _controller.evaluateJavascript(source: jsCode);
+    await _controller.runJavaScript(jsCode);
   }
 
   /// Oyun sonucunu dinle
@@ -114,11 +114,15 @@ class WebViewService {
   /// HTML oyundan config iste
   Future<Map<String, dynamic>> getGameConfig() async {
     await _controllerCompleter.future;
-    final result = await _controller.evaluateJavascript(
-      source: 'JSON.stringify(gameConfig)',
-    );
-    if (result != null) {
-      return jsonDecode(result);
+    try {
+      final result = await _controller.runJavaScriptReturningResult(
+        'JSON.stringify(gameConfig)',
+      );
+      if (result != null) {
+        return jsonDecode(result.toString());
+      }
+    } catch (e) {
+      print('⚠️ Config alınırken hata: $e');
     }
     return {};
   }
@@ -126,7 +130,7 @@ class WebViewService {
   /// Oyunu sıfırla
   Future<void> resetGame() async {
     await _controllerCompleter.future;
-    await _controller.evaluateJavascript(source: 'resetGame();');
+    await _controller.runJavaScript('resetGame();');
     _gameResultCompleter = Completer<GameResult?>();
     _gameResultFuture = _gameResultCompleter.future;
   }

@@ -2,6 +2,9 @@
 
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/gemini_game_service.dart';
+import '../../../../core/services/game_service.dart';
+import '../../../../main.dart';
 
 class CreateGameFlowPage extends StatefulWidget {
   const CreateGameFlowPage({super.key});
@@ -56,12 +59,10 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
   }
 
   Future<void> _createGame() async {
-    // TODO: Burada Gemini AI ile oyun içeriği oluşturulacak
-    // TODO: HTML şablonu ile birleştirilecek
-    // TODO: Firestore'a kaydedilecek
-    
+    // Gemini AI ile oyun içeriği oluştur
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('🎉 Oyun Oluşturuluyor!'),
         content: Column(
@@ -69,7 +70,8 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
           children: [
             const CircularProgressIndicator(),
             const SizedBox(height: 16),
-            Text('Yapay zeka oyununuzu hazırlıyor...'),
+            const Text('Yapay zeka oyununuzu hazırlıyor...',
+                style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(
               'Oyun Türü: $_selectedGameType\n'
@@ -82,22 +84,98 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
       ),
     );
 
-    // Simüle edilmiş bekleme (gerçekte Gemini API çağrısı olacak)
-    await Future.delayed(const Duration(seconds: 3));
-    
-    if (!mounted) return;
-    Navigator.of(context).pop(); // Dialog kapat
-    
-    // Başarı mesajı
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('✨ Oyununuz başarıyla oluşturuldu!'),
-        backgroundColor: Colors.green,
-      ),
-    );
-    
-    // Ana sayfaya dön
-    Navigator.of(context).pop();
+    try {
+      final geminiService = getIt<GeminiGameService>();
+      final gameService = getIt<GameService>();
+      
+      // 🤖 Gemini'den içerik oluştur (TEK ÇAĞRI)
+      Map<String, dynamic> gameContent = {};
+      
+      switch (_selectedGameType) {
+        case 'math':
+          gameContent = await geminiService.generateMathGameContent(
+            topic: _selectedGoals.isNotEmpty ? _selectedGoals[0] : 'toplama',
+            difficulty: _selectedDifficulty ?? 'easy',
+            questionCount: 10,
+          );
+          break;
+        case 'word':
+          gameContent = await geminiService.generateWordGameContent(
+            difficulty: _selectedDifficulty ?? 'easy',
+            wordCount: 10,
+          );
+          break;
+        case 'puzzle':
+          gameContent = await geminiService.generatePuzzleGameContent(
+            difficulty: _selectedDifficulty ?? 'easy',
+            puzzleCount: 5,
+          );
+          break;
+        case 'color':
+          gameContent = await geminiService.generateColorGameContent(
+            difficulty: _selectedDifficulty ?? 'easy',
+            colorCount: 8,
+          );
+          break;
+        case 'memory':
+          gameContent = await geminiService.generateMemoryGameContent(
+            difficulty: _selectedDifficulty ?? 'easy',
+            pairCount: 6,
+          );
+          break;
+        default:
+          throw Exception('Bilinmeyen oyun türü: $_selectedGameType');
+      }
+      
+      // 💾 Firestore'a kaydet (HTML + Metadata)
+      final gameId = await gameService.createAndSaveGame(
+        title: _titleController.text,
+        description: _descriptionController.text,
+        gameType: _selectedGameType ?? 'unknown',
+        difficulty: _selectedDifficulty ?? 'easy',
+        learningGoals: _selectedGoals,
+        geminiContent: gameContent,
+        userId: 'demo-user', // TODO: gerçek user ID kullan
+        userName: 'Oyun Yapıcı', // TODO: gerçek kullanıcı adı kullan
+      );
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Dialog kapat
+      
+      // ✅ Başarı mesajı
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✨ "${_titleController.text}" HTML oyun olarak kaydedildi!'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      
+      print('✅ Oyun oluşturuldu: ID=$gameId');
+      print('📝 Başlık: ${_titleController.text}');
+      print('🎮 Türü: $_selectedGameType');
+      print('💬 Zorluk: $_selectedDifficulty');
+      
+      // Ana sayfaya dön
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Dialog kapat
+      
+      print('❌ Hata: $e');
+      
+      // ❌ Hata mesajı
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Hata: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   @override

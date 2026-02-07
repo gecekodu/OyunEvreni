@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/gemini_service.dart';
+import 'core/services/gemini_game_service.dart';
+import 'core/services/game_service.dart';
 import 'features/auth/data/datasources/auth_remote_datasource.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/games/data/datasources/games_remote_datasource.dart';
@@ -13,6 +15,7 @@ import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/signup_page.dart';
 import 'features/games/presentation/pages/create_game_flow_page.dart';
 import 'features/games/presentation/pages/social_feed_page.dart';
+import 'features/admin/presentation/pages/test_panel_page.dart';
 import 'config/app_theme.dart';
 
 // GetIt - Dependency Injection
@@ -27,7 +30,7 @@ void main() async {
 
   // 🤖 Gemini API başlat
   // ⚠️ ZORUNLU: https://ai.google.dev/tutorials/setup adresinden API key al
-  const String geminiApiKey = 'YOUR_GEMINI_API_KEY_HERE';
+  const String geminiApiKey = 'AIzaSyDduUTk0dJZgVNeyg8AV66qiIChgmoAC3s';
   final geminiService = GeminiService(apiKey: geminiApiKey);
 
   // 📦 Dependency Injection setup
@@ -42,6 +45,12 @@ void _setupDependencies(
   // Core Services
   getIt.registerSingleton<FirebaseService>(firebaseService);
   getIt.registerSingleton<GeminiService>(geminiService);
+  getIt.registerSingleton<GeminiGameService>(
+    GeminiGameService(apiKey: 'AIzaSyDduUTk0dJZgVNeyg8AV66qiIChgmoAC3s'),
+  );
+  getIt.registerSingleton<GameService>(
+    GameService(firestore: firebaseService.firestore),
+  );
 
   // Datasources
   getIt.registerSingleton<AuthRemoteDataSource>(
@@ -546,6 +555,24 @@ class ProfilePage extends StatelessWidget {
                     title: const Text('Hakkında'),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {},
+                  ),
+                  // 🔬 DEBUG MODE: Test API Connections
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.science_outlined, color: Colors.orange),
+                    title: const Text(
+                      '🔬 Test API Connections',
+                      style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const TestPanelPage(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
