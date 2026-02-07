@@ -1,9 +1,8 @@
-// 🎮 OYUN OLUŞTURMA SAYFASI - Gelişmiş Versiyon
-
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/gemini_game_service.dart';
-import '../../../../core/services/game_service.dart';
+import '../../../../features/games/data/services/game_service.dart';
+import '../../../../features/games/presentation/pages/play_game_simple.dart';
 import '../../../../main.dart';
 
 class CreateGameFlowPage extends StatefulWidget {
@@ -85,85 +84,42 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
     );
 
     try {
-      final geminiService = getIt<GeminiGameService>();
       final gameService = getIt<GameService>();
       
-      // 🤖 Gemini'den içerik oluştur (TEK ÇAĞRI)
-      Map<String, dynamic> gameContent = {};
-      
-      switch (_selectedGameType) {
-        case 'math':
-          gameContent = await geminiService.generateMathGameContent(
-            topic: _selectedGoals.isNotEmpty ? _selectedGoals[0] : 'toplama',
-            difficulty: _selectedDifficulty ?? 'easy',
-            questionCount: 10,
-          );
-          break;
-        case 'word':
-          gameContent = await geminiService.generateWordGameContent(
-            difficulty: _selectedDifficulty ?? 'easy',
-            wordCount: 10,
-          );
-          break;
-        case 'puzzle':
-          gameContent = await geminiService.generatePuzzleGameContent(
-            difficulty: _selectedDifficulty ?? 'easy',
-            puzzleCount: 5,
-          );
-          break;
-        case 'color':
-          gameContent = await geminiService.generateColorGameContent(
-            difficulty: _selectedDifficulty ?? 'easy',
-            colorCount: 8,
-          );
-          break;
-        case 'memory':
-          gameContent = await geminiService.generateMemoryGameContent(
-            difficulty: _selectedDifficulty ?? 'easy',
-            pairCount: 6,
-          );
-          break;
-        default:
-          throw Exception('Bilinmeyen oyun türü: $_selectedGameType');
-      }
-      
-      // 💾 Firestore'a kaydet (HTML + Metadata)
-      final gameId = await gameService.createAndSaveGame(
-        title: _titleController.text,
-        description: _descriptionController.text,
-        gameType: _selectedGameType ?? 'unknown',
+      // 🎮 Oyunu oluştur (Gemini + HTML + Firestore)
+      final game = await gameService.createGame(
+        gameType: _selectedGameType ?? 'math',
         difficulty: _selectedDifficulty ?? 'easy',
         learningGoals: _selectedGoals,
-        geminiContent: gameContent,
-        userId: 'demo-user', // TODO: gerçek user ID kullan
-        userName: 'Oyun Yapıcı', // TODO: gerçek kullanıcı adı kullan
+        title: _titleController.text,
+        description: _descriptionController.text,
+        creatorUserId: 'demo-user', // TODO: Gerçek user ID'yi kullan
+        creatorName: 'Oyun Yapıcı', // TODO: Gerçek adı kullan
       );
 
       if (!mounted) return;
       Navigator.of(context).pop(); // Dialog kapat
+      
       // ✅ Başarı mesajı
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✨ "${_titleController.text}" HTML oyun olarak kaydedildi!'),
+          content: Text('✨ "${game.title}" hazır!'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
         ),
       );
-      print('✅ Oyun oluşturuldu: ID=$gameId');
-      print('📝 Başlık: ${_titleController.text}');
-      print('🎮 Türü: $_selectedGameType');
-      print('💬 Zorluk: $_selectedDifficulty');
-
-      // Oyun oluşturulduktan sonra HTML oyun oynama sayfasına yönlendir
+      
+      print('✅ Oyun oluşturuldu: ${game.id}');
+      
+      // Oyun sayfasına yönlendir
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => PlayHtmlGamePage(gameJson: gameContent),
+            builder: (context) => PlayGameSimple(game: game),
           ),
         );
       }
-    import 'play_html_game_page.dart';
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop(); // Dialog kapat

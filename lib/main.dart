@@ -3,10 +3,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'config/firebase_options.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/gemini_service.dart';
 import 'core/services/gemini_game_service.dart';
-import 'core/services/game_service.dart';
+import 'features/games/data/services/game_service.dart';
 import 'features/auth/data/datasources/auth_remote_datasource.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/games/data/datasources/games_remote_datasource.dart';
@@ -24,12 +26,15 @@ final getIt = GetIt.instance;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 Firebase başlat
+  // 🔥 Firebase başlat (Firebase options kullanarak)
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
   final firebaseService = FirebaseService();
   await firebaseService.initialize();
 
   // 🤖 Gemini API başlat
-  // ⚠️ ZORUNLU: https://ai.google.dev/tutorials/setup adresinden API key al
   const String geminiApiKey = 'AIzaSyDduUTk0dJZgVNeyg8AV66qiIChgmoAC3s';
   final geminiService = GeminiService(apiKey: geminiApiKey);
 
@@ -49,7 +54,10 @@ void _setupDependencies(
     GeminiGameService(apiKey: 'AIzaSyDduUTk0dJZgVNeyg8AV66qiIChgmoAC3s'),
   );
   getIt.registerSingleton<GameService>(
-    GameService(firestore: firebaseService.firestore),
+    GameService(
+      firebaseService: firebaseService,
+      geminiService: getIt<GeminiGameService>(),
+    ),
   );
 
   // Datasources
