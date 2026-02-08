@@ -27,16 +27,25 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
 
   void _validateAndInitialize() {
     // HTML içeriğini kontrol et ve gerekirse fallback ekle
+    print('DEBUG: Game ID: ${widget.game.id}');
+    print('DEBUG: Game Title: ${widget.game.title}');
+    print('DEBUG: Game Type: ${widget.game.gameType}');
+    print('DEBUG: HTML Content Length: ${widget.game.htmlContent.length}');
+    
     if (widget.game.htmlContent.isEmpty) {
       // Fallback: Test oyun HTML'i
       final fallbackHtml = _generateFallbackHtml();
       print('⚠️ HTML içerik boş, fallback yükleniyor');
-      _initializeWebViewWithHtml(fallbackHtml);
+      if (mounted) {
+        _initializeWebViewWithHtml(fallbackHtml);
+      }
       return;
     }
 
     print('✅ HTML yükleniyor: ${widget.game.htmlContent.length} karakter');
-    _initializeWebViewWithHtml(widget.game.htmlContent);
+    if (mounted) {
+      _initializeWebViewWithHtml(widget.game.htmlContent);
+    }
   }
 
   String _generateFallbackHtml() {
@@ -106,68 +115,94 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
   }
 
   void _initializeWebViewWithHtml(String htmlContent) {
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.white)
-      ..enableZoom(false)
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: (String url) {
-            print('🌐 Sayfa yükleniyor: $url');
-            if (!_isLoading) {
-              setState(() => _isLoading = true);
-            }
-            // ✅ Timeout ekle
-            Future.delayed(const Duration(seconds: 10), () {
-              if (_isLoading && mounted) {
+    try {
+      // WebView initialization - GPU devre dışı moda alabilir
+      _controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setBackgroundColor(// Lighter background for Emulator rendering
+            Colors.white)
+        ..enableZoom(false)
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onPageStarted: (String url) {
+              print('🌐 Sayfa yükleniyor: $url [${DateTime.now().toString()}]');
+              if (!_isLoading && mounted) {
+                setState(() => _isLoading = true);
+              }
+              // ✅ Timeout ekle
+              Future.delayed(const Duration(seconds: 15), () {
+                if (_isLoading && mounted) {
+                  setState(() {
+                    _errorMessage = 'Yükleme zaman aşımına uğradı (15s)';
+                    _isLoading = false;
+                  });
+                }
+              });
+            },
+            onPageFinished: (String url) {
+              print('✅ Sayfa yüklendi: $url [${DateTime.now().toString()}]');
+              if (mounted) {
+                setState(() => _isLoading = false);
+                // Small delay to ensure rendering
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted) {
+                    _controller.runJavaScript('''
+                      window.GameChannel = window.GameChannel || {
+                        postMessage: function(msg) {
+                          console.log('Game message: ' + msg);
+                        }
+                      };
+                      console.log('✅ Game Bridge Ready');
+                    ''');
+                  }
+                });
+              }
+            },
+            onWebResourceError: (WebResourceError error) {
+              print('⚠️ WebView Hatası: ${error.description} [Code: ${error.errorCode}]');
+              if (mounted) {
                 setState(() {
-                  _errorMessage = 'Yükleme zaman aşımına uğradı';
+                  _errorMessage = 'Bağlantı hatası: ${error.description}';
                   _isLoading = false;
                 });
               }
-            });
-          },
-          onPageFinished: (String url) {
-            print('✅ Sayfa yüklendi: $url');
-            setState(() => _isLoading = false);
-            // Bridge uyumluluğu
-            _controller.runJavaScript('''
-              window.GameChannel = window.GameChannel || {
-                postMessage: function(msg) {
-                  console.log('Game message: ' + msg);
-                }
-              };
-            ''');
-          },
-          onWebResourceError: (WebResourceError error) {
-            print('⚠️ WebView Hatası: ${error.description}');
-            if (mounted) {
-              setState(() {
-                _errorMessage = 'Bağlantı hatası: ${error.description}';
-                _isLoading = false;
-              });
+            },
+            onPageCommitVisible: (String url) {
+              print('🎨 Sayfa rendering başladı: $url');
+            },
+          ),
+        )
+        ..addJavaScriptChannel(
+          'GameChannel',
+          onMessageReceived: (JavaScriptMessage message) {
+            print('📨 Oyundan mesaj: ${message.message}');
+            // Oyun skorunu veya sonuçları burada yakalayabilirsin
+            if (message.message.startsWith('SCORE:')) {
+              final score = message.message.replaceFirst('SCORE:', '');
+              _showScore(score);
             }
           },
-        ),
-      )
-      ..addJavaScriptChannel(
-        'GameChannel',
-        onMessageReceived: (JavaScriptMessage message) {
-          print('📨 Oyundan mesaj: ${message.message}');
-          // Oyun skorunu veya sonuçları burada yakalayabilirsin
-          if (message.message.startsWith('SCORE:')) {
-            final score = message.message.replaceFirst('SCORE:', '');
-            _showScore(score);
-          }
-        },
-      )
-      ..loadRequest(
-        Uri.dataFromString(
-          htmlContent,
-          mimeType: 'text/html',
-          encoding: Encoding.getByName('utf-8'),
-        ),
+        );
+
+      // URL Data loadRequest
+      final htmlData = Uri.dataFromString(
+        htmlContent,
+        mimeType: 'text/html',
+        encoding: Encoding.getByName('utf-8'),
       );
+
+      print('📦 HTML verisi: ${htmlData.toString().substring(0, 100)}...');
+      _controller.loadRequest(htmlData);
+      
+    } catch (e) {
+      print('❌ WebView initialization error: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'WebView Hatası: $e\n\nTechnical: WebView may be unavailable on this emulator. Try physical device.';
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _showScore(String score) async {
@@ -265,20 +300,20 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Oyun yükleniyor...'),
-                ],
-              ),
-            )
-          : _errorMessage != null
+      body: _errorMessage != null
           ? _buildErrorView()
-          : WebViewWidget(controller: _controller),
+          : _isLoading
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Oyun yükleniyor...'),
+                    ],
+                  ),
+                )
+              : WebViewWidget(controller: _controller),
     );
   }
 

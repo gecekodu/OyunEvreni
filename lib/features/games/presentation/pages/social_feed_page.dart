@@ -5,6 +5,7 @@ import '../../data/services/social_feed_service.dart';
 import '../../domain/entities/game_models.dart';
 import '../../domain/entities/game_score.dart';
 import '../../../../core/widgets/futuristic_animations.dart';
+import 'play_game_simple.dart';
 
 class SocialFeedPage extends StatefulWidget {
   const SocialFeedPage({super.key});
@@ -274,10 +275,11 @@ class _SocialFeedPageState extends State<SocialFeedPage>
                       flex: 2,
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          // Oyun oynat
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('🎮 Oyun başlatılıyor...'),
+                          // Oyun sayfasına git
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PlayGameSimple(game: game),
                             ),
                           );
                         },
@@ -448,9 +450,12 @@ class _GameDetailPageState extends State<GameDetailPage> {
         child: SafeArea(
           child: ElevatedButton.icon(
             onPressed: () {
-              // Oyunu oyna
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('🎮 Oyun başlatılıyor...')),
+              // Oyunu oyna sayfasına git
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PlayGameSimple(game: widget.game),
+                ),
               );
             },
             icon: const Icon(Icons.play_arrow),
