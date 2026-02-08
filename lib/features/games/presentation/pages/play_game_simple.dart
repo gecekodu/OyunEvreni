@@ -167,9 +167,6 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
                 });
               }
             },
-            onPageCommitVisible: (String url) {
-              print('🎨 Sayfa rendering başladı: $url');
-            },
           ),
         )
         ..addJavaScriptChannel(

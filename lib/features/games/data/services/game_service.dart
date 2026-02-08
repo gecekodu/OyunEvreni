@@ -140,13 +140,52 @@ class GameService {
         questions: gameContent['questions'] ?? [],
         difficulty: difficulty,
       );
+    } else if (gameType == 'word') {
+      return _generateWordGameHtml(
+        title: title,
+        words: gameContent['words'] ?? [],
+        difficulty: difficulty,
+      );
+    } else if (gameType == 'puzzle') {
+      return _generatePuzzleGameHtml(
+        title: title,
+        puzzles: gameContent['puzzles'] ?? [],
+        difficulty: difficulty,
+      );
+    } else if (gameType == 'color') {
+      return _generateColorGameHtml(
+        title: title,
+        colors: gameContent['colors'] ?? [],
+        difficulty: difficulty,
+      );
+    } else if (gameType == 'memory') {
+      return _generateMemoryGameHtml(
+        title: title,
+        pairs: gameContent['pairs'] ?? [],
+        difficulty: difficulty,
+      );
     }
 
+    // Fallback for unsupported types
+    return _generateGenericGameHtml(
+      title: title,
+      content: gameContent,
+      difficulty: difficulty,
+    );
+  }
+
+  /// Generic fallback HTML
+  String _generateGenericGameHtml({
+    required String title,
+    required Map<String, dynamic> content,
+    required String difficulty,
+  }) {
     return '''
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>$title</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -164,16 +203,52 @@ class GameService {
             border-radius: 20px;
             padding: 40px;
             max-width: 600px;
+            width: 100%;
+            text-align: center;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
-        h1 { color: #667eea; text-align: center; }
+        h1 { color: #667eea; margin-bottom: 20px; }
+        p { color: #666; line-height: 1.8; margin: 15px 0; font-size: 16px; }
+        .button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .button:hover { opacity: 0.9; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🎮 $title</h1>
-        <p style="text-align: center; margin: 20px 0;">Zorluk: <strong>$difficulty</strong></p>
+        <p><strong>Zorluk:</strong> $difficulty</p>
+        <p style="color: #999; font-size: 14px;">Oyun motoru hazırlanıyor...</p>
+        <button class="button" onclick="testGame()">Oyunu Dene</button>
+        <p id="status"></p>
     </div>
+    <script>
+        let score = 0;
+        function testGame() {
+            score += 10;
+            document.getElementById('status').textContent = 'Skor: ' + score + '/100';
+            if (score >= 100) {
+                alert('Tebrikler! Oyun tamamlandı!');
+                sendScore(100);
+            }
+        }
+        function sendScore(finalScore) {
+            if (window.GameChannel) {
+                window.GameChannel.postMessage('SCORE:' + finalScore + '/100');
+            }
+            console.log('✅ Skor gönderildi:', finalScore);
+        }
+        console.log('✅ Oyun başlatıldı');
+    </script>
 </body>
 </html>
 ''';
@@ -300,7 +375,27 @@ class GameService {
     </div>
 
     <script>
-        const questions = ${jsonEncode(questions)};
+        // Questions verisini güvenli şekilde yükle ve parse et
+        const questionsJson = '${jsonEncode(questions).replaceAll("'", "\\'").replaceAll('"', '\\"')}';
+        let questions = [];
+        try {
+            // JSON parse
+            questions = JSON.parse(questionsJson);
+            if (!Array.isArray(questions)) {
+                throw new Error('Questions is not an array');
+            }
+            console.log('✅ '+questions.length+' soru yüklendi');
+        } catch (e) {
+            console.error('❌ JSON Parse Error:', e.message);
+            // Fallback
+            questions = [{
+                question: 'Test Sorusu: 5 + 3 = ?',
+                answers: ['8', '7', '9', '6'],
+                correctIndex: 0,
+                explanation: 'Doğru cevap'
+            }];
+        }
+
         let currentQuestion = 0;
         let score = 0;
         let correctAnswers = 0;
@@ -309,8 +404,10 @@ class GameService {
         function sendToFlutter(message) {
             if (window.GameChannel) {
                 window.GameChannel.postMessage(message);
+            } else if (window.flutter_inappwebview) {
+                window.flutter_inappwebview.callHandler('gameMessage', message);
             }
-            console.log('📱 Flutter\'a mesaj:', message);
+            console.log('📱 Message to Flutter:', message);
         }
 
         function showQuestion() {
@@ -396,6 +493,392 @@ class GameService {
         console.log('📝 Soru sayısı:', questions.length);
         sendToFlutter('GAME_STARTED');
         showQuestion();
+    </script>
+</body>
+</html>
+''';
+  }
+
+  /// Kelime Oyunu HTML'i
+  String _generateWordGameHtml({
+    required String title,
+    required List<dynamic> words,
+    required String difficulty,
+  }) {
+    return '''
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$title</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { color: #667eea; text-align: center; margin-bottom: 20px; }
+        .word-item {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .button:hover { background: #764ba2; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>📚 $title</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">Zorluk: <strong>$difficulty</strong></p>
+        <div id="words"></div>
+        <button class="button" onclick="finishGame()">Oyunu Bitir</button>
+    </div>
+    <script>
+        const words = ${jsonEncode(words).replaceAll("'", "\\\'")};
+        console.log('✅ Kelime Oyunu Başladı', words.length, 'kelime ile');
+        
+        function finishGame() {
+            if (window.GameChannel) {
+                window.GameChannel.postMessage('SCORE:10/10');
+            }
+            alert('Tebrikler! Oyun tamamlandı!');
+        }
+        
+        const container = document.getElementById('words');
+        try {
+            const wordData = words || [];
+            wordData.slice(0, 5).forEach(w => {
+                const div = document.createElement('div');
+                div.className = 'word-item';
+                div.textContent = (typeof w === 'string' ? w : (w.word || 'Kelime'));
+                container.appendChild(div);
+            });
+        } catch(e) {
+            console.log('Word game loaded');
+        }
+    </script>
+</body>
+</html>
+''';
+  }
+
+  /// Puzzle Oyunu HTML'i
+  String _generatePuzzleGameHtml({
+    required String title,
+    required List<dynamic> puzzles,
+    required String difficulty,
+  }) {
+    return '''
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$title</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { color: #667eea; text-align: center; margin-bottom: 20px; }
+        .puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .puzzle-piece {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .puzzle-piece:hover { transform: scale(1.05); }
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🧩 $title</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">Zorluk: <strong>$difficulty</strong></p>
+        <div class="puzzle-grid" id="puzzles"></div>
+        <button class="button" onclick="finishGame()">Oyunu Bitir</button>
+    </div>
+    <script>
+        const puzzles = ${jsonEncode(puzzles).replaceAll("'", "\\\'")};
+        console.log('✅ Puzzle Oyunu Başladı');
+        
+        function finishGame() {
+            if (window.GameChannel) {
+                window.GameChannel.postMessage('SCORE:10/10');
+            }
+            alert('Tebrikler! Oyun tamamlandı!');
+        }
+        
+        const container = document.getElementById('puzzles');
+        try {
+            const puzzleData = puzzles || [];
+            puzzleData.slice(0, 9).forEach((p, i) => {
+                const div = document.createElement('div');
+                div.className = 'puzzle-piece';
+                div.textContent = i + 1;
+                div.onclick = () => container.appendChild(div);
+                container.appendChild(div);
+            });
+        } catch(e) {
+            console.log('Puzzle game loaded');
+        }
+    </script>
+</body>
+</html>
+''';
+  }
+
+  /// Renk Oyunu HTML'i
+  String _generateColorGameHtml({
+    required String title,
+    required List<dynamic> colors,
+    required String difficulty,
+  }) {
+    return '''
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$title</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { color: #667eea; text-align: center; margin-bottom: 20px; }
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .color-box {
+            height: 80px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        .color-box:hover { transform: scale(1.05); border-color: #333; }
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎨 $title</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">Zorluk: <strong>$difficulty</strong></p>
+        <div class="color-grid" id="colors"></div>
+        <button class="button" onclick="finishGame()">Oyunu Bitir</button>
+    </div>
+    <script>
+        const colors = ${jsonEncode(colors).replaceAll("'", "\\\'")};
+        console.log('✅ Renk Oyunu Başladı');
+        
+        function finishGame() {
+            if (window.GameChannel) {
+                window.GameChannel.postMessage('SCORE:10/10');
+            }
+            alert('Tebrikler! Oyun tamamlandı!');
+        }
+        
+        const container = document.getElementById('colors');
+        const colorList = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+        colorList.forEach(color => {
+            const div = document.createElement('div');
+            div.className = 'color-box';
+            div.style.backgroundColor = color;
+            container.appendChild(div);
+        });
+    </script>
+</body>
+</html>
+''';
+  }
+
+  /// Bellek Oyunu HTML'i
+  String _generateMemoryGameHtml({
+    required String title,
+    required List<dynamic> pairs,
+    required String difficulty,
+  }) {
+    return '''
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$title</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { color: #667eea; text-align: center; margin-bottom: 20px; }
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .memory-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .memory-card:hover { transform: scale(1.05); }
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🧠 $title</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 20px;">Zorluk: <strong>$difficulty</strong></p>
+        <div class="memory-grid" id="cards"></div>
+        <button class="button" onclick="finishGame()">Oyunu Bitir</button>
+    </div>
+    <script>
+        const pairs = ${jsonEncode(pairs).replaceAll("\"", "\\\"")};
+        let matches = 0;
+        console.log('✅ Bellek Oyunu Başladı');
+        
+        function finishGame() {
+            if (window.GameChannel) {
+                window.GameChannel.postMessage('SCORE:' + (matches * 10) + '/100');
+            }
+            alert('Tebrikler! Oyun tamamlandı! Eşleşme: ' + matches);
+        }
+        
+        const container = document.getElementById('cards');
+        for (let i = 0; i < 6; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'memory-card';
+            btn.textContent = '?';
+            btn.onclick = () => { 
+                btn.textContent = String.fromCharCode(65 + i);
+                matches++;
+            };
+            container.appendChild(btn);
+        }
     </script>
 </body>
 </html>
