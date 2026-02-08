@@ -22,6 +22,7 @@ import 'features/games/presentation/pages/game_list_page.dart';
 import 'features/games/presentation/pages/social_feed_page.dart';
 import 'features/admin/presentation/pages/test_panel_page.dart';
 import 'config/app_theme.dart';
+import 'core/services/gemini_game_service_v2.dart';
 
 // GetIt - Dependency Injection
 final getIt = GetIt.instance;
@@ -91,6 +92,10 @@ void _setupDependencies(
   getIt.registerSingleton<GeminiService>(geminiService);
   getIt.registerSingleton<GeminiGameService>(
     GeminiGameService(apiKey: 'AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw'),
+  );
+  // ✨ Yeni refactored service (test aşaması)
+  getIt.registerSingleton<GeminiGameServiceV2>(
+    GeminiGameServiceV2(apiKey: 'AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw'),
   );
   getIt.registerSingleton<GameService>(
     GameService(

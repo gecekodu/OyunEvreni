@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'dart:convert';
 import '../../domain/entities/game_models.dart';
 import '../../data/services/score_service.dart';
 import 'leaderboard_page.dart';
@@ -25,21 +26,86 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
   }
 
   void _validateAndInitialize() {
-    // HTML içeriğini kontrol et
+    // HTML içeriğini kontrol et ve gerekirse fallback ekle
     if (widget.game.htmlContent.isEmpty) {
-      setState(() {
-        _errorMessage = 'Oyun içeriği bulunamadı';
-        _isLoading = false;
-      });
-      print('❌ HTML içerik boş!');
+      // Fallback: Test oyun HTML'i
+      final fallbackHtml = _generateFallbackHtml();
+      print('⚠️ HTML içerik boş, fallback yükleniyor');
+      _initializeWebViewWithHtml(fallbackHtml);
       return;
     }
 
     print('✅ HTML yükleniyor: ${widget.game.htmlContent.length} karakter');
-    _initializeWebView();
+    _initializeWebViewWithHtml(widget.game.htmlContent);
   }
 
-  void _initializeWebView() {
+  String _generateFallbackHtml() {
+    return '''<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${widget.game.title}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 { color: #667eea; margin-bottom: 20px; }
+    p { color: #666; line-height: 1.8; font-size: 16px; margin: 15px 0; }
+    .emoji { font-size: 60px; margin-bottom: 20px; }
+    button {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 20px;
+      transition: transform 0.2s;
+    }
+    button:active { transform: scale(0.95); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="emoji">🎮</div>
+    <h1>${widget.game.title}</h1>
+    <p>${widget.game.description}</p>
+    <p style="color: #999; font-size: 14px;">Oyun motoru hazırlanıyor...</p>
+    <button onclick="sendScore()">Test Puanı Gönder</button>
+  </div>
+  <script>
+    function sendScore() {
+      try {
+        GameChannel.postMessage('SCORE:5/10');
+      } catch (e) {
+        console.log('Error: ' + e);
+      }
+    }
+  </script>
+</body>
+</html>''';
+  }
+
+  void _initializeWebViewWithHtml(String htmlContent) {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
@@ -48,6 +114,9 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
         NavigationDelegate(
           onPageStarted: (String url) {
             print('🌐 Sayfa yükleniyor: $url');
+            if (!_isLoading) {
+              setState(() => _isLoading = true);
+            }
             // ✅ Timeout ekle
             Future.delayed(const Duration(seconds: 10), () {
               if (_isLoading && mounted) {
@@ -61,32 +130,23 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
           onPageFinished: (String url) {
             print('✅ Sayfa yüklendi: $url');
             setState(() => _isLoading = false);
-            // HTML oyunlar farkli bridge'ler kullanabiliyor; shim ekle.
+            // Bridge uyumluluğu
             _controller.runJavaScript('''
-              if (!window.flutter_inappwebview) {
-                window.flutter_inappwebview = {
-                  callHandler: function(name, msg) {
-                    if (name === 'GameChannel') {
-                      try { GameChannel.postMessage(String(msg)); } catch (e) {}
-                    }
-                  }
-                };
-              }
-              if (!window.GameChannel) {
-                window.GameChannel = {
-                  postMessage: function(msg) {
-                    try { GameChannel.postMessage(String(msg)); } catch (e) {}
-                  }
-                };
-              }
+              window.GameChannel = window.GameChannel || {
+                postMessage: function(msg) {
+                  console.log('Game message: ' + msg);
+                }
+              };
             ''');
           },
           onWebResourceError: (WebResourceError error) {
-            print('❌ WebView Hatası: ${error.description}');
-            setState(() {
-              _errorMessage = 'Yükleme hatası: ${error.description}';
-              _isLoading = false;
-            });
+            print('⚠️ WebView Hatası: ${error.description}');
+            if (mounted) {
+              setState(() {
+                _errorMessage = 'Bağlantı hatası: ${error.description}';
+                _isLoading = false;
+              });
+            }
           },
         ),
       )
@@ -101,7 +161,13 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
           }
         },
       )
-      ..loadHtmlString(widget.game.htmlContent);
+      ..loadRequest(
+        Uri.dataFromString(
+          htmlContent,
+          mimeType: 'text/html',
+          encoding: Encoding.getByName('utf-8'),
+        ),
+      );
   }
 
   void _showScore(String score) async {
@@ -162,11 +228,7 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
   }
 
   void _reloadGame() {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-    _controller.reload();
+    _validateAndInitialize();
   }
 
   @override
@@ -203,9 +265,7 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
           ),
         ],
       ),
-      body: _errorMessage != null
-          ? _buildErrorView()
-          : _isLoading
+      body: _isLoading
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -216,6 +276,8 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
                 ],
               ),
             )
+          : _errorMessage != null
+          ? _buildErrorView()
           : WebViewWidget(controller: _controller),
     );
   }
@@ -235,10 +297,21 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('Geri Dön'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _reloadGame,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Yeniden Dene'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Geri Dön'),
+                ),
+              ],
             ),
           ],
         ),
