@@ -93,9 +93,13 @@ class _SocialFeedPageState extends State<SocialFeedPage>
             itemBuilder: (context, index) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: ShimmerLoading(
-                width: double.infinity,
-                height: 200,
-                borderRadius: 15,
+                child: Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
               ),
             ),
           );

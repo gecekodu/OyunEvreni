@@ -284,8 +284,8 @@ class SocialFeedService {
           score: score,
           correctAnswers: correctAnswers,
           totalQuestions: totalQuestions,
-          timeSpent: timeSpent,
-          playedAt: DateTime.now(),
+          timeTaken: timeSpent,
+          completedAt: DateTime.now(),
         ).toFirestore(),
       );
 
