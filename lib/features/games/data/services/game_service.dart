@@ -25,9 +25,13 @@ class GameService {
     required String description,
     required String creatorUserId,
     required String creatorName,
+    String? userPrompt, // 🤖 Kullanıcının oyun istemi
   }) async {
     try {
       print('🎮 Oyun oluşturuluyor: $title');
+      if (userPrompt != null && userPrompt.isNotEmpty) {
+        print('💡 Oyun İstemi: $userPrompt');
+      }
 
       // 1. Gemini'den içerik al
       Map<String, dynamic> gameContent = await _generateGameContent(
@@ -35,6 +39,7 @@ class GameService {
         difficulty: difficulty,
         learningGoals: learningGoals,
         customDescription: description, // Kullanıcının özel açıklamasını gönder
+        userPrompt: userPrompt, // 🤖 Oyun istemi
       );
 
       print('✅ Gemini içerik oluşturuldu');
@@ -93,6 +98,7 @@ class GameService {
     required String difficulty,
     required List<String> learningGoals,
     String? customDescription,
+    String? userPrompt, // 🤖 Kullanıcının oyun istemi
   }) async {
     switch (gameType) {
       case 'math':
@@ -101,26 +107,31 @@ class GameService {
           difficulty: difficulty,
           questionCount: 10,
           customDescription: customDescription,
+          userPrompt: userPrompt,
         );
       case 'word':
         return await _geminiService.generateWordGameContent(
           difficulty: difficulty,
           wordCount: 10,
+          userPrompt: userPrompt,
         );
       case 'puzzle':
         return await _geminiService.generatePuzzleGameContent(
           difficulty: difficulty,
           puzzleCount: 5,
+          userPrompt: userPrompt,
         );
       case 'color':
         return await _geminiService.generateColorGameContent(
           difficulty: difficulty,
           colorCount: 8,
+          userPrompt: userPrompt,
         );
       case 'memory':
         return await _geminiService.generateMemoryGameContent(
           difficulty: difficulty,
           pairCount: 6,
+          userPrompt: userPrompt,
         );
       default:
         throw Exception('Bilinmeyen oyun türü: $gameType');

@@ -26,6 +26,7 @@ class GeminiGameService {
     required String topic, // addition, subtraction, multiplication, division
     required String difficulty, // easy, medium, hard
     String? customDescription, // Kullanıcının özel açıklaması
+    String? userPrompt, // 🤖 Kullanıcının oyun istemi
     int questionCount = 10,
     int ageGroup = 8, // 6-8, 8-10, 10-12
   }) async {
@@ -39,6 +40,7 @@ Parametreler:
 - Soru Sayısı: $questionCount
 - Hedef Yaş: $ageGroup yaş
 ${customDescription != null ? '- Tema/Açıklama: $customDescription (Bu temayı sorulara yansıt)' : ''}
+${userPrompt != null && userPrompt.isNotEmpty ? '- ⭐ KULLANICI İSTEMİ: $userPrompt\n⭐ Lütfen bu istekleri dikkate al! Oyunu bu isteklere uygun şekilde özelleştir.' : ''}
 
 JSON formatında şu yapıda cevap ver (başka bir şey yazma, sadece JSON):
 {
@@ -79,6 +81,7 @@ JSON formatında şu yapıda cevap ver (başka bir şey yazma, sadece JSON):
   /// 📝 Kelime Oyunu İçeriği Oluştur
   Future<Map<String, dynamic>> generateWordGameContent({
     required String difficulty, // easy, medium, hard
+    String? userPrompt, // 🤖 Kullanıcının oyun istemi
     int wordCount = 10,
     int ageGroup = 8,
   }) async {
@@ -90,6 +93,7 @@ Parametreler:
 - Zorluk: $difficulty
 - Kelime Sayısı: $wordCount
 - Hedef Yaş: $ageGroup yaş
+${userPrompt != null && userPrompt.isNotEmpty ? '- ⭐ KULLANICI İSTEMİ: $userPrompt\n⭐ Lütfen bu istekleri dikkate al!' : ''}
 
 JSON formatında cevap ver (başka şey yazma):
 {
@@ -126,6 +130,7 @@ JSON formatında cevap ver (başka şey yazma):
   /// 🎨 Renk Oyunu İçeriği Oluştur
   Future<Map<String, dynamic>> generateColorGameContent({
     required String difficulty,
+    String? userPrompt, // 🤖 Kullanıcının oyun istemi
     int colorCount = 8,
     int ageGroup = 8,
   }) async {
@@ -137,6 +142,7 @@ Parametreler:
 - Zorluk: $difficulty
 - Renk Sayısı: $colorCount
 - Hedef Yaş: $ageGroup yaş
+${userPrompt != null && userPrompt.isNotEmpty ? '- ⭐ KULLANICI İSTEMİ: $userPrompt\n⭐ Lütfen bu istekleri dikkate al!' : ''}
 
 JSON formatında cevap ver:
 {
@@ -175,6 +181,7 @@ JSON formatında cevap ver:
   /// 🧩 Bulmaca Oyunu İçeriği Oluştur
   Future<Map<String, dynamic>> generatePuzzleGameContent({
     required String difficulty,
+    String? userPrompt, // 🤖 Kullanıcının oyun istemi
     int puzzleCount = 5,
     int ageGroup = 8,
   }) async {
@@ -186,6 +193,7 @@ Parametreler:
 - Zorluk: $difficulty
 - Bulmaca Sayısı: $puzzleCount
 - Hedef Yaş: $ageGroup yaş
+${userPrompt != null && userPrompt.isNotEmpty ? '- ⭐ KULLANICI İSTEMİ: $userPrompt\n⭐ Lütfen bu istekleri dikkate al!' : ''}
 
 JSON formatında (sadece JSON):
 {
@@ -218,6 +226,7 @@ JSON formatında (sadece JSON):
   /// 🧠 Hafıza Oyunu İçeriği Oluştur
   Future<Map<String, dynamic>> generateMemoryGameContent({
     required String difficulty,
+    String? userPrompt, // 🤖 Kullanıcının oyun istemi
     int pairCount = 6,
     int ageGroup = 8,
   }) async {
@@ -229,6 +238,7 @@ Parametreler:
 - Zorluk: $difficulty
 - Kart Çifti Sayısı: $pairCount
 - Hedef Yaş: $ageGroup yaş
+${userPrompt != null && userPrompt.isNotEmpty ? '- ⭐ KULLANICI İSTEMİ: $userPrompt\n⭐ Lütfen bu istekleri dikkate al!' : ''}
 
 JSON formatında (sadece JSON):
 {

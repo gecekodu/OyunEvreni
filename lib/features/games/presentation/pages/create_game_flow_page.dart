@@ -22,12 +22,14 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
   List<String> _selectedGoals = [];
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _promptController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _titleController.addListener(_onFormChanged);
     _descriptionController.addListener(_onFormChanged);
+    _promptController.addListener(_onFormChanged);
   }
 
   void _onFormChanged() {
@@ -40,8 +42,10 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
   void dispose() {
     _titleController.removeListener(_onFormChanged);
     _descriptionController.removeListener(_onFormChanged);
+    _promptController.removeListener(_onFormChanged);
     _titleController.dispose();
     _descriptionController.dispose();
+    _promptController.dispose();
     super.dispose();
   }
 
@@ -111,6 +115,7 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
         learningGoals: _selectedGoals,
         title: _titleController.text,
         description: _descriptionController.text,
+        userPrompt: _promptController.text.isNotEmpty ? _promptController.text : null,
         creatorUserId: 'demo-user', // TODO: Gerçek user ID'yi kullan
         creatorName: 'Oyun Yapıcı', // TODO: Gerçek adı kullan
       );
@@ -417,6 +422,26 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
           ),
           maxLines: 4,
           maxLength: 200,
+        ),
+        const SizedBox(height: 16),
+
+        // 🤖 Oyun İstemi (Prompt)
+        TextField(
+          controller: _promptController,
+          onChanged: (value) => setState(() {}),
+          decoration: InputDecoration(
+            labelText: '🤖 Oyun İstemi (Tercihi)',
+            hintText: 'Örn: Oyun daha zor olsun, daha eğlenceli sızlan ekle, matematiksel adımları göster vb.',
+            prefixIcon: const Icon(Icons.lightbulb),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.blue.shade50,
+            alignLabelWithHint: true,
+            helperText: 'Yapay zeka oyunu oluştururken bu istekleri dikkate alır. (İsteğe bağlı)',
+            helperMaxLines: 2,
+          ),
+          maxLines: 3,
+          maxLength: 300,
         ),
         const SizedBox(height: 24),
 
