@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/game_models.dart';
-import 'play_html_game_page.dart';
+import 'play_game_simple.dart';
 
 class GameListPage extends StatelessWidget {
   GameListPage({super.key});
@@ -36,7 +36,7 @@ class GameListPage extends StatelessWidget {
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => PlayHtmlGamePage(gameJson: game.metadata?['geminiContent']),
+                      builder: (context) => PlayGameSimple(game: game),
                     ),
                   );
                 },
