@@ -10,6 +10,7 @@ import 'core/services/firebase_service.dart';
 import 'core/services/gemini_service.dart';
 import 'core/services/gemini_game_service.dart';
 import 'features/games/data/services/game_service.dart';
+import 'features/games/data/services/score_service.dart';
 import 'features/auth/data/datasources/auth_remote_datasource.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/games/data/datasources/games_remote_datasource.dart';
@@ -29,10 +30,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 🔥 Firebase başlat (Firebase options kullanarak)
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   final firebaseService = FirebaseService();
   await firebaseService.initialize();
 
@@ -48,13 +47,18 @@ void main() async {
       'status': 'active',
       'device': 'iOS/Android',
     };
-    
+
     await firestore.collection('test').doc('test_doc').set(testData);
     print('✅ Test koleksiyonu Firestore\'a başarıyla yazıldı!');
-    print('📍 Kontrol et: Firebase Console → Firestore Database → test koleksiyonu');
-    
+    print(
+      '📍 Kontrol et: Firebase Console → Firestore Database → test koleksiyonu',
+    );
+
     // Veriyi oku ve doğrula
-    final docSnapshot = await firestore.collection('test').doc('test_doc').get();
+    final docSnapshot = await firestore
+        .collection('test')
+        .doc('test_doc')
+        .get();
     if (docSnapshot.exists) {
       print('✅ Veriler veritabanında okundu: ${docSnapshot.data()}');
     }
@@ -62,7 +66,9 @@ void main() async {
     print('❌ Firestore yazma hatası: $e');
     print('📋 Stack trace: $stackTrace');
     print('⚠️ Eğer "PERMISSION_DENIED" hatası alıyorsanız:');
-    print('   Firebase Console → Firestore Database → Rules → Test Mode etkinleştir');
+    print(
+      '   Firebase Console → Firestore Database → Rules → Test Mode etkinleştir',
+    );
   }
 
   // 🤖 Gemini API başlat (API Key: AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw)
@@ -77,7 +83,9 @@ void main() async {
 
 /// 🔧 Tüm service'leri register et
 void _setupDependencies(
-    FirebaseService firebaseService, GeminiService geminiService) {
+  FirebaseService firebaseService,
+  GeminiService geminiService,
+) {
   // Core Services
   getIt.registerSingleton<FirebaseService>(firebaseService);
   getIt.registerSingleton<GeminiService>(geminiService);
@@ -89,6 +97,9 @@ void _setupDependencies(
       firebaseService: firebaseService,
       geminiService: getIt<GeminiGameService>(),
     ),
+  );
+  getIt.registerSingleton<ScoreService>(
+    ScoreService(firebaseService: firebaseService),
   );
 
   // Datasources
@@ -154,12 +165,14 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     // 🐛 DEBUG MODE: Direkt ana sayfaya git (geliştirme için)
-    const bool debugSkipAuth = true; // Firebase bağlantısı yoksa true yapın
-    
+    const bool debugSkipAuth = false; // Firebase bağlantısı yoksa true yapın
+
     if (debugSkipAuth) {
       Navigator.of(context).pushReplacementNamed('/home');
       return;
     }
+
+    Navigator.of(context).pushReplacementNamed('/login');
   }
 
   @override
@@ -177,10 +190,7 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text(
-                '🎮',
-                style: TextStyle(fontSize: 80),
-              ),
+              const Text('🎮', style: TextStyle(fontSize: 80)),
               const SizedBox(height: 20),
               const Text(
                 'Oyun Olustur',
@@ -231,7 +241,7 @@ class _HomePageState extends State<HomePage> {
       const CreateGameFlowPage(),
       const ProfilePage(),
     ];
-    
+
     return Scaffold(
       body: pages[_selectedIndex],
       bottomNavigationBar: NavigationBar(
@@ -295,11 +305,9 @@ class HomeTabView extends StatelessWidget {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => GameListPage(),
-                ),
-              );
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (context) => GameListPage()));
             },
             child: const Text('Oyunları Listele ve Oyna'),
           ),
@@ -323,19 +331,13 @@ class HomeTabView extends StatelessWidget {
           backgroundColor: Colors.blue.shade50,
           child: Text(icon, style: const TextStyle(fontSize: 24)),
         ),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(description),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.play_circle_outline, size: 20),
-            Text(
-              '$plays kez',
-              style: const TextStyle(fontSize: 11),
-            ),
+            Text('$plays kez', style: const TextStyle(fontSize: 11)),
           ],
         ),
         onTap: () {
@@ -407,10 +409,7 @@ class ProfilePage extends StatelessWidget {
     final userEmail = user?.email ?? 'email@example.com';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('👤 Profilim'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('👤 Profilim'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -444,10 +443,7 @@ class ProfilePage extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       userEmail,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -511,10 +507,16 @@ class ProfilePage extends StatelessWidget {
                   // 🔬 DEBUG MODE: Test API Connections
                   const Divider(height: 1),
                   ListTile(
-                    leading: const Icon(Icons.science_outlined, color: Colors.orange),
+                    leading: const Icon(
+                      Icons.science_outlined,
+                      color: Colors.orange,
+                    ),
                     title: const Text(
                       '🔬 Test API Connections',
-                      style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {
@@ -552,10 +554,7 @@ class ProfilePage extends StatelessWidget {
                 icon: const Icon(Icons.logout),
                 label: const Text(
                   'Çıkış Yap',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -572,18 +571,9 @@ class ProfilePage extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
       ],
     );
   }

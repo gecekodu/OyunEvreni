@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import '../../data/services/social_feed_service.dart';
 import '../../domain/entities/game_models.dart';
+import '../../domain/entities/game_score.dart';
+import '../../../../core/widgets/futuristic_animations.dart';
 
 class SocialFeedPage extends StatefulWidget {
   const SocialFeedPage({super.key});
@@ -42,17 +44,11 @@ class _SocialFeedPageState extends State<SocialFeedPage>
               children: [
                 Text(
                   'Sosyal Akış 📱',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   'Topluluk tarafından seçilen oyunlar',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.normal,
-                  ),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.normal),
                 ),
               ],
             ),
@@ -91,7 +87,42 @@ class _SocialFeedPageState extends State<SocialFeedPage>
       future: gamesFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: 3,
+            itemBuilder: (context, index) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ShimmerLoading(
+                width: double.infinity,
+                height: 200,
+                borderRadius: 15,
+              ),
+            ),
+          );
+        }
+
+        // ✅ Error handling
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                const SizedBox(height: 16),
+                Text(
+                  'Hata: ${snapshot.error}',
+                  style: TextStyle(color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Yenile'),
+                  onPressed: () => setState(() {}),
+                ),
+              ],
+            ),
+          );
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -114,168 +145,181 @@ class _SocialFeedPageState extends State<SocialFeedPage>
         return ListView.builder(
           padding: const EdgeInsets.all(12),
           itemCount: games.length,
-          itemBuilder: (context, index) => _buildGameCard(context, games[index]),
+          itemBuilder: (context, index) => FadeSlideIn(
+            delay: Duration(milliseconds: index * 100),
+            child: _buildGameCard(context, games[index]),
+          ),
         );
       },
     );
   }
 
   Widget _buildGameCard(BuildContext context, Game game) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      elevation: 2,
-      child: InkWell(
-        onTap: () {
-          // Oyun detayına git
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => GameDetailPage(game: game, feedService: _feedService),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(15),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header - Oyun Türü ve Yaratıcı
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        game.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+    return ScaleBounce(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                GameDetailPage(game: game, feedService: _feedService),
+          ),
+        );
+      },
+      child: GlowContainer(
+        glowColor: Colors.purple.withOpacity(0.3),
+        blurRadius: 15,
+        child: Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          elevation: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header - Oyun Türü ve Yaratıcı
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          game.title,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: 4),
+                        Text(
+                          'Yaratıcı: ${game.creatorName}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Yaratıcı: ${game.creatorName}',
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        game.gameType.toUpperCase(),
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
                         ),
                       ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade100,
-                      borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      game.gameType.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
+                  ],
+                ),
+              ),
+
+              // Açıklama
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  game.description,
+                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // İstatistikler - Yatay Üst Üste
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildStatChip('🎮 ${game.playCount}', 'Oynama'),
+                    _buildStatChip(
+                      '⭐ ${game.averageRating.toStringAsFixed(1)}',
+                      'Puan',
+                    ),
+                    _buildStatChip('📊 ${game.difficulty}', 'Zorluk'),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+
+              // Alt - Düğmeler
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Oyna Butonu
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          // Oyun oynat
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('🎮 Oyun başlatılıyor...'),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.play_arrow),
+                        label: const Text('Oyna'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                    const SizedBox(width: 8),
 
-            // Açıklama
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                game.description,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey[700],
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // İstatistikler - Yatay Üst Üste
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildStatChip('🎮 ${game.playCount}', 'Oynama'),
-                  _buildStatChip('⭐ ${game.averageRating.toStringAsFixed(1)}', 'Puan'),
-                  _buildStatChip('📊 ${game.difficulty}', 'Zorluk'),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-
-            // Alt - Düğmeler
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Oyna Butonu
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
+                    // Beğen Butonu
+                    IconButton(
                       onPressed: () {
-                        // Oyun oynat
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('🎮 Oyun başlatılıyor...')),
+                          const SnackBar(content: Text('❤️ Beğenildi!')),
                         );
                       },
-                      icon: const Icon(Icons.play_arrow),
-                      label: const Text('Oyna'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                      icon: const Icon(Icons.favorite_border),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.red.shade50,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
 
-                  // Beğen Butonu
-                  IconButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('❤️ Beğenildi!')),
-                      );
-                    },
-                    icon: const Icon(Icons.favorite_border),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.red.shade50,
+                    // Paylaş Butonu
+                    IconButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('📤 Paylaş!')),
+                        );
+                      },
+                      icon: const Icon(Icons.share),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.green.shade50,
+                      ),
                     ),
-                  ),
-
-                  // Paylaş Butonu
-                  IconButton(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('📤 Paylaş!')),
-                      );
-                    },
-                    icon: const Icon(Icons.share),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.green.shade50,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -292,18 +336,9 @@ class _SocialFeedPageState extends State<SocialFeedPage>
         children: [
           Text(
             value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
         ],
       ),
     );
@@ -403,10 +438,7 @@ class _GameDetailPageState extends State<GameDetailPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-            ),
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
           ],
         ),
         child: SafeArea(
@@ -440,10 +472,7 @@ class _GameDetailPageState extends State<GameDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.game.description,
-              style: const TextStyle(fontSize: 14),
-            ),
+            Text(widget.game.description, style: const TextStyle(fontSize: 14)),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
@@ -508,9 +537,7 @@ class _GameDetailPageState extends State<GameDetailPage> {
           controller: _commentController,
           decoration: InputDecoration(
             hintText: 'Bir yorum yazın...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             suffixIcon: IconButton(
               icon: const Icon(Icons.send),
               onPressed: () {
@@ -523,7 +550,9 @@ class _GameDetailPageState extends State<GameDetailPage> {
                   );
                   _commentController.clear();
                   setState(() {
-                    _commentsFuture = widget.feedService.getGameComments(widget.game.id);
+                    _commentsFuture = widget.feedService.getGameComments(
+                      widget.game.id,
+                    );
                   });
                 }
               },
@@ -635,10 +664,10 @@ class _GameDetailPageState extends State<GameDetailPage> {
               color: position == 1
                   ? Colors.amber
                   : position == 2
-                      ? Colors.grey
-                      : position == 3
-                          ? Colors.orange
-                          : Colors.blue.shade100,
+                  ? Colors.grey
+                  : position == 3
+                  ? Colors.orange
+                  : Colors.blue.shade100,
             ),
             child: Center(
               child: Text(
@@ -650,8 +679,13 @@ class _GameDetailPageState extends State<GameDetailPage> {
               ),
             ),
           ),
-          title: Text(score.userName, style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('${score.correctAnswers}/${score.totalQuestions} doğru'),
+          title: Text(
+            score.userName,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            '${score.correctAnswers}/${score.totalQuestions} doğru',
+          ),
           trailing: Text(
             '${score.score} puan',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),

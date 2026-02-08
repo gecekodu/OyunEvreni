@@ -25,6 +25,7 @@ class GeminiGameService {
   Future<Map<String, dynamic>> generateMathGameContent({
     required String topic, // addition, subtraction, multiplication, division
     required String difficulty, // easy, medium, hard
+    String? customDescription, // Kullanıcının özel açıklaması
     int questionCount = 10,
     int ageGroup = 8, // 6-8, 8-10, 10-12
   }) async {
@@ -37,6 +38,7 @@ Parametreler:
 - Zorluk: $difficulty
 - Soru Sayısı: $questionCount
 - Hedef Yaş: $ageGroup yaş
+${customDescription != null ? '- Tema/Açıklama: $customDescription (Bu temayı sorulara yansıt)' : ''}
 
 JSON formatında şu yapıda cevap ver (başka bir şey yazma, sadece JSON):
 {

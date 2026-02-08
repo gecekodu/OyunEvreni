@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/widgets/futuristic_animations.dart';
 import '../../../../core/services/gemini_game_service.dart';
 import '../../../../features/games/data/services/game_service.dart';
 import '../../../../features/games/presentation/pages/play_game_simple.dart';
@@ -14,7 +15,7 @@ class CreateGameFlowPage extends StatefulWidget {
 
 class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
   int _currentStep = 0;
-  
+
   // Kullanıcı seçimleri
   String? _selectedGameType;
   String? _selectedDifficulty;
@@ -23,7 +24,22 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
   final _descriptionController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _titleController.addListener(_onFormChanged);
+    _descriptionController.addListener(_onFormChanged);
+  }
+
+  void _onFormChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
   void dispose() {
+    _titleController.removeListener(_onFormChanged);
+    _descriptionController.removeListener(_onFormChanged);
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -69,8 +85,10 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
           children: [
             const CircularProgressIndicator(),
             const SizedBox(height: 16),
-            const Text('Yapay zeka oyununuzu hazırlıyor...',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            const Text(
+              'Yapay zeka oyununuzu hazırlıyor...',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 8),
             Text(
               'Oyun Türü: $_selectedGameType\n'
@@ -85,7 +103,7 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
 
     try {
       final gameService = getIt<GameService>();
-      
+
       // 🎮 Oyunu oluştur (Gemini + HTML + Firestore)
       final game = await gameService.createGame(
         gameType: _selectedGameType ?? 'math',
@@ -99,7 +117,7 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
 
       if (!mounted) return;
       Navigator.of(context).pop(); // Dialog kapat
-      
+
       // ✅ Başarı mesajı
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -108,24 +126,22 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
           duration: const Duration(seconds: 2),
         ),
       );
-      
+
       print('✅ Oyun oluşturuldu: ${game.id}');
-      
+
       // Oyun sayfasına yönlendir
       await Future.delayed(const Duration(milliseconds: 300));
       if (mounted) {
         Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => PlayGameSimple(game: game),
-          ),
+          MaterialPageRoute(builder: (context) => PlayGameSimple(game: game)),
         );
       }
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context).pop(); // Dialog kapat
-      
+
       print('❌ Hata: $e');
-      
+
       // ❌ Hata mesajı
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -148,12 +164,10 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
         children: [
           // İlerleme Göstergesi
           _buildProgressIndicator(),
-          
+
           // İçerik
-          Expanded(
-            child: _buildStepContent(),
-          ),
-          
+          Expanded(child: _buildStepContent()),
+
           // Alt Butonlar
           _buildBottomButtons(),
         ],
@@ -169,7 +183,7 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
         children: List.generate(4, (index) {
           final isCompleted = index < _currentStep;
           final isCurrent = index == _currentStep;
-          
+
           return Expanded(
             child: Row(
               children: [
@@ -231,7 +245,10 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
             child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: Color(gameType.color).withOpacity(0.2),
-                child: Text(gameType.icon, style: const TextStyle(fontSize: 24)),
+                child: Text(
+                  gameType.icon,
+                  style: const TextStyle(fontSize: 24),
+                ),
               ),
               title: Text(
                 gameType.name,
@@ -368,34 +385,32 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
           style: TextStyle(color: Colors.grey[600]),
         ),
         const SizedBox(height: 24),
-        
+
         // Başlık
         TextField(
           controller: _titleController,
+          onChanged: (value) => setState(() {}), // ✅ Butonu aktifleştir
           decoration: InputDecoration(
             labelText: 'Oyun Başlığı',
             hintText: 'Örn: Matematik Kahramanı',
             prefixIcon: const Icon(Icons.text_fields),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
             fillColor: Colors.grey[50],
           ),
           maxLength: 50,
         ),
         const SizedBox(height: 16),
-        
+
         // Açıklama
         TextField(
           controller: _descriptionController,
+          onChanged: (value) => setState(() {}), // ✅ Butonu aktifleştir
           decoration: InputDecoration(
             labelText: 'Oyun Açıklaması',
             hintText: 'Oyununuzu kısaca tanıtın...',
             prefixIcon: const Icon(Icons.description),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
             fillColor: Colors.grey[50],
             alignLabelWithHint: true,
@@ -404,7 +419,7 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
           maxLength: 200,
         ),
         const SizedBox(height: 24),
-        
+
         // Özet Card
         Card(
           color: Colors.blue.shade50,
@@ -415,10 +430,7 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
               children: [
                 const Text(
                   '📋 Oyun Özeti',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const Divider(),
                 _buildSummaryRow('Tür', _getGameTypeName()),
@@ -439,10 +451,7 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(color: Colors.grey[700])),
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -450,16 +459,20 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
 
   String _getGameTypeName() {
     return AppConstants.gameTypes
-            .firstWhere((t) => t.id == _selectedGameType,
-                orElse: () => AppConstants.gameTypes.first)
-            .name;
+        .firstWhere(
+          (t) => t.id == _selectedGameType,
+          orElse: () => AppConstants.gameTypes.first,
+        )
+        .name;
   }
 
   String _getDifficultyName() {
     return AppConstants.difficultyLevels
-            .firstWhere((d) => d.id == _selectedDifficulty,
-                orElse: () => AppConstants.difficultyLevels.first)
-            .name;
+        .firstWhere(
+          (d) => d.id == _selectedDifficulty,
+          orElse: () => AppConstants.difficultyLevels.first,
+        )
+        .name;
   }
 
   Widget _buildBottomButtons() {
@@ -491,32 +504,55 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
                 child: const Text('← Geri'),
               ),
             ),
-          
+
           if (_currentStep > 0) const SizedBox(width: 12),
-          
+
           // İleri / Oluştur Butonu
           Expanded(
             flex: 2,
-            child: ElevatedButton(
-              onPressed: _canProceed()
-                  ? (_currentStep == 3 ? _createGame : _nextStep)
-                  : null,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                backgroundColor: Colors.blue,
-              ),
-              child: Text(
-                _currentStep == 3 ? '✨ Oyunu Oluştur' : 'İleri →',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+            child: _canProceed()
+                ? GlowContainer(
+                    glowColor: Colors.blue.withOpacity(0.6),
+                    blurRadius: 20,
+                    child: PulseAnimation(
+                      child: ElevatedButton(
+                        onPressed: _currentStep == 3 ? _createGame : _nextStep,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor: Colors.blue,
+                        ),
+                        child: Text(
+                          _currentStep == 3 ? '✨ Oyunu Oluştur' : 'İleri →',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : ElevatedButton(
+                    onPressed: null,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: Colors.blue,
+                    ),
+                    child: Text(
+                      _currentStep == 3 ? '✨ Oyunu Oluştur' : 'İleri →',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),

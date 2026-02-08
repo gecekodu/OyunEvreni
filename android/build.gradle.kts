@@ -1,7 +1,7 @@
 plugins {
     // ...existing code...
     // Google hizmetleri Gradle eklentisi için bağımlılığı ekleyin
-    id("com.google.gms.google-services") version "4.4.4" apply false
+    id("com.google.gms.google-services") version "4.3.15" apply false
     // ...existing code...
 }
 

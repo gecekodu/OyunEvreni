@@ -34,6 +34,7 @@ class GameService {
         gameType: gameType,
         difficulty: difficulty,
         learningGoals: learningGoals,
+        customDescription: description, // Kullanıcının özel açıklamasını gönder
       );
 
       print('✅ Gemini içerik oluşturuldu');
@@ -91,6 +92,7 @@ class GameService {
     required String gameType,
     required String difficulty,
     required List<String> learningGoals,
+    String? customDescription,
   }) async {
     switch (gameType) {
       case 'math':
@@ -98,6 +100,7 @@ class GameService {
           topic: learningGoals.isNotEmpty ? learningGoals[0] : 'toplama',
           difficulty: difficulty,
           questionCount: 10,
+          customDescription: customDescription,
         );
       case 'word':
         return await _geminiService.generateWordGameContent(
@@ -302,6 +305,14 @@ class GameService {
         let score = 0;
         let correctAnswers = 0;
 
+        // Flutter'a mesaj gönder
+        function sendToFlutter(message) {
+            if (window.GameChannel) {
+                window.GameChannel.postMessage(message);
+            }
+            console.log('📱 Flutter\'a mesaj:', message);
+        }
+
         function showQuestion() {
             if (currentQuestion >= questions.length) {
                 showResults();
@@ -322,6 +333,8 @@ class GameService {
                 btn.onclick = () => checkAnswer(index, q.correctIndex);
                 answersDiv.appendChild(btn);
             });
+            
+            console.log('❓ Soru gösteriliyor:', currentQuestion + 1, '/', questions.length);
         }
 
         function checkAnswer(selected, correct) {
@@ -335,11 +348,17 @@ class GameService {
                 }
             });
 
-            if (selected === correct) {
+            const isCorrect = selected === correct;
+            if (isCorrect) {
                 correctAnswers++;
                 score += 10;
                 document.getElementById('score').textContent = score;
                 document.getElementById('correct').textContent = correctAnswers;
+                console.log('✅ Doğru cevap! Puan:', score);
+                sendToFlutter('CORRECT:' + score);
+            } else {
+                console.log('❌ Yanlış cevap');
+                sendToFlutter('WRONG:' + score);
             }
 
             setTimeout(() => {
@@ -353,6 +372,10 @@ class GameService {
             document.getElementById('result-screen').style.display = 'block';
             document.getElementById('final-score').textContent = correctAnswers;
             document.getElementById('total-questions').textContent = questions.length;
+            
+            const percentage = Math.round((correctAnswers / questions.length) * 100);
+            console.log('🎉 Oyun bitti! Skor:', correctAnswers, '/', questions.length, '(' + percentage + '%)');
+            sendToFlutter('SCORE:' + correctAnswers + '/' + questions.length);
         }
 
         function restartGame() {
@@ -363,9 +386,15 @@ class GameService {
             document.getElementById('correct').textContent = '0';
             document.getElementById('question-container').style.display = 'block';
             document.getElementById('result-screen').style.display = 'none';
+            console.log('🔄 Oyun yeniden başlatıldı');
+            sendToFlutter('RESTART');
             showQuestion();
         }
 
+        // Oyun başlıyor
+        console.log('🎮 Oyun başlatılıyor...');
+        console.log('📝 Soru sayısı:', questions.length);
+        sendToFlutter('GAME_STARTED');
         showQuestion();
     </script>
 </body>

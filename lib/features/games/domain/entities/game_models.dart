@@ -207,63 +207,6 @@ class GameRating {
   }
 }
 
-// 📊 OYUN İSTATİSTİKLERİ (Her kullanıcının oyundaki performansı)
-class GameScore {
-  final String id;
-  final String gameId;
-  final String userId;
-  final String userName;
-  final int score;
-  final int correctAnswers;
-  final int totalQuestions;
-  final int timeSpent; // saniye
-  final DateTime playedAt;
-
-  GameScore({
-    required this.id,
-    required this.gameId,
-    required this.userId,
-    required this.userName,
-    required this.score,
-    required this.correctAnswers,
-    required this.totalQuestions,
-    required this.timeSpent,
-    required this.playedAt,
-  });
-
-  factory GameScore.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return GameScore(
-      id: doc.id,
-      gameId: data['gameId'] ?? '',
-      userId: data['userId'] ?? '',
-      userName: data['userName'] ?? '',
-      score: data['score'] ?? 0,
-      correctAnswers: data['correctAnswers'] ?? 0,
-      totalQuestions: data['totalQuestions'] ?? 0,
-      timeSpent: data['timeSpent'] ?? 0,
-      playedAt: (data['playedAt'] as Timestamp).toDate(),
-    );
-  }
-
-  Map<String, dynamic> toFirestore() {
-    return {
-      'gameId': gameId,
-      'userId': userId,
-      'userName': userName,
-      'score': score,
-      'correctAnswers': correctAnswers,
-      'totalQuestions': totalQuestions,
-      'timeSpent': timeSpent,
-      'playedAt': Timestamp.fromDate(playedAt),
-    };
-  }
-
-  // Başarı yüzdesi
-  double get successRate =>
-      totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
-}
-
 // 🏆 KULLANICI ROZET MODELİ
 class UserBadge {
   final String id;

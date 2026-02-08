@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/game_models.dart';
+import '../../domain/entities/game_score.dart';
 
 class SocialFeedService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
