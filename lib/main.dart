@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'config/firebase_options.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/gemini_service.dart';
@@ -35,8 +36,37 @@ void main() async {
   final firebaseService = FirebaseService();
   await firebaseService.initialize();
 
-  // 🤖 Gemini API başlat
-  const String geminiApiKey = 'AIzaSyDduUTk0dJZgVNeyg8AV66qiIChgmoAC3s';
+  // 🔥 Firebase Firestore test verisini yaz
+  print('⏳ Firestore\'a test verisi yazılıyor...');
+  final firestore = FirebaseFirestore.instance;
+  try {
+    print('📝 Yazma işlemi başladı...');
+    final testData = {
+      'message': 'Test message from Flutter app',
+      'timestamp': DateTime.now(),
+      'app': 'OyunEvreni',
+      'status': 'active',
+      'device': 'iOS/Android',
+    };
+    
+    await firestore.collection('test').doc('test_doc').set(testData);
+    print('✅ Test koleksiyonu Firestore\'a başarıyla yazıldı!');
+    print('📍 Kontrol et: Firebase Console → Firestore Database → test koleksiyonu');
+    
+    // Veriyi oku ve doğrula
+    final docSnapshot = await firestore.collection('test').doc('test_doc').get();
+    if (docSnapshot.exists) {
+      print('✅ Veriler veritabanında okundu: ${docSnapshot.data()}');
+    }
+  } catch (e, stackTrace) {
+    print('❌ Firestore yazma hatası: $e');
+    print('📋 Stack trace: $stackTrace');
+    print('⚠️ Eğer "PERMISSION_DENIED" hatası alıyorsanız:');
+    print('   Firebase Console → Firestore Database → Rules → Test Mode etkinleştir');
+  }
+
+  // 🤖 Gemini API başlat (API Key: AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw)
+  const String geminiApiKey = 'AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw';
   final geminiService = GeminiService(apiKey: geminiApiKey);
 
   // 📦 Dependency Injection setup
@@ -52,7 +82,7 @@ void _setupDependencies(
   getIt.registerSingleton<FirebaseService>(firebaseService);
   getIt.registerSingleton<GeminiService>(geminiService);
   getIt.registerSingleton<GeminiGameService>(
-    GeminiGameService(apiKey: 'AIzaSyDduUTk0dJZgVNeyg8AV66qiIChgmoAC3s'),
+    GeminiGameService(apiKey: 'AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw'),
   );
   getIt.registerSingleton<GameService>(
     GameService(
