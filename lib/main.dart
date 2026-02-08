@@ -16,6 +16,7 @@ import 'features/ai/data/datasources/ai_remote_datasource.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/signup_page.dart';
 import 'features/games/presentation/pages/create_game_flow_page.dart';
+import 'features/games/presentation/pages/game_list_page.dart';
 import 'features/games/presentation/pages/social_feed_page.dart';
 import 'features/admin/presentation/pages/test_panel_page.dart';
 import 'config/app_theme.dart';
@@ -245,119 +246,32 @@ class HomeTabView extends StatelessWidget {
   Widget build(BuildContext context) {
     final firebaseService = getIt<FirebaseService>();
     final userName = firebaseService.currentUser?.displayName ?? 'Kullanıcı';
-
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          // App Bar
-          SliverAppBar.large(
-            floating: true,
-            snap: true,
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Merhaba, $userName 👋',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('Ana Sayfa'),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CreateGameFlowPage(),
                 ),
-                const Text(
-                  'Bugün hangi oyunu oynayacaksın?',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
+              );
+            },
+            child: const Text('Yeni Oyun Oluştur'),
           ),
-
-          // İçerik
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // Hızlı Eylemler
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '⚡ Hızlı Başlangıç',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _QuickActionButton(
-                                icon: Icons.add_circle,
-                                label: 'Oyun Oluştur',
-                                color: Colors.blue,
-                                onTap: () {
-                                  // Orta taba geç
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _QuickActionButton(
-                                icon: Icons.explore,
-                                label: 'Keşfet',
-                                color: Colors.purple,
-                                onTap: () {},
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => GameListPage(),
                 ),
-                const SizedBox(height: 16),
-
-                // Oyunlarım Bölümü
-                const Text(
-                  '🎮 Oyunlarım',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildGameCard(
-                  context,
-                  title: 'Matematik Macerası',
-                  description: 'Toplama ve çıkarma öğren',
-                  icon: '🔢',
-                  plays: 12,
-                  gameType: 'math',
-                ),
-                _buildGameCard(
-                  context,
-                  title: 'Kelime Avı',
-                  description: 'Türkçe kelimeleri bul',
-                  icon: '📝',
-                  plays: 8,
-                  gameType: 'word',
-                ),
-                _buildGameCard(
-                  context,
-                  title: 'Renk Eşleştirme',
-                  description: 'Renkleri eşleştir',
-                  icon: '🎨',
-                  plays: 15,
-                  gameType: 'color',
-                ),
-              ]),
-            ),
+              );
+            },
+            child: const Text('Oyunları Listele ve Oyna'),
           ),
         ],
       ),
