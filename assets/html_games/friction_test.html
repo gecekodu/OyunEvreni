@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Görsel Sürtünme Deneyi: Köşe Pedallar</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; user-select: none; background-color: #333; }
+        
+        /* ORTA ÇİZGİ */
+        .split-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: rgba(255,255,255,0.5);
+            z-index: 40;
+            transform: translateX(-50%);
+        }
+
+        /* İLERLEME BARI */
+        #progress-container {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70%;
+            height: 60px;
+            background-color: rgba(0,0,0,0.8);
+            border: 3px solid #555;
+            border-radius: 10px;
+            z-index: 100;
+            padding: 5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
+        .progress-label {
+            text-align: center;
+            color: white;
+            font-size: 14px;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        #progress-bar-bg {
+            position: relative;
+            width: 100%;
+            height: 30px;
+            background: linear-gradient(to right, #222, #444);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .finish-line-flag {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+
+        .car-marker {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: bold;
+            font-size: 13px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            transition: left 0.1s linear;
+        }
+        .p1-color { color: white; background-color: #DC143C; border: 1px solid #ff9999; left: 0%; z-index: 2; }
+        .p2-color { color: white; background-color: #0000FF; border: 1px solid #9999ff; left: 0%; margin-top: 10px; z-index: 1; opacity: 0.9; }
+
+        /* OYUNCU PANELLERİ */
+        .player-ui {
+            position: absolute;
+            top: 80px;
+            width: 50%;
+            height: calc(100% - 80px);
+            pointer-events: none;
+            overflow: hidden;
+        }
+        #p1-ui { left: 0; }
+        #p2-ui { right: 0; }
+
+        .info-panel {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            text-shadow: 2px 2px 4px black;
+        }
+        .title { font-size: 22px; font-weight: bold; display: block; margin-bottom: 5px; }
+        .sub-info { font-size: 18px; font-weight: bold; }
+        .speed { font-size: 32px; font-weight: bold; color: #00ff00; margin-top: 5px; display:block; }
+
+        /* GAZ PEDALLARI GENEL STİLİ (GÜNCELLENDİ) */
+        .gas-btn {
+            position: absolute;
+            bottom: 20px; /* Alt kenardan mesafe */
+            width: 90px;  /* Küçültüldü */
+            height: 120px; /* Küçültüldü */
+            background: linear-gradient(to bottom, #43A047, #2E7D32);
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            cursor: pointer;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px; /* Küçültüldü */
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            z-index: 90;
+        }
+        .gas-btn:active { transform: scale(0.95); background: #2E7D32; }
+        .gas-btn::after { content: "GAZ"; }
+
+        /* ÖZEL KONUMLANDIRMA */
+        #btn-p1 {
+            left: 20px; /* Sol alt köşe */
+        }
+        #btn-p2 {
+            right: 20px; /* Sağ alt köşe */
+        }
+
+        /* Bitiş Mesajı */
+        #finish-msg {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            color: gold;
+            font-size: 40px;
+            padding: 40px;
+            border: 5px solid white;
+            border-radius: 20px;
+            display: none;
+            z-index: 200;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="finish-msg">HOŞ GELDİNİZ!<br><span style="font-size:24px; color:white">İmaret Ortaokulu</span><br><span style="font-size:18px; color:#aaa">Yeniden başlamak için F5'e basın</span></div>
+
+    <div id="progress-container">
+        <div class="progress-label">İMARET ORTAOKULU'NA MESAFE</div>
+        <div id="progress-bar-bg">
+            <div id="p1-marker" class="car-marker p1-color" style="left:0%">Emrullah Hoca</div>
+            <div id="p2-marker" class="car-marker p2-color" style="left:0%; top: 2px;">Kadir Hoca</div>
+            <div class="finish-line-flag">🏫</div>
+        </div>
+    </div>
+
+    <div class="split-line"></div>
+
+    <div id="p1-ui" class="player-ui">
+        <div class="info-panel">
+            <span class="title" style="color:#ffcc00">OYUNCU 1 (Deney Grubu)</span>
+            <span id="p1-desc" class="sub-info" style="background:rgba(0,0,0,0.5); padding: 5px 10px; border-radius:5px;">Zemin: --</span>
+            <span id="p1-speed" class="speed">0 km/h</span>
+        </div>
+        <div id="btn-p1" class="gas-btn"></div>
+    </div>
+
+    <div id="p2-ui" class="player-ui">
+        <div class="info-panel">
+            <span class="title" style="color:#00ffff">OYUNCU 2 (Kontrol Grubu)</span>
+            <span class="sub-info" style="background:rgba(0,0,0,0.5); padding: 5px 10px; border-radius:5px;">Zemin: Sadece Asfalt</span>
+            <span id="p2-speed" class="speed">0 km/h</span>
+        </div>
+        <div id="btn-p2" class="gas-btn"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- AYARLAR ---
+        const SEGMENT_LEN = 120;
+        const GOAL_DISTANCE = 3000; 
+        const SEGMENT_BATCH_COUNT = 6; 
+        const TOTAL_LOOP_LEN = SEGMENT_LEN * SEGMENT_BATCH_COUNT;
+        const P1_X_OFFSET = -15;
+        const P2_X_OFFSET = 15;
+
+        // --- GLOBAL DEĞİŞKENLER ---
+        let scene, renderer;
+        let camera1, camera2;
+        let raceFinished = false;
+
+        // Oyuncu 1
+        let car1, speed1 = 0, gas1 = false;
+        let roadSegs1 = [], wheels1 = [];
+        let p1OnSand = false, p1KumTimer = 0;
+        let totalDist1 = 0;
+        let p1ArrowMesh; // P1 için zemin oku
+
+        // Oyuncu 2
+        let car2, speed2 = 0, gas2 = false;
+        let roadSegs2 = [], wheels2 = [];
+        let totalDist2 = 0;
+        let p2ArrowMesh; // P2 için zemin oku
+
+        // UI
+        const ui1Desc = document.getElementById('p1-desc');
+        const ui1Speed = document.getElementById('p1-speed');
+        const ui2Speed = document.getElementById('p2-speed');
+        const p1Marker = document.getElementById('p1-marker');
+        const p2Marker = document.getElementById('p2-marker');
+        const finishMsg = document.getElementById('finish-msg');
+
+        let karamanSignMat;
+        let arrowTexture; // Ortak ok dokusu
+
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 50, 400);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.autoClear = false; 
+            document.body.appendChild(renderer.domElement);
+
+            const aspect = (window.innerWidth / 2) / window.innerHeight;
+            camera1 = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+            camera1.position.set(P1_X_OFFSET, 6, 12);
+            camera2 = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+            camera2.position.set(P2_X_OFFSET, 6, 12);
+
+            const amb = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(amb);
+            const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+            dir.position.set(0, 100, 50);
+            dir.castShadow = true;
+            dir.shadow.mapSize.width = 2048; dir.shadow.mapSize.height = 2048;
+            dir.shadow.camera.left = -50; dir.shadow.camera.right = 50;
+            scene.add(dir);
+
+            karamanSignMat = createKaramanSignTexture();
+            arrowTexture = createArrowTexture(); // Ok dokusunu oluştur
+
+            createVariableRoads(); 
+            createConstantRoads(); 
+
+            car1 = createCar(0xDC143C, P1_X_OFFSET); 
+            car2 = createCar(0x0000FF, P2_X_OFFSET); 
+
+            // Zemin Oklarını Oluştur
+            p1ArrowMesh = createGroundFrictionArrow(P1_X_OFFSET);
+            p2ArrowMesh = createGroundFrictionArrow(P2_X_OFFSET);
+
+            createImaretSchool(-GOAL_DISTANCE - 40); 
+
+            setupControls();
+            window.addEventListener('resize', onResize);
+        }
+
+        // --- YENİ: ZEMİN OKLARI VE GÜNCELLENMİŞ METİN ---
+        
+        // Okunabilirliği artırılmış metin spritesi
+        function createTextSprite(message, colorStr) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 512; canvas.height = 128;
+            
+            // Yarı saydam arka plan kutusu
+            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            ctx.fillRect(0, 20, canvas.width, canvas.height - 40);
+
+            ctx.fillStyle = colorStr;
+            ctx.font = "Bold 45px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(message, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            return new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
+        }
+
+        // Zemin oku için texture oluşturur (Aşağı/Geriye bakan ok)
+        function createArrowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath();
+            ctx.moveTo(64, 256); // Uç
+            ctx.lineTo(0, 192);  // Sol kanat
+            ctx.lineTo(32, 192); // Sol gövde başı
+            ctx.lineTo(32, 0);   // Sol gövde sonu
+            ctx.lineTo(96, 0);   // Sağ gövde sonu
+            ctx.lineTo(96, 192); // Sağ gövde başı
+            ctx.lineTo(128, 192);// Sağ kanat
+            ctx.closePath();
+            ctx.fill();
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // Zeminde duracak ok mesh'ini oluşturur
+        function createGroundFrictionArrow(xPos) {
+            // 1 birim genişlik, 4 birim uzunlukta düzlem
+            const geometry = new THREE.PlaneGeometry(2, 6); 
+            const material = new THREE.MeshBasicMaterial({ 
+                map: arrowTexture, 
+                transparent: true, 
+                opacity: 0,
+                color: 0xffff00 // Varsayılan renk
+            });
+            const arrowMesh = new THREE.Mesh(geometry, material);
+            arrowMesh.rotation.x = -Math.PI / 2; // Zemine yatır
+            arrowMesh.position.set(xPos, -0.48, 0); // Yolun çok az üstünde
+            scene.add(arrowMesh);
+            return arrowMesh;
+        }
+
+        function updateFrictionVisuals(arrowMesh, carZ, speed, terrainType, isGassing) {
+            // Sadece gaz veriliyorsa ve hız varsa göster
+            const showArrows = isGassing && Math.abs(speed) > 0.05;
+            
+            if(!showArrows) {
+                arrowMesh.material.opacity = 0;
+                return;
+            }
+
+            arrowMesh.material.opacity = Math.min(1, Math.abs(speed) * 2); // Hızlandıkça belirginleşsin
+            arrowMesh.position.z = carZ + 4; // Arabanın biraz arkasında
+
+            let color = 0xffff00; // Sarı (Asfalt)
+            let scaleZ = 1; // Normal uzunluk
+
+            if(terrainType === 'sand') {
+                color = 0xff0000; // Kırmızı (Çok sürtünme)
+                scaleZ = 3.0; // Çok uzun ok
+            } else if(terrainType === 'ice') {
+                color = 0x00ffff; // Cyan (Az sürtünme)
+                scaleZ = 0.3; // Çok kısa ok
+            }
+
+            arrowMesh.material.color.setHex(color);
+            // Okun uzunluğunu hıza ve zemine göre ayarla
+            arrowMesh.scale.set(1, Math.max(0.1, Math.abs(speed) * 2 * scaleZ), 1);
+        }
+
+
+        // --- MEVCUT FONKSİYONLAR ---
+
+        function createKaramanSignTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 8; ctx.strokeStyle = '#000080'; ctx.strokeRect(4, 4, canvas.width-8, canvas.height-8);
+            ctx.fillStyle = '#000080'; ctx.font = "Bold 40px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText("KARAMAN", canvas.width / 2, canvas.height / 2);
+            return new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(canvas) });
+        }
+
+        function createImaretSchool(zPos) {
+            const schoolGroup = new THREE.Group();
+            const mainBuildingGeo = new THREE.BoxGeometry(70, 25, 20);
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0xDDEEAA });
+            const mainBuilding = new THREE.Mesh(mainBuildingGeo, wallMat);
+            mainBuilding.position.y = 12.5; mainBuilding.castShadow = true; mainBuilding.receiveShadow = true;
+            schoolGroup.add(mainBuilding);
+
+            const roofShape = new THREE.ConeGeometry(50, 15, 4);
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x8B0000 });
+            const roof = new THREE.Mesh(roofShape, roofMat);
+            roof.position.y = 25 + 7.5; roof.rotation.y = Math.PI / 4; roof.scale.set(1, 1, 0.5);
+            schoolGroup.add(roof);
+
+            const windowGeo = new THREE.PlaneGeometry(2, 3);
+            const windowMat = new THREE.MeshBasicMaterial({ color: 0x223344 });
+            for(let floor=0; floor<3; floor++) {
+                for(let i=0; i<10; i++) {
+                    if(floor === 0 && (i === 4 || i === 5)) continue;
+                    const win = new THREE.Mesh(windowGeo, windowMat);
+                    win.position.set(-30 + (i * 6.5) + 3, 5 + (floor * 7), 10.1);
+                    schoolGroup.add(win);
+                }
+            }
+            const entranceGeo = new THREE.BoxGeometry(12, 10, 5);
+            const entrance = new THREE.Mesh(entranceGeo, wallMat);
+            entrance.position.set(0, 5, 10); schoolGroup.add(entrance);
+            const doorGeo = new THREE.PlaneGeometry(6, 7);
+            const doorMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+            const door = new THREE.Mesh(doorGeo, doorMat);
+            door.position.set(0, 3.5, 12.6); schoolGroup.add(door);
+
+            const signBgGeo = new THREE.BoxGeometry(14, 3, 0.5);
+            const signBgMat = new THREE.MeshStandardMaterial({ color: 0x004488 });
+            const signBg = new THREE.Mesh(signBgGeo, signBgMat);
+            signBg.position.set(0, 9, 13); schoolGroup.add(signBg);
+            // Metin spritesi güncellendi, arka planlı
+            const textSprite = createTextSprite("İMARET ORTAOKULU", "#ffffff");
+            textSprite.scale.set(20, 5, 1); textSprite.position.set(0, 9, 13.6);
+            schoolGroup.add(textSprite);
+
+            const poleGeo = new THREE.CylinderGeometry(0.2, 0.2, 15);
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+            const pole = new THREE.Mesh(poleGeo, poleMat); pole.position.set(-10, 7.5, 25); schoolGroup.add(pole);
+            const flagGeo = new THREE.BoxGeometry(4, 2.5, 0.1);
+            const flagMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            const flag = new THREE.Mesh(flagGeo, flagMat); flag.position.set(-8, 13, 25); schoolGroup.add(flag);
+
+            const yardGeo = new THREE.BoxGeometry(100, 1, 60);
+            const yardMat = new THREE.MeshStandardMaterial({ color: 0x777777 });
+            const yard = new THREE.Mesh(yardGeo, yardMat); yard.position.y = -0.6; yard.position.z = 10; schoolGroup.add(yard);
+
+            schoolGroup.position.set(0, 0, zPos);
+            scene.add(schoolGroup);
+        }
+
+        function createVariableRoads() {
+            for(let i=0; i<SEGMENT_BATCH_COUNT; i++) {
+                let type = 'asphalt'; let color = 0x333333;
+                if (i % 3 === 0) { type = 'sand'; color = 0xE6C288; }
+                else if (i % 3 === 1) { type = 'asphalt'; color = 0x333333; }
+                else { type = 'ice'; color = 0xCCFFFF; }
+                if (i===0) { type = 'asphalt'; color = 0x333333; }
+                createSegment(P1_X_OFFSET, type, color, -i * SEGMENT_LEN);
+            }
+        }
+
+        function createConstantRoads() {
+            for(let i=0; i<SEGMENT_BATCH_COUNT; i++) {
+                createSegment(P2_X_OFFSET, 'asphalt', 0x333333, -i * SEGMENT_LEN);
+            }
+        }
+
+        function createSegment(xOffset, type, color, zPos) {
+            const group = new THREE.Group();
+            const geo = new THREE.BoxGeometry(20, 1, SEGMENT_LEN);
+            let matParams = { color: color };
+            if(type==='ice') { matParams.roughness=0.1; matParams.metalness=0.1; }
+            else if(type==='sand') { matParams.roughness=1.0; }
+            else { matParams.roughness=0.6; }
+            const road = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(matParams));
+            road.position.y = -0.5; road.receiveShadow = true; group.add(road);
+
+            const grassGeo = new THREE.PlaneGeometry(30, SEGMENT_LEN);
+            const grassMat = new THREE.MeshStandardMaterial({ color: 0x4CAF50 });
+            const gLeft = new THREE.Mesh(grassGeo, grassMat);
+            gLeft.rotation.x = -Math.PI/2; gLeft.position.set(-25, -0.6, 0); gLeft.receiveShadow=true; group.add(gLeft);
+            const gRight = gLeft.clone();
+            gRight.position.set(25, -0.6, 0); group.add(gRight);
+
+            if(xOffset === P1_X_OFFSET) {
+                const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,5), new THREE.MeshStandardMaterial({color:0x555}));
+                pole.position.set(-12, 2.5, 0); group.add(pole);
+                const sign = new THREE.Mesh(new THREE.BoxGeometry(5,2,0.2), new THREE.MeshStandardMaterial({color:color}));
+                sign.position.set(0, 1.5, 0); pole.add(sign);
+            }
+
+            for(let i=0; i<2; i++){ 
+                const t = createTree();
+                t.position.set((Math.random()>0.5?1:-1)*(18+Math.random()*8), 0, (Math.random()-0.5)*SEGMENT_LEN*0.7);
+                group.add(t);
+            }
+
+            const kSignGroup = new THREE.Group();
+            const kPole = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 4), new THREE.MeshStandardMaterial({color:0x888888}));
+            kPole.position.y = 2; kSignGroup.add(kPole);
+            const kBoard = new THREE.Mesh(new THREE.BoxGeometry(4, 2, 0.2), karamanSignMat);
+            kBoard.position.y = 3.5; kBoard.position.z = 0.11; kSignGroup.add(kBoard);
+            kSignGroup.position.set(22, -0.5, (Math.random()-0.5)*SEGMENT_LEN*0.5);
+            group.add(kSignGroup);
+
+            group.position.set(xOffset, 0, zPos);
+            scene.add(group);
+            
+            const segData = { mesh: group, type: type, z: zPos };
+            if(xOffset === P1_X_OFFSET) roadSegs1.push(segData);
+            else roadSegs2.push(segData);
+        }
+
+        function createTree() {
+            const g = new THREE.Group();
+            const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.5,2), new THREE.MeshStandardMaterial({color:0x8B4513}));
+            trunk.position.y=1;
+            const leaves = new THREE.Mesh(new THREE.ConeGeometry(2,4,8), new THREE.MeshStandardMaterial({color:0x228B22}));
+            leaves.position.y=3;
+            g.add(trunk); g.add(leaves);
+            return g;
+        }
+
+        function createCar(color, xOffset) {
+            const c = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2.2,0.8,4.6), new THREE.MeshStandardMaterial({color:color}));
+            body.position.y=0.8; body.castShadow=true; c.add(body);
+            const top = new THREE.Mesh(new THREE.BoxGeometry(2,0.6,2.5), new THREE.MeshStandardMaterial({color:0x111}));
+            top.position.set(0,1.5,-0.2); c.add(top);
+            const wGeo = new THREE.CylinderGeometry(0.45,0.45,0.4,16);
+            const wMat = new THREE.MeshStandardMaterial({color:0x222});
+            const wList = [];
+            [{x:-1.2,z:1.4},{x:1.2,z:1.4},{x:-1.2,z:-1.4},{x:1.2,z:-1.4}].forEach(p=>{
+                const w = new THREE.Mesh(wGeo, wMat);
+                w.rotation.z=Math.PI/2; w.position.set(p.x,0.45,p.z); w.castShadow=true;
+                c.add(w); wList.push(w);
+            });
+            c.rotation.y = Math.PI;
+            c.position.set(xOffset, 0, 0);
+
+            let labelText = xOffset === P1_X_OFFSET ? "Emrullah Hocanın Arabası" : "Kadir Hocanın Arabası";
+            // Metin spritesi güncellendi, arka planlı
+            const labelSprite = createTextSprite(labelText, "#ffffff");
+            labelSprite.scale.set(5, 1.5, 1); 
+            labelSprite.position.set(0, 3.5, 0);
+            c.add(labelSprite);
+
+            scene.add(c);
+            if(xOffset === P1_X_OFFSET) wheels1 = wList;
+            else wheels2 = wList;
+            return c;
+        }
+
+        function setupControls() {
+            const btn1 = document.getElementById('btn-p1');
+            const btn2 = document.getElementById('btn-p2');
+            btn1.addEventListener('mousedown', ()=>gas1=true);
+            window.addEventListener('mouseup', ()=>gas1=false);
+            btn1.addEventListener('touchstart', (e)=>{e.preventDefault(); gas1=true;});
+            btn1.addEventListener('touchend', (e)=>{e.preventDefault(); gas1=false;});
+            btn2.addEventListener('mousedown', ()=>gas2=true);
+            window.addEventListener('mouseup', ()=>gas2=false);
+            btn2.addEventListener('touchstart', (e)=>{e.preventDefault(); gas2=true;});
+            btn2.addEventListener('touchend', (e)=>{e.preventDefault(); gas2=false;});
+        }
+
+        function updatePhysics() {
+            if(raceFinished) return;
+
+            // P1 FİZİK
+            let seg1 = null;
+            for(let s of roadSegs1) { if(Math.abs(s.mesh.position.z - car1.position.z) < SEGMENT_LEN/2) { seg1 = s; break; } }
+            
+            let fric1=0.98, acc1=0.02, max1=0.9;
+            p1OnSand = false; let typeName = "Asfalt", typeColor="#ffffff"; let terrainType1 = 'asphalt';
+
+            if(seg1) {
+                terrainType1 = seg1.type;
+                if(seg1.type === 'sand') { fric1=0.85; acc1=0.006; max1=0.3; typeName="KUM (Ağır)"; typeColor="#ffcc00"; p1OnSand=true; } 
+                else if(seg1.type === 'ice') { fric1=0.998; acc1=0.015; max1=1.4; typeName="BUZ (Kaygan)"; typeColor="#00ffff"; } 
+                else { fric1=0.97; acc1=0.022; max1=0.9; typeName="ASFALT (Normal)"; typeColor="#cccccc"; }
+            }
+            ui1Desc.innerText = typeName; ui1Desc.style.color = typeColor;
+
+            if(gas1) speed1 -= acc1; else speed1 *= fric1;
+            if(speed1 < -max1) speed1 = -max1; if(Math.abs(speed1) < 0.001) speed1=0;
+            car1.position.z += speed1; totalDist1 += Math.abs(speed1); 
+            
+            if(p1OnSand && gas1 && Math.abs(speed1)>0.05) { p1KumTimer+=0.4; car1.position.y = 0.0 + Math.sin(p1KumTimer)*0.04; } 
+            else { car1.position.y += (0.0 - car1.position.y)*0.1; }
+            if(seg1 && seg1.type==='ice' && Math.abs(speed1)>0.2) { car1.rotation.y = Math.PI + Math.sin(Date.now()*0.003)*0.2; } 
+            else { car1.rotation.y += (Math.PI - car1.rotation.y)*0.1; }
+
+            // P1 ZEMİN OKUNU GÜNCELLE
+            updateFrictionVisuals(p1ArrowMesh, car1.position.z, speed1, terrainType1, gas1);
+
+
+            // P2 FİZİK
+            let fric2=0.97, acc2=0.022, max2=0.9; 
+            if(gas2) speed2 -= acc2; else speed2 *= fric2;
+            if(speed2 < -max2) speed2 = -max2; if(Math.abs(speed2) < 0.001) speed2=0;
+            car2.position.z += speed2; totalDist2 += Math.abs(speed2);
+
+            // P2 ZEMİN OKUNU GÜNCELLE (Hep Asfalt)
+            updateFrictionVisuals(p2ArrowMesh, car2.position.z, speed2, 'asphalt', gas2);
+
+
+            if(totalDist1 >= GOAL_DISTANCE || totalDist2 >= GOAL_DISTANCE) {
+                raceFinished = true;
+                finishMsg.style.display = 'block';
+            }
+        }
+
+        function updateRoads() {
+            if(totalDist1 < GOAL_DISTANCE - 500) {
+                 roadSegs1.forEach(s => { if(s.mesh.position.z - car1.position.z > SEGMENT_LEN * 2) s.mesh.position.z -= TOTAL_LOOP_LEN; });
+            }
+            if(totalDist2 < GOAL_DISTANCE - 500) {
+                roadSegs2.forEach(s => { if(s.mesh.position.z - car2.position.z > SEGMENT_LEN * 2) s.mesh.position.z -= TOTAL_LOOP_LEN; });
+            }
+        }
+
+        function updateCameras() {
+            camera1.position.z = car1.position.z + 14; camera1.position.x = P1_X_OFFSET; 
+            camera1.lookAt(P1_X_OFFSET, 1, car1.position.z - 20);
+            camera2.position.z = car2.position.z + 14; camera2.position.x = P2_X_OFFSET; 
+            camera2.lookAt(P2_X_OFFSET, 1, car2.position.z - 20);
+        }
+
+        function updateProgressBar() {
+            let pct1 = Math.min((totalDist1 / GOAL_DISTANCE) * 100, 100);
+            let pct2 = Math.min((totalDist2 / GOAL_DISTANCE) * 100, 100);
+            p1Marker.style.left = `calc(${pct1}% - 70px)`;
+            p2Marker.style.left = `calc(${pct2}% - 70px)`;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updatePhysics();
+            updateRoads();
+            updateCameras();
+            updateProgressBar();
+            wheels1.forEach(w => w.rotation.x += speed1);
+            wheels2.forEach(w => w.rotation.x += speed2);
+            ui1Speed.innerText = Math.round(Math.abs(speed1)*180) + " km/h";
+            ui2Speed.innerText = Math.round(Math.abs(speed2)*180) + " km/h";
+
+            const w = window.innerWidth; const h = window.innerHeight;
+            renderer.setScissorTest(true);
+            renderer.setScissor(0, 0, w/2, h); renderer.setViewport(0, 0, w/2, h); renderer.render(scene, camera1);
+            renderer.setScissor(w/2, 0, w/2, h); renderer.setViewport(w/2, 0, w/2, h); renderer.render(scene, camera2);
+            renderer.setScissorTest(false);
+        }
+
+        function onResize() {
+            const w = window.innerWidth; const h = window.innerHeight;
+            const aspect = (w/2) / h;
+            camera1.aspect = aspect; camera1.updateProjectionMatrix();
+            camera2.aspect = aspect; camera2.updateProjectionMatrix();
+            renderer.setSize(w, h);
+        }
+    </script>
+</body>
+</html>

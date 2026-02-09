@@ -8,15 +8,28 @@ class GeminiGameService {
   final String apiKey;
 
   GeminiGameService({required this.apiKey}) {
-    // Gemini 2.5 Flash - En uygun model (hızlı, ucuz, yetenekli)
+    // 🤖 Gemini 2.5 Flash Lite - Lightweight model (hızlı, az token tüket, daha az rate limit)
+    // Rate limit dolursa: gemini-pro'ya fallback
     _model = GenerativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       apiKey: apiKey,
       generationConfig: GenerationConfig(
-        temperature: 0.7,
+        temperature: 0.6,
         topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 8000,
+        topP: 0.9,
+        maxOutputTokens: 4000, // Lite için daha uygun
+      ),
+    );
+  }
+
+  /// 🔄 Fallback Model (rate limit hatası durumunda)
+  GenerativeModel _getFallbackModel() {
+    return GenerativeModel(
+      model: 'gemini-pro', // Eski ama stabil model
+      apiKey: apiKey,
+      generationConfig: GenerationConfig(
+        temperature: 0.5,
+        maxOutputTokens: 3000,
       ),
     );
   }
@@ -212,39 +225,43 @@ JSON formatında cevap ver:
   /// 🧩 Bulmaca Oyunu İçeriği Oluştur
   Future<Map<String, dynamic>> generatePuzzleGameContent({
     required String difficulty,
-    String? userPrompt, // 🤖 Kullanıcının oyun istemi
+    String? userPrompt,
     int puzzleCount = 5,
     int ageGroup = 8,
   }) async {
     try {
+      final userPromptSection = userPrompt != null && userPrompt.isNotEmpty
+          ? '- Kullanici Talabi: "$userPrompt"\n- ONEMLI: Bulmacalari bu tema/konuya uygun yap'
+          : '';
+
       final prompt = '''
-Türkçe olarak mantık/görsel bulmaca oyunu için içerik oluştur.
+Turkce olarak mantik/gorsel bulmaca oyunu icin icerik olustur.
 
 Parametreler:
 - Zorluk: $difficulty
-- Bulmaca Sayısı: $puzzleCount
-- Hedef Yaş: $ageGroup yaş
-${userPrompt != null && userPrompt.isNotEmpty ? '- 🎯 KULLANICI TALEBİ: "$userPrompt"\n🎯 ÖNEMLI: Bulmaçaları bu tema/konuya uygun yap (örn. araba bulmacaları, hayvan puzzle'ları vb.)' : ''}
+- Bulmaca Sayisi: $puzzleCount
+- Hedef Yas: $ageGroup yas
+$userPromptSection
 
 OYUN KURALLARI:
-✅ Mantık, görsel veya kombinasyon bulmacaları
-✅ Tema-uyumlu bulmacalar
-✅ Çözümü gerektiren, eğlenceli bulmacalar
+- Mantik, gorsel veya kombinasyon bulmacalari
+- Tema-uyumlu bulmacalar
+- Cozumu gerektiren, egenceli bulmacalar
 
-JSON formatında cevap ver (sadece JSON):
+JSON formatinda cevap ver (sadece JSON):
 {
-  "title": "Mantık Bulmacaları",
-  "description": "Açıklama",
+  "title": "Mantik Bulmacalari",
+  "description": "Aciklama",
   "puzzles": [
     {
       "question": "Bulmaca sorusu",
-      "image_description": "Resim açıklaması",
-      "options": ["Seçenek1", "Seçenek2", "Seçenek3"],
+      "image_description": "Resim aciklamasi",
+      "options": ["Secenekl", "Secenek2", "Secenek3"],
       "correctIndex": 0,
-      "explanation": "Açıklama"
+      "explanation": "Aciklama"
     }
   ],
-  "encouragements": ["Çok iyi!", "Harika!"]
+  "encouragements": ["Cok iyi!", "Harika!"]
 }
 ''';
 
@@ -255,37 +272,40 @@ JSON formatında cevap ver (sadece JSON):
       final cleanJson = _extractJson(response.text!);
       return jsonDecode(cleanJson);
     } catch (e) {
-      throw Exception('Bulmaca oyunu içeriği oluşturulamadı: $e');
+      throw Exception('Bulmaca oyunu icerigi olusturulamadi: $e');
     }
   }
 
-  /// 🧠 Hafıza Oyunu İçeriği Oluştur
   Future<Map<String, dynamic>> generateMemoryGameContent({
     required String difficulty,
-    String? userPrompt, // 🤖 Kullanıcının oyun istemi
+    String? userPrompt,
     int pairCount = 6,
     int ageGroup = 8,
   }) async {
     try {
+      final userPromptSection = userPrompt != null && userPrompt.isNotEmpty
+          ? '- Kullanici Talabi: "$userPrompt"\n- ONEMLI: Hafiza oyununu bu temali ogelelerle olustur'
+          : '';
+
       final prompt = '''
-Türkçe olarak bir hafıza/eşleştirme oyunu için içerik oluştur.
+Turkce olarak bir hafiza/eslesstirme oyunu icin icerik olustur.
 
 Parametreler:
 - Zorluk: $difficulty
-- Kart Çifti Sayısı: $pairCount
-- Hedef Yaş: $ageGroup yaş
-${userPrompt != null && userPrompt.isNotEmpty ? '- 🎯 KULLANICI TALEBİ: "$userPrompt"\n🎯 ÖNEMLI: Hafıza oyununu bu temalı öğelerle oluştur (örn. araba modelleri, hayvan türleri vb. eşleştir)' : ''}
+- Kart Cifti Sayisi: $pairCount
+- Hedef Yas: $ageGroup yas
+$userPromptSection
 
 OYUN KURALLARI:
-✅ Kartları açıp eşleştir
-✅ Tema-uyumlu kart çiftleri
-✅ Hafıza becerisini test et
-✅ Emoji, resim açıklama veya kelimeler kullan
+- Kartlari aci ve eslestir
+- Tema-uyumlu kart ciftleri
+- Hafiza becerisini test et
+- Emoji, resim aciklama veya kelimeler kullan
 
-JSON formatında cevap ver (sadece JSON):
+JSON formatinda cevap ver (sadece JSON):
 {
-  "title": "Hafıza Oyunu",
-  "description": "Açıklama",
+  "title": "Hafiza Oyunu",
+  "description": "Aciklama",
   "pairs": [
     {
       "id": 1,
@@ -300,7 +320,7 @@ JSON formatında cevap ver (sadece JSON):
       "pairId": 1
     }
   ],
-  "encouragements": ["Çok iyi!", "Harika!"]
+  "encouragements": ["Cok iyi!", "Harika!"]
 }
 ''';
 
@@ -311,11 +331,10 @@ JSON formatında cevap ver (sadece JSON):
       final cleanJson = _extractJson(response.text!);
       return jsonDecode(cleanJson);
     } catch (e) {
-      throw Exception('Hafıza oyunu içeriği oluşturulamadı: $e');
+      throw Exception('Hafiza oyunu icerigi olusturulamadi: $e');
     }
   }
 
-  /// Kullanıcı profili için AI tarafından yazılan açıklama oluştur
   Future<String> generateUserRecommendation({
     required String userName,
     required int gamesCreated,
@@ -323,21 +342,21 @@ JSON formatında cevap ver (sadece JSON):
   }) async {
     try {
       final prompt = '''
-Kısa (1-2 cümle) ve cesur bir yorum yaz. Kişi:
+Kisa (1-2 cumle) ve cesur bir yorum yaz. Kisi:
 - Ad: $userName
-- Oluşturduğu Oyun: $gamesCreated
+- Olusturulan Oyun: $gamesCreated
 - Toplam Oynama: $totalPlays
 
-Örnek: "Matematik ustası! 🏆"
+Ornek: "Matematik ustasi! 🏆"
 ''';
 
       final response = await _model.generateContent([
         Content.text(prompt),
       ]);
 
-      return response.text ?? 'Harika oyun yapıcısı!';
+      return response.text ?? 'Harika oyun yapicisi!';
     } catch (e) {
-      return 'Yetenekli oyun yapıcısı!';
+      return 'Yetenekli oyun yapicisi!';
     }
   }
 

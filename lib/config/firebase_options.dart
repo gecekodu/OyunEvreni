@@ -9,6 +9,9 @@ class DefaultFirebaseOptions {
     return android;
   }
 
+  // 🤖 Gemini API Key
+  static const String geminiApiKey = 'AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw';
+
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyDduUTk0dJZgVNeyg8AV66qiIChgmoAC3s',
     appId: '1:319430039491:web:9f3c8f0a7b6c5d4e3f2a',

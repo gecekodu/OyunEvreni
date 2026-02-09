@@ -1,10 +1,16 @@
-// 📱 SOSYAL AKIŞ SAYFASI
+// 📱 SOSYAL AKIŞ SAYFASI - HTML + AI Oyunlar
 
 import 'package:flutter/material.dart';
+import 'package:timeago/timeago.dart' as timeago;
 import '../../data/services/social_feed_service.dart';
 import '../../domain/entities/game_models.dart';
 import '../../domain/entities/game_score.dart';
 import '../../../../core/widgets/futuristic_animations.dart';
+import '../../../../core/services/ai_game_social_service.dart';
+import '../../../../core/services/firebase_service.dart';
+import '../../../ai_game_engine/data/game/dynamic_ai_game.dart';
+import '../../../webview/presentation/pages/webview_page.dart';
+import 'package:flame/game.dart' show GameWidget;
 import 'play_game_simple.dart';
 
 class SocialFeedPage extends StatefulWidget {
@@ -15,19 +21,29 @@ class SocialFeedPage extends StatefulWidget {
 }
 
 class _SocialFeedPageState extends State<SocialFeedPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+    with TickerProviderStateMixin {
+  late TabController _mainTabController;
+  late TabController _htmlTabController;
+  late TabController _aiTabController;
   final _feedService = SocialFeedService();
+  final _aiSocialService = AIGameSocialService();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _mainTabController = TabController(length: 2, vsync: this);
+    _htmlTabController = TabController(length: 4, vsync: this);
+    _aiTabController = TabController(length: 3, vsync: this);
+    
+    // Türkçe timeago
+    timeago.setLocaleMessages('tr', timeago.TrMessages());
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _mainTabController.dispose();
+    _htmlTabController.dispose();
+    _aiTabController.dispose();
     super.dispose();
   }
 
@@ -44,24 +60,20 @@ class _SocialFeedPageState extends State<SocialFeedPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Sosyal Akış 📱',
+                  'Sosyal Akış 🌐',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  'Topluluk tarafından seçilen oyunlar',
+                  'Topluluk oyunlarını keşfet',
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.normal),
                 ),
               ],
             ),
             bottom: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              indicatorSize: TabBarIndicatorSize.tab,
+              controller: _mainTabController,
               tabs: const [
-                Tab(icon: Icon(Icons.calendar_today), text: 'Bugün'),
-                Tab(icon: Icon(Icons.star), text: 'Editor Seçimi'),
-                Tab(icon: Icon(Icons.favorite), text: 'Beğenilenler'),
-                Tab(icon: Icon(Icons.trending_up), text: 'Trend'),
+                Tab(icon: Icon(Icons.auto_awesome), text: 'AI Oyunlar'),
+                Tab(icon: Icon(Icons.code), text: 'HTML Oyunlar'),
               ],
             ),
           ),
@@ -69,12 +81,10 @@ class _SocialFeedPageState extends State<SocialFeedPage>
           // Tab İçeriği
           SliverFillRemaining(
             child: TabBarView(
-              controller: _tabController,
+              controller: _mainTabController,
               children: [
-                _buildFeedList(_feedService.getTodaysGames()),
-                _buildFeedList(_feedService.getEditorsChoice()),
-                _buildFeedList(_feedService.getMostLovedGames()),
-                _buildFeedList(_feedService.getTrendingGames()),
+                _buildAIGamesSection(),
+                _buildHTMLGamesSection(),
               ],
             ),
           ),
@@ -83,7 +93,298 @@ class _SocialFeedPageState extends State<SocialFeedPage>
     );
   }
 
-  Widget _buildFeedList(Future<List<Game>> gamesFuture) {
+  // ========== AI OYUNLAR BÖLÜMÜ ==========
+  Widget _buildAIGamesSection() {
+    return Column(
+      children: [
+        TabBar(
+          controller: _aiTabController,
+          tabs: const [
+            Tab(icon: Icon(Icons.explore), text: 'Keşfet'),
+            Tab(icon: Icon(Icons.star), text: 'Popüler'),
+            Tab(icon: Icon(Icons.person), text: 'Benim'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _aiTabController,
+            children: [
+              _buildAIExploreFeed(),
+              _buildAIPopularFeed(),
+              _buildMyAIGamesFeed(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAIExploreFeed() {
+    return StreamBuilder<List<SharedAIGame>>(
+      stream: _aiSocialService.getGameFeed(limit: 50),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(child: Text('Hata: ${snapshot.error}'));
+        }
+
+        final games = snapshot.data ?? [];
+
+        if (games.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.games, size: 80, color: Colors.grey.shade300),
+                const SizedBox(height: 16),
+                Text(
+                  'Henüz paylaşılan oyun yok',
+                  style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/ai-game-creator');
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('İlk oyunu sen oluştur!'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: games.length,
+          itemBuilder: (context, index) => _buildAIGameCard(games[index]),
+        );
+      },
+    );
+  }
+
+  Widget _buildAIPopularFeed() {
+    return StreamBuilder<List<SharedAIGame>>(
+      stream: _aiSocialService.getPopularGames(limit: 20),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final games = snapshot.data ?? [];
+
+        if (games.isEmpty) {
+          return const Center(child: Text('Popüler oyun bulunamadı'));
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: games.length,
+          itemBuilder: (context, index) {
+            return _buildAIGameCard(games[index], showRank: true, rank: index + 1);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMyAIGamesFeed() {
+    final userId = FirebaseService().currentUser?.uid;
+
+    if (userId == null) {
+      return const Center(child: Text('Lütfen giriş yapın'));
+    }
+
+    return StreamBuilder<List<SharedAIGame>>(
+      stream: _aiSocialService.getUserGames(userId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final games = snapshot.data ?? [];
+
+        if (games.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.videogame_asset_off, size: 80, color: Colors.grey.shade300),
+                const SizedBox(height: 16),
+                const Text('Henüz oyun oluşturmadınız'),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/ai-game-creator');
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Oyun Oluştur'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: games.length,
+          itemBuilder: (context, index) {
+            return _buildAIGameCard(games[index], showDelete: true);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildAIGameCard(SharedAIGame game, {bool showRank = false, int? rank, bool showDelete = false}) {
+    final userId = FirebaseService().currentUser?.uid;
+    final isLiked = userId != null && game.isLikedBy(userId);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 3,
+      child: InkWell(
+        onTap: () => _playAIGame(game),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Row(
+                children: [
+                  if (showRank && rank != null) ...[
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: _getRankColor(rank),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text('#$rank', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  _buildTemplateChip(game.template),
+                  const Spacer(),
+                  if (showDelete)
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _deleteAIGame(game),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              
+              // Title
+              Text(game.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              
+              // Description
+              Text(game.description, style: TextStyle(fontSize: 14, color: Colors.grey.shade700), maxLines: 2, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 12),
+              
+              // Info chips
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (!game.isHtmlGame)
+                    _buildInfoChip(icon: Icons.school, label: game.subject, color: Colors.blue),
+                  if (!game.isHtmlGame)
+                    _buildInfoChip(icon: Icons.quiz, label: '${game.questionCount} soru', color: Colors.green),
+                  _buildInfoChip(icon: Icons.child_care, label: '${game.targetAge} yaş', color: Colors.orange),
+                  _buildInfoChip(icon: Icons.speed, label: game.difficulty, color: _getDifficultyColor(game.difficulty)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Play button
+              ElevatedButton.icon(
+                onPressed: () => _playAIGame(game),
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Oyna'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 45),
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Bottom row: creator + stats
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.blue.shade100,
+                    child: Text(game.createdByName[0].toUpperCase(), style: TextStyle(color: Colors.blue.shade900, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(game.createdByName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                        if (game.createdAt != null)
+                          Text(timeago.format(game.createdAt!, locale: 'tr'), style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(isLiked ? Icons.favorite : Icons.favorite_border, color: isLiked ? Colors.red : Colors.grey),
+                    onPressed: () => _toggleLikeAI(game),
+                  ),
+                  Text('${game.likeCount}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.play_circle, size: 20, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text('${game.playCount}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ========== HTML OYUNLAR BÖLÜMÜ ==========
+  Widget _buildHTMLGamesSection() {
+    return Column(
+      children: [
+        TabBar(
+          controller: _htmlTabController,
+          isScrollable: true,
+          tabs: const [
+            Tab(icon: Icon(Icons.calendar_today), text: 'Bugün'),
+            Tab(icon: Icon(Icons.star), text: 'Editor Seçimi'),
+            Tab(icon: Icon(Icons.favorite), text: 'Beğenilenler'),
+            Tab(icon: Icon(Icons.trending_up), text: 'Trend'),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _htmlTabController,
+            children: [
+              _buildHTMLFeedList(_feedService.getTodaysGames()),
+              _buildHTMLFeedList(_feedService.getEditorsChoice()),
+              _buildHTMLFeedList(_feedService.getMostLovedGames()),
+              _buildHTMLFeedList(_feedService.getTrendingGames()),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHTMLFeedList(Future<List<Game>> gamesFuture) {
     return FutureBuilder<List<Game>>(
       future: gamesFuture,
       builder: (context, snapshot) {
@@ -98,7 +399,7 @@ class _SocialFeedPageState extends State<SocialFeedPage>
                   height: 200,
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
               ),
@@ -348,6 +649,217 @@ class _SocialFeedPageState extends State<SocialFeedPage>
         ],
       ),
     );
+  }
+
+  // ========== AI OYUN HELPER METHODLARI ==========
+
+  Widget _buildTemplateChip(String template) {
+    final templates = {
+      'platformer': ('🏃', 'Platform', Colors.blue),
+      'collector': ('⭐', 'Koleksiyon', Colors.amber),
+      'puzzle': ('🧩', 'Puzzle', Colors.purple),
+      'educational': ('📚', 'Eğitim', Colors.green),
+      'runner': ('🏃‍♂️', 'Runner', Colors.orange),
+      'shooter': ('🚀', 'Shooter', Colors.red),
+      'html3d': ('🌐', 'HTML 3D', Colors.teal),
+    };
+
+    final info = templates[template] ?? ('🎮', template, Colors.grey);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: info.$3.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: info.$3.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(info.$1, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 6),
+          Text(
+            info.$2,
+            style: TextStyle(
+              color: info.$3,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getRankColor(int rank) {
+    if (rank == 1) return Colors.amber;
+    if (rank == 2) return Colors.grey.shade400;
+    if (rank == 3) return Colors.brown.shade300;
+    return Colors.blue;
+  }
+
+  Color _getDifficultyColor(String difficulty) {
+    switch (difficulty.toLowerCase()) {
+      case 'easy':
+        return Colors.green;
+      case 'medium':
+        return Colors.orange;
+      case 'hard':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Future<void> _playAIGame(SharedAIGame sharedGame) async {
+    // Oynanma sayisini artir
+    await _aiSocialService.incrementPlayCount(sharedGame.docId);
+
+    if (sharedGame.isHtmlGame) {
+      if (sharedGame.htmlCode == null || sharedGame.htmlCode!.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('HTML oyun verisi bulunamadı.')),
+          );
+        }
+        return;
+      }
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WebViewPage(
+            htmlContent: sharedGame.htmlCode!,
+            gameTitle: sharedGame.title,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (sharedGame.gameConfig == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Oyun konfigurasyonu bulunamadı.')),
+        );
+      }
+      return;
+    }
+
+    // Oyunu baslat
+    final game = DynamicAIGame(config: sharedGame.gameConfig!);
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: Text(sharedGame.title),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+          body: GameWidget(game: game),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleLikeAI(SharedAIGame game) async {
+    final userId = FirebaseService().currentUser?.uid;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Beğenmek için giriş yapmalısınız')),
+      );
+      return;
+    }
+
+    try {
+      await _aiSocialService.toggleLike(game.docId, userId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hata: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteAIGame(SharedAIGame game) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Oyunu Sil'),
+        content: Text('${game.title} oyununu silmek istediğinize emin misiniz?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('İptal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Sil'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    final userId = FirebaseService().currentUser?.uid;
+    if (userId == null) return;
+
+    try {
+      await _aiSocialService.deleteGame(game.docId, userId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Oyun silindi')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hata: $e')),
+        );
+      }
+    }
   }
 }
 

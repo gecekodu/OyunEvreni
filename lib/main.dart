@@ -23,6 +23,9 @@ import 'features/games/presentation/pages/social_feed_page.dart';
 import 'features/admin/presentation/pages/test_panel_page.dart';
 import 'config/app_theme.dart';
 import 'core/services/gemini_game_service_v2.dart';
+import 'features/flame_game/presentation/pages/flame_game_page.dart';
+import 'features/ai_game_engine/presentation/pages/ai_game_creator_page.dart';
+import 'features/webview/presentation/pages/webview_page.dart';
 
 // GetIt - Dependency Injection
 final getIt = GetIt.instance;
@@ -144,6 +147,8 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignupPage(),
         '/home': (context) => const HomePage(),
         '/profile': (context) => const ProfilePage(),
+        '/flame-game': (context) => const FlameGamePage(),
+        '/ai-game-creator': (context) => const AIGameCreatorPage(),
       },
     );
   }
@@ -289,34 +294,337 @@ class HomeTabView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firebaseService = getIt<FirebaseService>();
-    final userName = firebaseService.currentUser?.displayName ?? 'Kullanıcı';
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text('Ana Sayfa'),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CreateGameFlowPage(),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Ana başlık
+            const Icon(
+              Icons.auto_awesome,
+              size: 80,
+              color: Colors.deepPurple,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'AI Oyun Dünyası',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Hayal gücünle oyun yarat!',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 48),
+
+            // 🤖 AI OYUN OLUŞTURUCU - ANA BUTON
+            Container(
+              width: double.infinity,
+              height: 120,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Colors.orange, Colors.deepOrange],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              );
-            },
-            child: const Text('Yeni Oyun Oluştur'),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).pushNamed('/ai-game-creator');
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.auto_awesome,
+                          size: 60,
+                          color: Colors.white,
+                        ),
+                        SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '🤖 AI Oyun Oluştur',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Gemini AI ile orijinal oyunlar',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // 🧪 SÜRTÜNME DENEYİ OYUNU - BÜYÜK BUTON
+            Container(
+              width: double.infinity,
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Colors.amber, Colors.orange],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.amber.withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => WebViewPage(
+                          htmlPath: 'assets/html_games/friction_test.html',
+                          gameTitle: 'Sürtünme Deneyi',
+                        ),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.science,
+                          size: 50,
+                          color: Colors.white,
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                '🧪 Sürtünme Deneyi',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                '3D Araba Yarışı - Zemin Sürtünmesi',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Diğer özellikler
+            Row(
+              children: [
+                Expanded(
+                  child: _buildFeatureCard(
+                    context: context,
+                    icon: Icons.public,
+                    title: 'Keşfet',
+                    subtitle: 'Oyunları gör',
+                    color: Colors.blue,
+                    onTap: () {
+                      // Sosyal tab'ine geç - Navigator.pushReplacement kullan
+                      Navigator.pop(context); // Mevcut context'i kapat
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildFeatureCard(
+                    context: context,
+                    icon: Icons.person,
+                    title: 'Profilim',
+                    subtitle: 'İstatistikler',
+                    color: Colors.purple,
+                    onTap: () {
+                      // Profil sayfasına git
+                      Navigator.pushNamed(context, '/profile');
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // Klasik Oyunlar Bölümü
+            const Divider(height: 40),
+            const Text(
+              'Klasik Oyunlar',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // HTML Oyun Oluştur
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const CreateGameFlowPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.code),
+              label: const Text('HTML Oyun Oluştur'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Oyunları Listele
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => GameListPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.list),
+              label: const Text('HTML Oyunları Listele'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Flame Platformer
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pushNamed('/flame-game');
+              },
+              icon: const Icon(Icons.videogame_asset),
+              label: const Text('🎮 Flame 2D Platformer'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                minimumSize: const Size(double.infinity, 50),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildFeatureCard({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Icon(icon, size: 40, color: color),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (context) => GameListPage()));
-            },
-            child: const Text('Oyunları Listele ve Oyna'),
-          ),
-        ],
+        ),
       ),
     );
   }

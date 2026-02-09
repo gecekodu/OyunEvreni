@@ -24,12 +24,25 @@ class GeminiGameServiceV2 {
   late final GenerativeModel _model;
 
   GeminiGameServiceV2({required this.apiKey}) {
+    // 🤖 Gemini 2.5 Flash Lite - Lightweight & responsive
     _model = GenerativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       apiKey: apiKey,
       generationConfig: GenerationConfig(
         temperature: 0.6,
-        maxOutputTokens: 6000,
+        maxOutputTokens: 4000,
+      ),
+    );
+  }
+
+  /// 🔄 Fallback Model
+  GenerativeModel _getFallbackModel() {
+    return GenerativeModel(
+      model: 'gemini-pro',
+      apiKey: apiKey,
+      generationConfig: GenerationConfig(
+        temperature: 0.5,
+        maxOutputTokens: 3000,
       ),
     );
   }
