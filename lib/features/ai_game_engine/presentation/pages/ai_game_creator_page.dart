@@ -39,8 +39,68 @@ class _AIGameCreatorPageState extends State<AIGameCreatorPage> {
         title: const Text('🤖 AI Oyun Olusturucu'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.play_circle),
+            tooltip: 'Örnek Oyunları Göster',
+            onPressed: _showExampleGames,
+          ),
+        ],
       ),
       body: _buildCreatorView(),
+    );
+  }
+
+  void _showExampleGames() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('📚 Örnek HTML Oyunları'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              _buildExampleGameTile('Quiz Game', '27-Quiz-Game'),
+              _buildExampleGameTile('Memory Card', '10-Memory-Card-Game'),
+              _buildExampleGameTile('Speed Typing', '03-Speed-Typing-Game'),
+              _buildExampleGameTile('Hangman', '18-Hangman-Game'),
+              _buildExampleGameTile('Snake Game', '14-Snake-Game'),
+              _buildExampleGameTile('Tic Tac Toe', '13-Tic-Tac-Toe'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Kapat'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExampleGameTile(String name, String folder) {
+    return ListTile(
+      title: Text(name),
+      trailing: const Icon(Icons.arrow_forward),
+      onTap: () {
+        Navigator.pop(context); // Dialog'u kapat
+        _openExampleGame(folder);
+      },
+    );
+  }
+
+  void _openExampleGame(String folder) {
+    final assetPath = 'assets/html_games/$folder/index.html';
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WebViewPage(
+          htmlPath: assetPath,
+          gameTitle: folder,
+        ),
+      ),
     );
   }
 
