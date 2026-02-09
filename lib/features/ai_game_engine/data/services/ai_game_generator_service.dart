@@ -261,13 +261,76 @@ HARD: Hızlı tempo, çok engel, küçük hedefler, zaman limiti
 ═══════════════════════════════════════════════════════════════
 � TEMEL OYUN ŞABLONU (CUSTOMIZE ET):
 ═══════════════════════════════════════════════════════════════
-$baseTemplate
+<!DOCTYPE html>
+<html>
+<head>
+  <title>3D Game</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // Base game template - customize this
+    let score = 0;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    document.body.appendChild(renderer.domElement);
+    
+    // Add lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 10, 10);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+    
+    // Create ground
+    const groundGeometry = new THREE.PlaneGeometry(20, 20);
+    const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x90EE90 });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    
+    // Create player
+    const playerGeometry = new THREE.CapsuleGeometry(0.5, 2, 4, 8);
+    const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x0066ff });
+    const player = new THREE.Mesh(playerGeometry, playerMaterial);
+    player.position.y = 2;
+    player.castShadow = true;
+    scene.add(player);
+    
+    camera.position.set(0, 5, 15);
+    camera.lookAt(0, 0, 0);
+    
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
 
 ═══════════════════════════════════════════════════════════════
 🔧 SENIN GÖREVIN:
 ═══════════════════════════════════════════════════════════════
 1. Yukarıdaki temel şablonu al
-2. "$userDescription" açıklamasına uygun olarak ÖZELLEŞTİR:
+2. "\$userDescription" açıklamasına uygun olarak ÖZELLEŞTİR:
    - Oyun adını ve açıklamasını değiştir
    - Player modelini tema ile uyumlu yap (araba, hayvan, karakter vb.)
    - Collectible objeleri temaya göre tasarla
@@ -276,8 +339,8 @@ $baseTemplate
    - Arka plan ve renkleri temaya uygun ayarla
    - Ses efektleri ekle (Web Audio API)
    - Parçacık efektleri ekle
-   - Zorluk seviyesine göre ayarla ($difficulty)
-   - Yaşa uygun görsellik ($targetAge)
+   - Zorluk seviyesine göre ayarla (\$difficulty)
+   - Yaşa uygun görsellik (\$targetAge)
 
 3. EKLENMESI GEREKEN ÖZELLIKLER:
    ✓ Jump mekanigi (Space tuşu)

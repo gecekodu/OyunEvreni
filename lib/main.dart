@@ -138,7 +138,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '🎮 Oyun Olustur',
+      title: 'Nemos',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: const SplashScreen(),
@@ -200,7 +200,15 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('🎮', style: TextStyle(fontSize: 80)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(
+                  'assets/images/logo.jpeg',
+                  width: 140,
+                  height: 140,
+                  fit: BoxFit.cover,
+                ),
+              ),
               const SizedBox(height: 20),
               const Text(
                 'Oyun Olustur',
@@ -300,11 +308,15 @@ class HomeTabView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Ana başlık
-            const Icon(
-              Icons.auto_awesome,
-              size: 80,
-              color: Colors.deepPurple,
+            // Uygulama Logosu
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Image.asset(
+                'assets/images/logo.jpeg',
+                width: 120,
+                height: 120,
+                fit: BoxFit.cover,
+              ),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -368,18 +380,22 @@ class HomeTabView extends StatelessWidget {
                               Text(
                                 '🤖 AI Oyun Oluştur',
                                 style: TextStyle(
-                                  fontSize: 24,
+                                  fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              SizedBox(height: 4),
+                              SizedBox(height: 2),
                               Text(
                                 'Gemini AI ile orijinal oyunlar',
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 12,
                                   color: Colors.white70,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
