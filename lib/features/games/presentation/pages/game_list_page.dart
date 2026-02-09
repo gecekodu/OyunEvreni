@@ -7,8 +7,20 @@ class GameListPage extends StatelessWidget {
   GameListPage({super.key});
 
   Future<List<Game>> fetchGames() async {
-    final snapshot = await FirebaseFirestore.instance.collection('games').orderBy('createdAt', descending: true).limit(20).get();
-    return snapshot.docs.map((doc) => Game.fromFirestore(doc)).toList();
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('games')
+          .orderBy('createdAt', descending: true)
+          .limit(20)
+          .get();
+      
+      final games = snapshot.docs.map((doc) => Game.fromFirestore(doc)).toList();
+      print('✅ ${games.length} oyun getirildi');
+      return games;
+    } catch (e) {
+      print('❌ Oyunları getirme hatası: $e');
+      return [];
+    }
   }
 
   @override

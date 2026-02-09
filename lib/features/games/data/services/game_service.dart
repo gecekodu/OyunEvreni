@@ -33,24 +33,39 @@ class GameService {
         print('💡 Oyun İstemi: $userPrompt');
       }
 
-      // 1. Gemini'den içerik al
-      Map<String, dynamic> gameContent = await _generateGameContent(
-        gameType: gameType,
-        difficulty: difficulty,
-        learningGoals: learningGoals,
-        customDescription: description, // Kullanıcının özel açıklamasını gönder
-        userPrompt: userPrompt, // 🤖 Oyun istemi
-      );
+      // 1. Gemini'den içerik al (hata olsa bile fallback ile devam et)
+      Map<String, dynamic> gameContent;
+      try {
+        gameContent = await _generateGameContent(
+          gameType: gameType,
+          difficulty: difficulty,
+          learningGoals: learningGoals,
+          customDescription: description, // Kullanıcının özel açıklamasını gönder
+          userPrompt: userPrompt, // 🤖 Oyun istemi
+        );
+        print('✅ Gemini içerik oluşturuldu');
+      } catch (geminiError) {
+        print('⚠️ Gemini API hatası: $geminiError, fallback içerik kullanılıyor');
+        gameContent = {'title': title, 'description': description, 'content': {}};
+      }
 
-      print('✅ Gemini içerik oluşturuldu');
-
-      // 2. HTML oluştur
+      // 2. HTML oluştur (fallback ile)
       String htmlContent = _generateHtmlFromContent(
         gameType: gameType,
         title: title,
         gameContent: gameContent,
         difficulty: difficulty,
       );
+      
+      // Fallback HTML kontrolü
+      if (htmlContent.isEmpty) {
+        htmlContent = _generateGenericGameHtml(
+          title: title,
+          content: gameContent,
+          difficulty: difficulty,
+        );
+        print('⚠️ HTML boş, fallback kullanılıyor');
+      }
 
       print('✅ HTML oluşturuldu (${htmlContent.length} karakter)');
 
@@ -100,41 +115,47 @@ class GameService {
     String? customDescription,
     String? userPrompt, // 🤖 Kullanıcının oyun istemi
   }) async {
-    switch (gameType) {
-      case 'math':
-        return await _geminiService.generateMathGameContent(
-          topic: learningGoals.isNotEmpty ? learningGoals[0] : 'toplama',
-          difficulty: difficulty,
-          questionCount: 10,
-          customDescription: customDescription,
-          userPrompt: userPrompt,
-        );
-      case 'word':
-        return await _geminiService.generateWordGameContent(
-          difficulty: difficulty,
-          wordCount: 10,
-          userPrompt: userPrompt,
-        );
-      case 'puzzle':
-        return await _geminiService.generatePuzzleGameContent(
-          difficulty: difficulty,
-          puzzleCount: 5,
-          userPrompt: userPrompt,
-        );
-      case 'color':
-        return await _geminiService.generateColorGameContent(
-          difficulty: difficulty,
-          colorCount: 8,
-          userPrompt: userPrompt,
-        );
-      case 'memory':
-        return await _geminiService.generateMemoryGameContent(
-          difficulty: difficulty,
-          pairCount: 6,
-          userPrompt: userPrompt,
-        );
-      default:
-        throw Exception('Bilinmeyen oyun türü: $gameType');
+    try {
+      switch (gameType) {
+        case 'math':
+          return await _geminiService.generateMathGameContent(
+            topic: learningGoals.isNotEmpty ? learningGoals[0] : 'toplama',
+            difficulty: difficulty,
+            questionCount: 10,
+            customDescription: customDescription,
+            userPrompt: userPrompt,
+          );
+        case 'word':
+          return await _geminiService.generateWordGameContent(
+            difficulty: difficulty,
+            wordCount: 10,
+            userPrompt: userPrompt,
+          );
+        case 'puzzle':
+          return await _geminiService.generatePuzzleGameContent(
+            difficulty: difficulty,
+            puzzleCount: 5,
+            userPrompt: userPrompt,
+          );
+        case 'color':
+          return await _geminiService.generateColorGameContent(
+            difficulty: difficulty,
+            colorCount: 8,
+            userPrompt: userPrompt,
+          );
+        case 'memory':
+          return await _geminiService.generateMemoryGameContent(
+            difficulty: difficulty,
+            pairCount: 6,
+            userPrompt: userPrompt,
+          );
+        default:
+          print('⚠️ Bilinmeyen oyun türü: $gameType, fallback oluşturuluyor...');
+          return {'title': 'Oyun', 'description': 'Oyun açıklaması', 'content': {}};
+      }
+    } catch (e) {
+      print('❌ Gemini API hatası: $e');
+      return {'title': 'Oyun', 'description': 'Oyun açıklaması', 'content': {}};
     }
   }
 
