@@ -31,16 +31,37 @@ class GeminiGameService {
     int ageGroup = 8, // 6-8, 8-10, 10-12
   }) async {
     try {
+      // ⭐ USER PROMPT'TA TEMA KONTROLÜ - İnteraktif oyun talebi varsa uyar
+      bool isThemeRequest = userPrompt != null && 
+          (userPrompt.contains('araba') || 
+           userPrompt.contains('yarış') ||
+           userPrompt.contains('oyun') ||
+           userPrompt.contains('interaktif') ||
+           userPrompt.contains('deneyim') ||
+           userPrompt.contains('hikaye'));
+      
+      final gameFormat = isThemeRequest 
+          ? '''ÖZEL: Bu oyun TEMATİK/İNTERAKTİF bir oyun olmalı! Sadece soru sormak yerine, 
+          ortam/senaryoya dayalı bir deneyim yarat. Örneğin "araba yarışı" ise, yarışa katılma 
+          simülasyonu, puan sistemi, hız/engeller gibi dinamik öğeler ekle.'''
+          : '';
+      
       final prompt = '''
-Bir matematik oyunu için soru setini türkçe olarak oluştur. 
+Türkçe olarak öğretici bir oyun için içerik oluştur.
 
 Parametreler:
 - Konu: $topic
 - Zorluk: $difficulty
 - Soru Sayısı: $questionCount
 - Hedef Yaş: $ageGroup yaş
-${customDescription != null ? '- Tema/Açıklama: $customDescription (Bu temayı sorulara yansıt)' : ''}
-${userPrompt != null && userPrompt.isNotEmpty ? '- ⭐ KULLANICI İSTEMİ: $userPrompt\n⭐ Lütfen bu istekleri dikkate al! Oyunu bu isteklere uygun şekilde özelleştir.' : ''}
+${customDescription != null ? '- Tema: $customDescription (Bu tema oyunun merkezinde olmalı!)' : ''}
+${userPrompt != null && userPrompt.isNotEmpty ? '- 🎯 KULLANICI TALEBİ: "$userPrompt"\n🎯 ÇOK ÖNEMLİ: Bu talebi oyunun temel yapısına entegre et! Kullanıcı specific bir deneyim/tema istiyorsa, bunu prioritize et.' : ''}
+$gameFormat
+
+OYUN YAPISI KURALLARI:
+${isThemeRequest ? '✅ TEMA-TABALI: Tema/senaryoya dayalı, interaktif, deneyim odaklı' : '✅ KLASIK: Soru-cevap bazlı'}
+✅ Eğlenceli, öğretici ve yaş-uygun
+✅ Dinamik ve katılımcı
 
 JSON formatında şu yapıda cevap ver (başka bir şey yazma, sadece JSON):
 {
@@ -87,15 +108,20 @@ JSON formatında şu yapıda cevap ver (başka bir şey yazma, sadece JSON):
   }) async {
     try {
       final prompt = '''
-Türkçe bir kelime oyunu için kelime setini oluştur.
+Türkçe olarak bir kelime oyunu için içerik oluştur.
 
 Parametreler:
 - Zorluk: $difficulty
 - Kelime Sayısı: $wordCount
 - Hedef Yaş: $ageGroup yaş
-${userPrompt != null && userPrompt.isNotEmpty ? '- ⭐ KULLANICI İSTEMİ: $userPrompt\n⭐ Lütfen bu istekleri dikkate al!' : ''}
+${userPrompt != null && userPrompt.isNotEmpty ? '- 🎯 KULLANICI TALEBİ: "$userPrompt"\n🎯 ÖNEMLI: Kelime oyununu bu talebe uygun temada oluştur (örn. araba, spor, doğa vb.)' : ''}
 
-JSON formatında cevap ver (başka şey yazma):
+OYUN KURALLARI:
+✅ Sözcükleri yakala, tamamla veya eşleştir
+✅ Tema-uyumlu kelimeler seç
+✅ İnteraktif ve eğlenceli
+
+JSON formatında cevap ver (başka şey yazma, sadece JSON):
 {
   "title": "Kelime Oyunu",
   "description": "Açıklama",
@@ -136,13 +162,18 @@ JSON formatında cevap ver (başka şey yazma):
   }) async {
     try {
       final prompt = '''
-Türkçe bir renk eşleştirme oyunu için içerik oluştur.
+Türkçe olarak bir renk eşleştirme/ayırt etme oyunu için içerik oluştur.
 
 Parametreler:
 - Zorluk: $difficulty
 - Renk Sayısı: $colorCount
 - Hedef Yaş: $ageGroup yaş
-${userPrompt != null && userPrompt.isNotEmpty ? '- ⭐ KULLANICI İSTEMİ: $userPrompt\n⭐ Lütfen bu istekleri dikkate al!' : ''}
+${userPrompt != null && userPrompt.isNotEmpty ? '- 🎯 KULLANICI TALEBİ: "$userPrompt"\n🎯 ÖNEMLI: Renk oyununu bu temaya uygun yap (örn. araba renkleri, hayvan renkleri vb.)' : ''}
+
+OYUN KURALLARI:
+✅ Renk tanıma, eşleştirme veya ayırt etme
+✅ Tema-uyumlu öğeler ekle
+✅ Interaktif ve görsel
 
 JSON formatında cevap ver:
 {
@@ -187,15 +218,20 @@ JSON formatında cevap ver:
   }) async {
     try {
       final prompt = '''
-Türkçe bir mantık bulmacası oyunu için içerik oluştur.
+Türkçe olarak mantık/görsel bulmaca oyunu için içerik oluştur.
 
 Parametreler:
 - Zorluk: $difficulty
 - Bulmaca Sayısı: $puzzleCount
 - Hedef Yaş: $ageGroup yaş
-${userPrompt != null && userPrompt.isNotEmpty ? '- ⭐ KULLANICI İSTEMİ: $userPrompt\n⭐ Lütfen bu istekleri dikkate al!' : ''}
+${userPrompt != null && userPrompt.isNotEmpty ? '- 🎯 KULLANICI TALEBİ: "$userPrompt"\n🎯 ÖNEMLI: Bulmaçaları bu tema/konuya uygun yap (örn. araba bulmacaları, hayvan puzzle'ları vb.)' : ''}
 
-JSON formatında (sadece JSON):
+OYUN KURALLARI:
+✅ Mantık, görsel veya kombinasyon bulmacaları
+✅ Tema-uyumlu bulmacalar
+✅ Çözümü gerektiren, eğlenceli bulmacalar
+
+JSON formatında cevap ver (sadece JSON):
 {
   "title": "Mantık Bulmacaları",
   "description": "Açıklama",
@@ -232,15 +268,21 @@ JSON formatında (sadece JSON):
   }) async {
     try {
       final prompt = '''
-Türkçe bir hafıza oyunu için kartları oluştur.
+Türkçe olarak bir hafıza/eşleştirme oyunu için içerik oluştur.
 
 Parametreler:
 - Zorluk: $difficulty
 - Kart Çifti Sayısı: $pairCount
 - Hedef Yaş: $ageGroup yaş
-${userPrompt != null && userPrompt.isNotEmpty ? '- ⭐ KULLANICI İSTEMİ: $userPrompt\n⭐ Lütfen bu istekleri dikkate al!' : ''}
+${userPrompt != null && userPrompt.isNotEmpty ? '- 🎯 KULLANICI TALEBİ: "$userPrompt"\n🎯 ÖNEMLI: Hafıza oyununu bu temalı öğelerle oluştur (örn. araba modelleri, hayvan türleri vb. eşleştir)' : ''}
 
-JSON formatında (sadece JSON):
+OYUN KURALLARI:
+✅ Kartları açıp eşleştir
+✅ Tema-uyumlu kart çiftleri
+✅ Hafıza becerisini test et
+✅ Emoji, resim açıklama veya kelimeler kullan
+
+JSON formatında cevap ver (sadece JSON):
 {
   "title": "Hafıza Oyunu",
   "description": "Açıklama",
