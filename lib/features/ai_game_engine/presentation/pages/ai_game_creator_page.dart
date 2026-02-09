@@ -362,6 +362,17 @@ class _AIGameCreatorPageState extends State<AIGameCreatorPage> {
       return;
     }
 
+    // API key check
+    if (DefaultFirebaseOptions.geminiApiKey == 'SENIN_YENI_API_KEY_BURAYA') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Gemini API Key ayarlanmamis!'),
+          duration: Duration(seconds: 5),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isGenerating = true;
       _sharedGameId = null;
@@ -394,7 +405,7 @@ class _AIGameCreatorPageState extends State<AIGameCreatorPage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ 3D Oyun basariyla olusturuldu!')),
+        const SnackBar(content: Text('✅ Oyun basariyla olusturuldu!')),
       );
     } catch (e) {
       setState(() {
@@ -402,8 +413,13 @@ class _AIGameCreatorPageState extends State<AIGameCreatorPage> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Hata: $e')),
+        SnackBar(
+          content: Text('❌ Hata: $e'),
+          duration: const Duration(seconds: 5),
+        ),
       );
+      
+      print('🔴 AI Game Generation Error: $e');
     }
   }
 

@@ -12,7 +12,7 @@ class AIGameGeneratorService {
 
   AIGameGeneratorService({required this.apiKey}) {
     _model = GenerativeModel(
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       apiKey: apiKey,
       generationConfig: GenerationConfig(
         temperature: 0.9, // Yaratıcılık için yüksek

@@ -38,7 +38,7 @@ class GeminiGameServiceV2 {
   /// 🔄 Fallback Model
   GenerativeModel _getFallbackModel() {
     return GenerativeModel(
-      model: 'gemini-pro',
+      model: 'gemini-1.5-flash',
       apiKey: apiKey,
       generationConfig: GenerationConfig(
         temperature: 0.5,

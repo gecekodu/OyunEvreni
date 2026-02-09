@@ -12,7 +12,7 @@ class GeminiService {
   // https://ai.google.dev/tutorials/setup
   GeminiService({required this.apiKey}) {
     _model = GenerativeModel(
-      model: 'gemini-pro',
+      model: 'gemini-2.5-flash-lite',
       apiKey: apiKey,
     );
   }

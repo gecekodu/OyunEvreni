@@ -10,7 +10,8 @@ class DefaultFirebaseOptions {
   }
 
   // 🤖 Gemini API Key
-  static const String geminiApiKey = 'AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw';
+  // ⚠️ https://aistudio.google.com/app/apikey adresinden al
+  static const String geminiApiKey = 'SENIN_YENI_API_KEY_BURAYA';
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyDduUTk0dJZgVNeyg8AV66qiIChgmoAC3s',

@@ -9,7 +9,7 @@ class GeminiGameService {
 
   GeminiGameService({required this.apiKey}) {
     // 🤖 Gemini 2.5 Flash Lite - Lightweight model (hızlı, az token tüket, daha az rate limit)
-    // Rate limit dolursa: gemini-pro'ya fallback
+    // Rate limit dolursa: gemini-1.5-flash'e fallback
     _model = GenerativeModel(
       model: 'gemini-2.5-flash-lite',
       apiKey: apiKey,
@@ -25,7 +25,7 @@ class GeminiGameService {
   /// 🔄 Fallback Model (rate limit hatası durumunda)
   GenerativeModel _getFallbackModel() {
     return GenerativeModel(
-      model: 'gemini-pro', // Eski ama stabil model
+      model: 'gemini-1.5-flash', // Eski ama stabil model
       apiKey: apiKey,
       generationConfig: GenerationConfig(
         temperature: 0.5,

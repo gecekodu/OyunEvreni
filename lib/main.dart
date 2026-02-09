@@ -26,6 +26,7 @@ import 'core/services/gemini_game_service_v2.dart';
 import 'features/flame_game/presentation/pages/flame_game_page.dart';
 import 'features/ai_game_engine/presentation/pages/ai_game_creator_page.dart';
 import 'features/webview/presentation/pages/webview_page.dart';
+import 'features/games/presentation/pages/example_games_list_page.dart';
 
 // GetIt - Dependency Injection
 final getIt = GetIt.instance;
@@ -149,6 +150,7 @@ class MyApp extends StatelessWidget {
         '/profile': (context) => const ProfilePage(),
         '/flame-game': (context) => const FlameGamePage(),
         '/ai-game-creator': (context) => const AIGameCreatorPage(),
+        '/example-games': (context) => const ExampleGamesListPage(),
       },
     );
   }
@@ -478,6 +480,19 @@ class HomeTabView extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Diğer özellikler
+            Expanded(
+              child: _buildFeatureCard(
+                context: context,
+                icon: Icons.videogame_asset,
+                title: 'Örnek Oyunlar',
+                subtitle: 'Hazır oyunları oyna',
+                color: Colors.indigo,
+                onTap: () {
+                  Navigator.pushNamed(context, '/example-games');
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(

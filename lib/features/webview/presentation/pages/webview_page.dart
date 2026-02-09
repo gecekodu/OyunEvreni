@@ -52,30 +52,26 @@ class _WebViewPageState extends State<WebViewPage> {
   Future<void> _loadAssetHtml(String assetPath) async {
     try {
       String html = await rootBundle.loadString(assetPath);
-      final dir = assetPath.substring(0, assetPath.lastIndexOf('/'));
-
-      // CSS
-      html = html.replaceAllMapped(
-        RegExp(r'href="([^"]+\.css)"'),
-        (Match m) => 'href="/$dir/${m.group(1)}"',
-      );
-
-      // JS
-      html = html.replaceAllMapped(
-        RegExp(r'src="([^"]+\.js)"'),
-        (Match m) => 'src="/$dir/${m.group(1)}"',
-      );
-
-      // Images
-      html = html.replaceAllMapped(
-        RegExp(r'src="((?!/).+?\.(?:png|jpg|jpeg|gif|svg|webp))"'),
-        (Match m) => 'src="/$dir/${m.group(1)}"',
-      );
-
-      controller.loadHtmlString(html);
+      controller.loadHtmlString(html, baseUrl: 'http://localhost/assets/');
     } catch (e) {
-      debugPrint('Asset error: $e');
-      controller.loadHtmlString('<html><body>Error: $e</body></html>');
+      debugPrint('Asset loading error: $e');
+      final errorHtml = '''
+        <html>
+          <head>
+            <style>
+              body { font-family: Arial; padding: 20px; text-align: center; }
+              .error { color: red; }
+              .details { color: #666; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <h1 class="error">⚠️ Oyun Yüklenemedi</h1>
+            <p class="details">Path: $assetPath</p>
+            <p class="details">Hata: $e</p>
+          </body>
+        </html>
+      ''';
+      controller.loadHtmlString(errorHtml);
     }
   }
 

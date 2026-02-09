@@ -211,7 +211,7 @@ class AppConstants {
   static const String firebaseProjectId = 'oyun-olustur-ai';
 
   // Gemini API Model
-  static const String geminiModel = 'gemini-pro';
+  static const String geminiModel = 'gemini-2.5-flash-lite';
 
   // Game limits
   static const int maxGameTitleLength = 100;
