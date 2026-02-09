@@ -148,49 +148,74 @@ $_gameJsonSchema
     print('🎮 Eğitim Oyunu üretiliyor: "$userDescription"');
 
      final prompt = '''
-Sen, html-css-javascript-games repository'sinin 30 HTML oyununu (Quiz Game, Memory Card Game, Speed Typing Game, Hangman vb.) analiz eden deneyimli oyun ve eğitim geliştiricisin.
+Sen http-css-javascript-games repository'sinin yapısını bilen ve bunun 30 oyununu (01-Candy-Crush, 02-Archery, 03-Speed-Typing, 04-Breakout, 05-Minesweeper, 07-Ping-Pong, 08-Tetris, 10-Memory-Card, 13-Tic-Tac-Toe, 14-Snake, 18-Hangman, 19-Flappy-Bird, 27-Quiz-Game vb.) analiz edip öğrenen deneyimli oyun ve eğitim tasarımcısısın.
+
+REFERANS OYUN MİMARİLERİ:
+1. Quiz-Game (27): Soru-cevap, çoktan seçmeli, score tracking, result screen
+2. Memory-Card-Game (10): Eşleştirme mekanikli, flip animation, skor, zorluk seviyeleri  
+3. Speed-Typing-Game (03): Hız ve doğruluk testi, timer, WPM sayacı, ilerleme barı
+4. Hangman-Game (18): Kelime tahmin, yanılış sayıcı, kategoriler
+5. Snake-Game (14): Duvar çarpışma, büyüme mekanikli, skor
+6. Tic-Tac-Toe (13): Turn-based, AI vs Player, kazanan algılama
+7. Tetris-Game (08): Grid-based, rotation, hız artışı, line clear
+8. Breakout-Game (04): Paddle control, ball physics, brick break, score
 
 OYUN TANIMI: "$userDescription"
 YAŞ GRUBU: $targetAge yaş
 ZORLUK: $difficulty
 
-İŞ: 
-1. Verilen açıklamaya uygun HTML5 oyun yap
-2. Mimarisi şu oyunlardan biri gibi ol: Quiz (soru-cevap), Memory (eşleştirme), Typing (hız-doğruluk), Collector (toplama)
-3. Oyun mekaniklerini eğitim kazanımlarıyla yap
-4. Oyunun başında kazanımları göster
-5. Oyun sonunda başarı analizi göster
+İŞ:
+1. Verilen açıklamaya en uygun oyun mimarisini seç (Quiz, Memory, Typing, Hangman, vb.)
+2. Seçilen mimarinin yapısını kopyala (CSS animasyonlar, game loop, collision detection, vb.)
+3. İçerideki hazır mekanikler kalmalı ama EĞİTİM İÇERİĞİ EKLE
+4. Oyunun başında 5-6 Kazanım (Learning Outcome) göster
+5. Oyun sonunda kazanım bazlı sonuç ekranı yap (başarıya göre ⭐)
 
-KAZANIM ÖRNEKLERI (5-6 tane):
-- Öğrenci X konseptini anlayacak
-- Öğrenci Y problemini çözebilecek
-- Öğrenci Z hızını artıracak
-- Öğrenci dikkatini geliştirecek
+KAZANIM YAPISI (Örnek):
+- 🎯 Kazanım 1: "Öğrenci X'i anlayacak"
+- 🎯 Kazanım 2: "Öğrenci Y'yi çözebilecek" 
+- 🎯 Kazanım 3: "Öğrenci Z'yi geliştirecek"
+- 🎯 Kazanım 4: "Öğrenci W'de başarılı olacak"
+- 🎯 Kazanım 5: "Öğrenci V'de hız kazanacak"
+- 🎯 Kazanım 6: "Öğrenci U'de dikkat artacak"
 
 TEKNIK GEREKLER:
 - Tek HTML dosyası (CSS + JS içine entegre)
-- Canvas veya DOM-based (seçim tamam)
-- Tam çalışan, eksik kod YOK
+- Canvas VEYA DOM-based (seçim senin)
+- Tam çalışan, EKSİK KOD YOK
 - TODO, placeholder, pseudo-code YOK
-- Oyun açılır açılmaz oynanabilir
-- Mobil + Desktop uyumlu
+- Oyun açılır açılmaz OYNANABILIR
+- Mobile + Desktop uyumlu
 - Dokunma + Klavye kontrol
+- Minimal assets (base64 veya Unicode karakterler kullan)
 
 HTML YAPISI:
-1. Başlık + Kazanımları gösteren intro ekranı
-2. Oyun başlatma butonu
-3. Oyun alanı (score, timer göster)
-4. Oyun bitişinde sonuç ekranı (başarıya göre kazanım göster)
-5. Yeniden oyna butonu
+1. Loading başlangıcı
+2. INTRO EKRAN: Oyun başlığı + 6 Kazanım + START butonu
+3. OYUN EKRAN: Oyun alanı + score/timer + progress
+4. RESULT EKRAN: 
+   - Kazanım bazlı başarı (★★★★☆ gibi)
+   - Her kazanım için elde edilen puan göster
+   - "Başarıyla Tamamlandı" / "Tekrar Dene" seçeneği
 
-MEKANIK:
-- Min 2 dakika oyun süresi
-- Progressive zorluk
-- Skor sistemi
-- Hata sayıcısı
-- Teşvik mesajları
+MEKANIK SEÇENEKLERI (Seç bir tanesini):
+A) Quiz Tipi: 5-10 soru, doğru cevap = 1 kazanım unlock
+B) Memory Tipi: Eşleştirme oyunu, hata sayısı az = daha çok kazanım
+C) Typing Tipi: Yazma hızı, doğruluk oranı = kazanım seviyesi
+D) Hangman Tipi: Kelime tahmin, hakkı az = daha zor kazanımlar
+E) Snake Tipi: Hızlı oyun, puan = kazanım level'i
+
+PUAN HESAPLAMASI:
+- Her kazanım max 100 puan
+- Başarı = puan / 600 * %100
+- %80+ = Tüm kazanımlar bitirildi
+- %50-79% = Bazı kazanımlar
+- %0-49% = Temel kazanım
 
 ÇIKTI: SADECE COMPLETE HTML KOD (açıklama YOK)
+<!DOCTYPE html>
+<html>
+<!-- Buradan başla -->
 ''';
 
     try {
