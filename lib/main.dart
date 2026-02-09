@@ -321,18 +321,12 @@ class HomeTabView extends StatelessWidget {
             const SizedBox(height: 16),
             const Text(
               'AI Oyun Dünyası',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Hayal gücünle oyun yarat!',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
             const SizedBox(height: 48),
 
@@ -366,11 +360,7 @@ class HomeTabView extends StatelessWidget {
                     padding: EdgeInsets.all(20),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.auto_awesome,
-                          size: 60,
-                          color: Colors.white,
-                        ),
+                        Icon(Icons.auto_awesome, size: 60, color: Colors.white),
                         SizedBox(width: 20),
                         Expanded(
                           child: Column(
@@ -451,11 +441,7 @@ class HomeTabView extends StatelessWidget {
                     padding: EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.science,
-                          size: 50,
-                          color: Colors.white,
-                        ),
+                        Icon(Icons.science, size: 50, color: Colors.white),
                         SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -481,11 +467,7 @@ class HomeTabView extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 30,
-                        ),
+                        Icon(Icons.play_arrow, color: Colors.white, size: 30),
                       ],
                     ),
                   ),
@@ -534,10 +516,7 @@ class HomeTabView extends StatelessWidget {
             const Divider(height: 40),
             const Text(
               'Klasik Oyunlar',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
@@ -555,7 +534,10 @@ class HomeTabView extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 minimumSize: const Size(double.infinity, 50),
               ),
             ),
@@ -564,18 +546,19 @@ class HomeTabView extends StatelessWidget {
             // Oyunları Listele
             ElevatedButton.icon(
               onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => GameListPage(),
-                  ),
-                );
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (context) => GameListPage()));
               },
               icon: const Icon(Icons.list),
               label: const Text('HTML Oyunları Listele'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 minimumSize: const Size(double.infinity, 50),
               ),
             ),
@@ -591,7 +574,10 @@ class HomeTabView extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 minimumSize: const Size(double.infinity, 50),
               ),
             ),
@@ -611,9 +597,7 @@ class HomeTabView extends StatelessWidget {
   }) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
@@ -633,10 +617,7 @@ class HomeTabView extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ],
           ),

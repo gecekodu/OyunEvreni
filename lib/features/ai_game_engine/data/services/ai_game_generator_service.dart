@@ -136,235 +136,61 @@ $_gameJsonSchema
     }
   }
 
-  /// 🎮 HTML 3D OYUN OLUŞTUR (Three.js ile)
+  /// 🎮 HTML OYUN OLUŞTUR (Eğitim Amaçlı)
+  /// Referans: html-css-javascript-games repository (30 oyun)
+  /// - Quiz Game, Memory Card Game, Typing Game mimarisinden ilham al
+  /// - Oyunla eğitim kazanımlarını birleştir
   Future<String> generateHTML3DGame({
     required String userDescription,
     required String difficulty,
     required int targetAge,
   }) async {
-    print('🎮 HTML 3D oyun uretiliyor: "$userDescription"');
+    print('🎮 Eğitim Oyunu üretiliyor: "$userDescription"');
 
-    final prompt = '''
-Sen profesyonel bir HTML5/Three.js oyun geliştiricisisin. Asagidaki açıklamaya gore TAM ÖZELLIKLI, KAPSAMLI, PROFESYONEL bir 3D oyun oluştur.
+     final prompt = '''
+Sen, html-css-javascript-games repository'sinin 30 HTML oyununu (Quiz Game, Memory Card Game, Speed Typing Game, Hangman vb.) analiz eden deneyimli oyun ve eğitim geliştiricisin.
 
-🎮 OYUN ACIKLAMASI: "$userDescription"
-📊 ZORLUK: $difficulty (easy, medium, hard)
-👶 HEDEF YAS: $targetAge
+OYUN TANIMI: "$userDescription"
+YAŞ GRUBU: $targetAge yaş
+ZORLUK: $difficulty
 
-═══════════════════════════════════════════════════════════════
-🎯 OYUN GEREKSINIMLERI (EKSIK BIRAKMA!):
-═══════════════════════════════════════════════════════════════
+İŞ: 
+1. Verilen açıklamaya uygun HTML5 oyun yap
+2. Mimarisi şu oyunlardan biri gibi ol: Quiz (soru-cevap), Memory (eşleştirme), Typing (hız-doğruluk), Collector (toplama)
+3. Oyun mekaniklerini eğitim kazanımlarıyla yap
+4. Oyunun başında kazanımları göster
+5. Oyun sonunda başarı analizi göster
 
-1. **TEMEL YAPI**:
-   ✓ Complete HTML5 oyun - tek dosya, self-contained
-   ✓ Three.js CDN: https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js
-   ✓ Responsive design (mobile + desktop)
-   ✓ MINIMUM 500 SATIR JavaScript kodu
+KAZANIM ÖRNEKLERI (5-6 tane):
+- Öğrenci X konseptini anlayacak
+- Öğrenci Y problemini çözebilecek
+- Öğrenci Z hızını artıracak
+- Öğrenci dikkatini geliştirecek
 
-2. **3D SAHNE ve KAMERA**:
-   ✓ PerspectiveCamera optimal açıyla
-   ✓ OrbitControls veya custom camera control
-   ✓ Dinamik aydınlatma (AmbientLight + DirectionalLight + PointLight)
-   ✓ Gölge sistemi (castShadow, receiveShadow)
-   ✓ Skybox veya gradient background
-   ✓ Fog effect (atmosfer için)
+TEKNIK GEREKLER:
+- Tek HTML dosyası (CSS + JS içine entegre)
+- Canvas veya DOM-based (seçim tamam)
+- Tam çalışan, eksik kod YOK
+- TODO, placeholder, pseudo-code YOK
+- Oyun açılır açılmaz oynanabilir
+- Mobil + Desktop uyumlu
+- Dokunma + Klavye kontrol
 
-3. **OYUNCU KARAKTERI**:
-   ✓ 3D model (basit geometrilerden oluşmuş karakter)
-   ✓ Smooth hareket animasyonları
-   ✓ Klavye (WASD/Ok tuşları) + touch kontrol
-   ✓ Zıplama (jump) mekanigi
-   ✓ Hız ve ivme fizik sistemi
-   ✓ Karakter rotasyonu ve yön değiştirme
+HTML YAPISI:
+1. Başlık + Kazanımları gösteren intro ekranı
+2. Oyun başlatma butonu
+3. Oyun alanı (score, timer göster)
+4. Oyun bitişinde sonuç ekranı (başarıya göre kazanım göster)
+5. Yeniden oyna butonu
 
-4. **OYUN DÜNYASI**:
-   ✓ Minimum 20x20 birim 3D zemin
-   ✓ Engeller, platformlar, toplanabilir objeler (minimum 15 adet)
-   ✓ Çeşitli renk ve geometriler (küp, küre, silindir, koni vb.)
-   ✓ Parçacık efektleri (collecting, win/lose)
-   ✓ Rastgele oluşturulan objeler (procedural)
-   ✓ Arka plan dekorasyon (ağaçlar, binalar, bulutlar)
+MEKANIK:
+- Min 2 dakika oyun süresi
+- Progressive zorluk
+- Skor sistemi
+- Hata sayıcısı
+- Teşvik mesajları
 
-5. **OYUN MEKANİKLERİ**:
-   ✓ Puan sistemi (score) ekranda sürekli göster
-   ✓ Can/sağlık sistemi (health bar)
-   ✓ Süre sayacı (timer) - opsiyonel
-   ✓ Seviye sistemi (3+ level)
-   ✓ Zorluk artışı (difficulty progression)
-   ✓ Power-ups veya bonus itemlar
-   ✓ Düşman/engel AI (basit hareket pattern)
-   ✓ Collision detection (çarpışma kontrolü)
-
-6. **GÖRSEL EFEKTLER**:
-   ✓ Parçacık patlamaları (collecting item)
-   ✓ Glow effect önemli objeler için
-   ✓ Smooth kamera geçişleri
-   ✓ Screen shake (çarpışmada)
-   ✓ Color transitions
-   ✓ Trail effect (iz bırakma)
-
-7. **SES ve MÜZİK** (opsiyonel ama önerilen):
-   ✓ Web Audio API kullan
-   ✓ Basit ses efektleri (beep, collect, jump)
-   ✓ Arka plan müziği (synthesized)
-
-8. **UI ve HUD**:
-   ✓ Başlangıç ekranı (Start Game butonu)
-   ✓ Oyun içi HUD (score, health, level)
-   ✓ Pause menüsü
-   ✓ Kazanma/kaybetme ekranı
-   ✓ Restart butonu
-   ✓ Kontrol açıklaması
-   ✓ Tüm metinler TÜRKÇE
-
-9. **PERFORMANS ve OPTIMIZASYON**:
-   ✓ RequestAnimationFrame kullan
-   ✓ Object pooling (obje yeniden kullanımı)
-   ✓ Ekran dışı objeleri kaldır
-   ✓ FPS göstergesi (debug için)
-
-10. **KOD KALİTESI**:
-    ✓ Clean code, yorumlarla açıklanmış
-    ✓ Object-oriented yapı (class kullan)
-    ✓ Error handling (try-catch)
-    ✓ Console.log debug mesajları
-    ✓ Değişken isimlerinde Türkçe karakterler YOK
-
-═══════════════════════════════════════════════════════════════
-📝 ZORLUĞa GÖRE AYARLAMALAR:
-═══════════════════════════════════════════════════════════════
-EASY: Yavaş hareket, az engel, büyük hedefler
-MEDIUM: Normal hız, orta yoğunluk engeller
-HARD: Hızlı tempo, çok engel, küçük hedefler, zaman limiti
-
-═══════════════════════════════════════════════════════════════
-🎨 ÖRNEK OYUN TÜRLERI:
-═══════════════════════════════════════════════════════════════
-- Matematik: Uçan sayıları yakala, doğru işlemleri seç
-- Araba yarışı: 3D pist, sürtünmeli zemin, checkpointler
-- Koleksiyonlama: Renkli küpleri topla, engelleri atla
-- Platform: Yüksek platformlara zıpla, düşme
-- Koşu: Sonsuz koşu, rastgele engeller
-
-═══════════════════════════════════════════════════════════════
-⚠️ KURALLARI KATI TAKIP ET:
-═══════════════════════════════════════════════════════════════
-1. DOCTYPE html ile başla
-2. Tüm CSS <style> tagında
-3. Tüm JavaScript <script> tagında
-4. Harici dosya SADECE Three.js CDN
-5. Mobil + desktop responsive
-6. MINIMUM 500 satır JavaScript
-7. Açıklama veya markdown YOK, sadece HTML kodu
-8. Oyun TAM ÇALIŞIR DURUMDA dön
-
-═══════════════════════════════════════════════════════════════
-� TEMEL OYUN ŞABLONU (CUSTOMIZE ET):
-═══════════════════════════════════════════════════════════════
-<!DOCTYPE html>
-<html>
-<head>
-  <title>3D Game</title>
-  <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { display: block; }
-  </style>
-</head>
-<body>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script>
-    // Base game template - customize this
-    let score = 0;
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
-    document.body.appendChild(renderer.domElement);
-    
-    // Add lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 10, 10);
-    directionalLight.castShadow = true;
-    scene.add(directionalLight);
-    
-    // Create ground
-    const groundGeometry = new THREE.PlaneGeometry(20, 20);
-    const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x90EE90 });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
-    scene.add(ground);
-    
-    // Create player
-    const playerGeometry = new THREE.CapsuleGeometry(0.5, 2, 4, 8);
-    const playerMaterial = new THREE.MeshStandardMaterial({ color: 0x0066ff });
-    const player = new THREE.Mesh(playerGeometry, playerMaterial);
-    player.position.y = 2;
-    player.castShadow = true;
-    scene.add(player);
-    
-    camera.position.set(0, 5, 15);
-    camera.lookAt(0, 0, 0);
-    
-    // Animation loop
-    function animate() {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    }
-    animate();
-    
-    // Handle window resize
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
-</body>
-</html>
-
-═══════════════════════════════════════════════════════════════
-🔧 SENIN GÖREVIN:
-═══════════════════════════════════════════════════════════════
-1. Yukarıdaki temel şablonu al
-2. "\$userDescription" açıklamasına uygun olarak ÖZELLEŞTİR:
-   - Oyun adını ve açıklamasını değiştir
-   - Player modelini tema ile uyumlu yap (araba, hayvan, karakter vb.)
-   - Collectible objeleri temaya göre tasarla
-   - Enemy objeleri temaya göre tasarla
-   - Ek mekanikler ekle (zıplama, özel güçler, vb.)
-   - Arka plan ve renkleri temaya uygun ayarla
-   - Ses efektleri ekle (Web Audio API)
-   - Parçacık efektleri ekle
-   - Zorluk seviyesine göre ayarla (\$difficulty)
-   - Yaşa uygun görsellik (\$targetAge)
-
-3. EKLENMESI GEREKEN ÖZELLIKLER:
-   ✓ Jump mekanigi (Space tuşu)
-   ✓ Parçacık efektleri (collect, hit)
-   ✓ Ses efektleri (beep sounds)
-   ✓ Power-ups (hız, kalkan vb.)
-   ✓ Daha karmaşık enemy AI
-   ✓ Arka plan dekorasyonları
-   ✓ Smooth animations
-   ✓ Score multiplier
-   ✓ Combo system
-
-4. KOD UZUNLUĞU:
-   ✓ MINIMUM 800 satır JavaScript
-   ✓ Tüm özellikler eksiksiz implement edilmeli
-   ✓ Yorumlar ve clean code
-
-═══════════════════════════════════════════════════════════════
-📤 ÇIKTI FORMATI:
-═══════════════════════════════════════════════════════════════
-SADECE ÖZELLEŞTİRİLMİŞ, TAM HTML5 kodunu döndür. 
-Hiçbir açıklama, markdown, ```html tag veya ek metin ekleme.
-
-Şimdi "$userDescription" için yukarıdaki şablonu özelleştir ve genişlet!
+ÇIKTI: SADECE COMPLETE HTML KOD (açıklama YOK)
 ''';
 
     try {
