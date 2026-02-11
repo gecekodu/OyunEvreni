@@ -574,6 +574,14 @@
                     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
                 }
                 btn.onclick = function() { initGame(); };
+                
+                // Oyun bittiginde puanı gonder
+                window.parent.postMessage({
+                    type: 'GAME_SCORE',
+                    gameName: 'matematik_okcusu',
+                    score: score,
+                    rank: 'Oyun Tamamlandı'
+                }, '*');
             } else {
                 btn.onclick = function() { nextLevelAction(); };
             }

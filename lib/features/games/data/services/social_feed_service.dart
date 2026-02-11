@@ -313,4 +313,85 @@ class SocialFeedService {
       print('Hata - Oyun istatistikleri güncellenemedi: $e');
     }
   }
-}
+
+  /// 🎮 HTML Oyunlarını sosyal akışta göster (5 temel oyun)
+  Future<List<Map<String, dynamic>>> getHtmlGamesForFeed() async {
+    try {
+      return [
+        {
+          'id': 'besin-ninja-001',
+          'title': '🥗 Besin Ninja',
+          'description': 'Doğru besin grubunu keserek oyun oyna',
+          'category': 'Sağlık',
+          'icon': '🥗',
+          'difficulty': '⭐⭐',
+          'playCount': 0,
+          'isHtml': true,
+          'htmlFile': 'assets/html_games/example_games/besin_ninja.html',
+        },
+        {
+          'id': 'lazer-fizik-001',
+          'title': '🔦 Lazer Fizik',
+          'description': 'Lazeri aynalarla yönlendir hedefe ulaştır',
+          'category': 'Fizik',
+          'icon': '🔦',
+          'difficulty': '⭐⭐⭐',
+          'playCount': 0,
+          'isHtml': true,
+          'htmlFile': 'assets/html_games/example_games/lazer_fizik.html',
+        },
+        {
+          'id': 'matematik-okcusu-001',
+          'title': '🏹 Matematik Okcusu',
+          'description': 'Soruyu çöz, doğru hedefi vur',
+          'category': 'Matematik',
+          'icon': '🏹',
+          'difficulty': '⭐⭐⭐',
+          'playCount': 0,
+          'isHtml': true,
+          'htmlFile': 'assets/html_games/example_games/matematik_okcusu.html',
+        },
+        {
+          'id': 'araba-surtunme-001',
+          'title': '🚗 Sürütünme Yarışı',
+          'description': 'Farklı zeminlerde doğru araba seç',
+          'category': 'Fizik',
+          'icon': '🚗',
+          'difficulty': '⭐⭐',
+          'playCount': 0,
+          'isHtml': true,
+          'htmlFile': 'assets/html_games/example_games/araba_surtunme.html',
+        },
+        {
+          'id': 'gezegen-bul-001',
+          'title': '🪐 Gezegen Bul',
+          'description': 'Gezegen ismini bulup gemiye çarpıştır',
+          'category': 'Fen Bilgisi',
+          'icon': '🪐',
+          'difficulty': '⭐⭐',
+          'playCount': 0,
+          'isHtml': true,
+          'htmlFile': 'assets/html_games/example_games/gezegenibul.html',
+        },
+      ];
+    } catch (e) {
+      print('HTML Oyunlar yüklenemedi: $e');
+      return [];
+    }
+  }
+
+  /// 📱 Sosyal akışta tüm oyunları göster (HTML + Firestore)
+  Future<List<dynamic>> getCombinedFeed({int limit = 20}) async {
+    try {
+      final htmlGames = await getHtmlGamesForFeed();
+      final firebaseGames = await getTodaysGames();
+      
+      // Kombinli feed
+      final combined = <dynamic>[...htmlGames, ...firebaseGames];
+      
+      return combined.take(limit).toList();
+    } catch (e) {
+      print('Hata - Kombinli akış getirilemedi: $e');
+      return [];
+    }
+  }}

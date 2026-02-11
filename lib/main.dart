@@ -416,121 +416,17 @@ class HomeTabView extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // 🧪 SÜRTÜNME DENEYİ OYUNU - BÜYÜK BUTON
-            Container(
-              width: double.infinity,
-              height: 100,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Colors.amber, Colors.orange],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.amber.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => WebViewPage(
-                          htmlPath: 'assets/html_games/example_games/friction_experiment.html',
-                          gameTitle: 'Sürtünme Deneyi',
-                        ),
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Icon(Icons.science, size: 50, color: Colors.white),
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '🧪 Sürtünme Deneyi',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                '3D Araba Yarışı - Zemin Sürtünmesi',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(Icons.play_arrow, color: Colors.white, size: 30),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Diğer özellikler
+            // Profilim ve İstatistikler
             _buildFeatureCard(
               context: context,
-              icon: Icons.videogame_asset,
-              title: 'Örnek Oyunlar',
-              subtitle: 'Hazır oyunları oyna',
-              color: Colors.indigo,
+              icon: Icons.person,
+              title: 'Profilim',
+              subtitle: 'İstatistikler',
+              color: Colors.purple,
               onTap: () {
-                Navigator.pushNamed(context, '/example-games');
+                // Profil sayfasına git
+                Navigator.pushNamed(context, '/profile');
               },
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildFeatureCard(
-                    context: context,
-                    icon: Icons.public,
-                    title: 'Keşfet',
-                    subtitle: 'Oyunları gör',
-                    color: Colors.blue,
-                    onTap: () {
-                      // Sosyal tab'ine geç - Navigator.pushReplacement kullan
-                      Navigator.pop(context); // Mevcut context'i kapat
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildFeatureCard(
-                    context: context,
-                    icon: Icons.person,
-                    title: 'Profilim',
-                    subtitle: 'İstatistikler',
-                    color: Colors.purple,
-                    onTap: () {
-                      // Profil sayfasına git
-                      Navigator.pushNamed(context, '/profile');
-                    },
-                  ),
-                ),
-              ],
             ),
 
             const SizedBox(height: 24),
@@ -731,8 +627,71 @@ class _QuickActionButton extends StatelessWidget {
 // CreateGameFlowPage tarafından değiştirildi
 
 // 👤 Profile Page
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  late Future<Map<String, dynamic>> userStats;
+
+  @override
+  void initState() {
+    super.initState();
+    userStats = _fetchUserStats();
+  }
+
+  Future<Map<String, dynamic>> _fetchUserStats() async {
+    final firebaseService = getIt<FirebaseService>();
+    final userId = firebaseService.currentUser?.uid ?? 'unknown';
+    
+    try {
+      final firestore = FirebaseFirestore.instance;
+      
+      // Kullanıcı genel verileri
+      final userDoc = await firestore.collection('users').doc(userId).get();
+      final userData = userDoc.data() ?? {};
+      
+      // Oyun skorları
+      final scoresSnapshot = await firestore
+          .collection('game_scores')
+          .where('userId', isEqualTo: userId)
+          .get();
+      
+      final scores = scoresSnapshot.docs;
+      final totalScore = scores.fold<int>(0, (sum, doc) {
+        final score = doc['score'] as int? ?? 0;
+        return sum + score;
+      });
+      
+      // Oyun sayısı
+      final uniqueGames = {...scores.map((doc) => doc['gameId'])}.length;
+      
+      // En yüksek skor
+      final highestScore = scores.isEmpty 
+          ? 0 
+          : scores.map((doc) => (doc['score'] as int?) ?? 0).reduce((a, b) => a > b ? a : b);
+      
+      return {
+        'totalScore': totalScore,
+        'playCount': scores.length,
+        'uniqueGames': uniqueGames,
+        'highestScore': highestScore,
+        'globalRank': userData['globalRank'] ?? '---',
+      };
+    } catch (e) {
+      debugPrint('Hata - İstatistikler yüklenemedi: $e');
+      return {
+        'totalScore': 0,
+        'playCount': 0,
+        'uniqueGames': 0,
+        'highestScore': 0,
+        'globalRank': '---',
+      };
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -749,6 +708,7 @@ class ProfilePage extends StatelessWidget {
           children: [
             // Profil Kartı
             Card(
+              elevation: 4,
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -756,14 +716,19 @@ class ProfilePage extends StatelessWidget {
                     CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.blue.shade100,
-                      child: Text(
-                        userName.isNotEmpty ? userName[0].toUpperCase() : 'K',
-                        style: const TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
+                      backgroundImage: user?.photoURL != null 
+                          ? NetworkImage(user!.photoURL!) 
+                          : null,
+                      child: user?.photoURL == null
+                          ? Text(
+                              userName.isNotEmpty ? userName[0].toUpperCase() : 'K',
+                              style: const TextStyle(
+                                fontSize: 40,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            )
+                          : null,
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -782,39 +747,124 @@ class ProfilePage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-            // İstatistikler
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '📊 İstatistikler',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+            // İstatistikler (Firestore'dan)
+            FutureBuilder<Map<String, dynamic>>(
+              future: userStats,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: CircularProgressIndicator(),
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  );
+                }
+
+                final stats = snapshot.data ?? {};
+                return Card(
+                  elevation: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildStatItem('Oyunlar', '3', Icons.gamepad),
-                        _buildStatItem('Oynama', '35', Icons.play_circle),
-                        _buildStatItem('Seviye', '5', Icons.star),
+                        const Text(
+                          '📊 İstatistikler',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatItem(
+                              'Toplam Puan',
+                              '${stats['totalScore'] ?? 0}',
+                              Icons.emoji_events,
+                            ),
+                            _buildStatItem(
+                              'Oynama',
+                              '${stats['playCount'] ?? 0}',
+                              Icons.play_circle,
+                            ),
+                            _buildStatItem(
+                              'Oyun Sayısı',
+                              '${stats['uniqueGames'] ?? 0}',
+                              Icons.gamepad,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                '🏆 Global Sıralama',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                '#${stats['globalRank'] ?? '---'}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                '⭐ Yüksek Skor',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                '${stats['highestScore'] ?? 0}',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-            // Ayarlar
+            // Hızlı Linkler
             Card(
+              elevation: 4,
               child: Column(
                 children: [
                   ListTile(
@@ -822,6 +872,15 @@ class ProfilePage extends StatelessWidget {
                     title: const Text('Ayarlar'),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {},
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.emoji_events),
+                    title: const Text('Sıralamalar'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () {
+                      Navigator.pushNamed(context, '/leaderboard');
+                    },
                   ),
                   const Divider(height: 1),
                   ListTile(
@@ -837,34 +896,10 @@ class ProfilePage extends StatelessWidget {
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {},
                   ),
-                  // 🔬 DEBUG MODE: Test API Connections
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.science_outlined,
-                      color: Colors.orange,
-                    ),
-                    title: const Text(
-                      '🔬 Test API Connections',
-                      style: TextStyle(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const TestPanelPage(),
-                        ),
-                      );
-                    },
-                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
             // Çıkış Yap
             SizedBox(
@@ -872,7 +907,7 @@ class ProfilePage extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: () async {
                   await firebaseService.signOut();
-                  if (context.mounted) {
+                  if (mounted) {
                     Navigator.of(context).pushReplacementNamed('/login');
                   }
                 },

@@ -256,7 +256,7 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
   }
 
   List<Color> _getGradientColors(ExampleGameType type) {
-    switch (type) {
+    switch (type) { // planetHunt vb. yeni types için 
       case ExampleGameType.friction:
         return [Color(0xFF667EEA), Color(0xFF764BA2)];
       case ExampleGameType.tetris:
@@ -269,6 +269,8 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
         return [Color(0xFF30CFD0), Color(0xFF330867)];
       case ExampleGameType.wordChain:
         return [Color(0xFFA8EDEA), Color(0xFFFED6E3)];
+      case ExampleGameType.planetHunt:
+        return [Color(0xFF667EEA), Color(0xFFFF6B9D)];
     }
   }
 }

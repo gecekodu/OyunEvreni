@@ -304,6 +304,14 @@ class Game {
         else if(this.totalScore >= 80) comment = "Harika bir Fizikcisin! ⚛️";
         else comment = "Biraz daha calismalisin.";
         document.getElementById('final-comment').innerText = comment;
+        
+        // Puan bilgisini uygulamaya gonder
+        window.parent.postMessage({
+            type: 'GAME_SCORE',
+            gameName: 'lazer_fizik',
+            score: this.totalScore,
+            rank: 'Oyun Tamamlandı'
+        }, '*');
     }
 
     generateLevel(lvl) {

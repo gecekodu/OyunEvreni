@@ -494,6 +494,25 @@
         document.getElementById('hud').style.display = 'none';
         document.getElementById('end-screen').style.display = 'flex';
         document.getElementById('final-score').innerText = score;
+
+        // 🎯 Puan verisi Dart'a gönder
+        if (window.parent && window.parent.postMessage) {
+            window.parent.postMessage({
+                type: 'GAME_SCORE',
+                gameName: 'besin-ninja',
+                score: score,
+                rank: score > 80 ? 'UZMAN' : score > 50 ? 'ORTA' : 'BAŞLANGIC'
+            }, '*');
+        }
+        // WebChannel ile de gönder (native Flutter)
+        if (window.GameScoreListener) {
+            window.GameScoreListener.postMessage(JSON.stringify({
+                type: 'GAME_SCORE',
+                gameName: 'besin-ninja',
+                score: score,
+                rank: score > 80 ? 'UZMAN' : score > 50 ? 'ORTA' : 'BAŞLANGIC'
+            }));
+        }
     }
 
     // --- LOOP ---

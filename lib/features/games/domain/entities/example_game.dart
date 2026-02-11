@@ -7,7 +7,8 @@ enum ExampleGameType {
   memory('Hafıza Oyunu', '🧠'),
   colorMatch('Renk Eşleştir', '🎨'),
   mathQuiz('Matematik', '🔢'),
-  wordChain('Kelime Zinciri', '📝');
+  wordChain('Kelime Zinciri', '📝'),
+  planetHunt('Gezegen Bul', '🪐');
 
   final String title;
   final String emoji;

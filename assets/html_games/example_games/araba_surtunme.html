@@ -492,6 +492,14 @@
             if(score >= 90) msg.innerText="Harika! Tam bir fen ustasisin.";
             else if(score >= 70) msg.innerText="Guzel! Biraz daha pratik yapabilirsin.";
             else msg.innerText="Zeminlere ve arac secimine dikkat etmelisin.";
+            
+            // Oyun bittiginde puanı gonder
+            window.parent.postMessage({
+                type: 'GAME_SCORE',
+                gameName: 'araba_surtunme',
+                score: score,
+                rank: 'Oyun Tamamlandı'
+            }, '*');
         }
     </script>
 </body>

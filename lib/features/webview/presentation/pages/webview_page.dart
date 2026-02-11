@@ -3,17 +3,22 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/services.dart';
+import 'package:get_it/get_it.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../games/data/services/leaderboard_service.dart';
 
 class WebViewPage extends StatefulWidget {
   final String? htmlPath;
   final String? htmlContent;
   final String gameTitle;
+  final String? gameId; // Oyun tanımlayıcı
 
   const WebViewPage({
     super.key,
     this.htmlPath,
     this.htmlContent,
     required this.gameTitle,
+    this.gameId,
   }) : assert(htmlPath != null || htmlContent != null);
 
   @override
@@ -42,12 +47,61 @@ class _WebViewPageState extends State<WebViewPage> {
             debugPrint('WebView error: ${error.description}');
           },
         ),
+      )
+      ..addJavaScriptChannel('GameScoreListener',
+        onMessageReceived: (JavaScriptMessage message) {
+          _handleGameScore(message.message);
+        },
       );
 
     if (widget.htmlContent != null && widget.htmlContent!.isNotEmpty) {
       controller.loadHtmlString(widget.htmlContent!);
     } else if (widget.htmlPath != null && widget.htmlPath!.isNotEmpty) {
       _loadAssetHtml(widget.htmlPath!);
+    }
+  }
+
+  Future<void> _handleGameScore(String jsonData) async {
+    try {
+      final data = jsonDecode(jsonData);
+      final gameName = data['gameName'] as String?;
+      final score = data['score'] is int 
+          ? (data['score'] as int).toDouble() 
+          : (data['score'] as num).toDouble();
+      final rank = data['rank'] as String?;
+
+      debugPrint('🎮 Oyun Puanı Alındı: $gameName = $score');
+
+      // Leaderboard servisine puan kaydet
+      final leaderboardService = GetIt.instance<LeaderboardService>();
+      
+      // Format: "oyun-adi-001" 
+      final gameId = widget.gameId ?? gameName ?? 'unknown-game';
+      
+      // Firebase Auth'dan gerçek kullanıcı al
+      final currentUser = FirebaseAuth.instance.currentUser;
+      final userId = currentUser?.uid ?? 'guest-${DateTime.now().millisecondsSinceEpoch}';
+      final userName = currentUser?.displayName ?? 'Anonim Oyuncu';
+      final userAvatar = currentUser?.photoURL ?? 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(userName)}';
+      
+      await leaderboardService.saveGameScore(
+        gameId: gameId,
+        userId: userId,
+        userName: userName,
+        score: score.toInt(),
+        userAvatar: userAvatar,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Puan kaydedildi: ${score.toInt()} | Kullanıcı: $userName'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Skor işleme hatası: $e');
     }
   }
 
