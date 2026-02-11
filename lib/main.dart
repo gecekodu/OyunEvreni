@@ -158,6 +158,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignupPage(),
         '/home': (context) => const HomePage(),
         '/profile': (context) => const ProfilePage(),
+        '/leaderboard': (context) => const LeaderboardPage(),
         '/flame-game': (context) => const FlameGamePage(),
         '/ai-game-creator': (context) => const AIGameCreatorPage(),
         '/example-games': (context) => const ExampleGamesListPage(),
@@ -483,13 +484,13 @@ class HomeTabView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Flame Platformer
+            // Örnek Oyunlar
             ElevatedButton.icon(
               onPressed: () {
-                Navigator.of(context).pushNamed('/flame-game');
+                Navigator.of(context).pushNamed('/example-games');
               },
-              icon: const Icon(Icons.videogame_asset),
-              label: const Text('🎮 Flame 2D Platformer'),
+              icon: const Icon(Icons.games),
+              label: const Text('🎮 Örnek Oyunlar'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
