@@ -617,6 +617,10 @@ function oyunBitti(puan) {
     } else {
         console.log("Flutter baglansi bulunamadi");
     }
+
+    if (window.GameBridge && typeof window.GameBridge.sendScore === 'function') {
+        window.GameBridge.sendScore(puan, { source: 'gameOver' });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -638,6 +642,83 @@ document.addEventListener('DOMContentLoaded', function() {
             <button id="playAgainBtn" class="gameOverBtn">Tekrar Oyna 🔁</button>
         </div>
     </div>
+
+    <div id="app-controls" class="app-controls">
+        <button id="app-back" class="app-ctrl-btn" type="button">⟵</button>
+        <button id="app-full" class="app-ctrl-btn" type="button">⛶</button>
+    </div>
+
+    <style>
+        .app-controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10001;
+            display: flex;
+            gap: 8px;
+        }
+        .app-ctrl-btn {
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .app-ctrl-btn:active { transform: scale(0.96); }
+    </style>
+
+    <script>
+        (function () {
+            function postUi(payload) {
+                if (window.GameUi && window.GameUi.postMessage) {
+                    window.GameUi.postMessage(JSON.stringify(payload));
+                    return true;
+                }
+                return false;
+            }
+
+            function setFullscreen(next) {
+                postUi({ type: next ? 'enterFullscreen' : 'exitFullscreen' });
+            }
+
+            window.GameBridge = {
+                backToApp: function () { postUi({ type: 'back' }); },
+                enterFullscreen: function () { setFullscreen(true); },
+                exitFullscreen: function () { setFullscreen(false); },
+                requestAppData: function () { postUi({ type: 'requestAppData' }); },
+                sendEvent: function (event, data) { postUi({ type: 'event', event: event, data: data || {} }); },
+                sendScore: function (score, meta) { postUi({ type: 'score', score: Number(score) || 0, meta: meta || {} }); },
+            };
+
+            var fullBtn = document.getElementById('app-full');
+            var backBtn = document.getElementById('app-back');
+            var isFull = false;
+
+            if (backBtn) backBtn.addEventListener('click', function () { window.GameBridge.backToApp(); });
+            if (fullBtn) fullBtn.addEventListener('click', function () {
+                isFull = !isFull;
+                fullBtn.textContent = isFull ? '⤡' : '⛶';
+                if (isFull) window.GameBridge.enterFullscreen();
+                else window.GameBridge.exitFullscreen();
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') window.GameBridge.backToApp();
+                if (e.key && e.key.toLowerCase() === 'f' && fullBtn) fullBtn.click();
+            });
+
+            window.onAppData = function (dataJson) {
+                try { window.__appData = JSON.parse(dataJson); } catch (e) {}
+            };
+
+            document.addEventListener('DOMContentLoaded', function () {
+                window.GameBridge.requestAppData();
+                window.GameBridge.sendEvent('ready', { title: document.title });
+            });
+        })();
+    </script>
 
 </body>
 </html>

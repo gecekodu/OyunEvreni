@@ -31,6 +31,7 @@ class _WebViewPageState extends State<WebViewPage> {
   bool isLoading = true;
   int lastScore = 0;
   String lastRank = 'Başlangıç';
+  bool _isFullscreen = false;
 
   @override
   void initState() {
@@ -45,6 +46,7 @@ class _WebViewPageState extends State<WebViewPage> {
           },
           onPageFinished: (String url) {
             setState(() => isLoading = false);
+            _sendAppData();
           },
           onWebResourceError: (WebResourceError error) {
             debugPrint('WebView error: ${error.description}');
@@ -59,6 +61,11 @@ class _WebViewPageState extends State<WebViewPage> {
       ..addJavaScriptChannel('PuanKanali',
         onMessageReceived: (JavaScriptMessage message) {
           _handlePuanMessage(message.message);
+        },
+      )
+      ..addJavaScriptChannel('GameUi',
+        onMessageReceived: (JavaScriptMessage message) {
+          _handleGameUiMessage(message.message);
         },
       );
 
@@ -142,6 +149,75 @@ class _WebViewPageState extends State<WebViewPage> {
     } catch (e) {
       debugPrint('❌ Puan işleme hatası: $e');
     }
+  }
+
+  Future<void> _handleGameUiMessage(String message) async {
+    try {
+      final data = jsonDecode(message);
+      final type = data['type'] as String? ?? '';
+
+      switch (type) {
+        case 'enterFullscreen':
+          await _enterFullscreen();
+          break;
+        case 'exitFullscreen':
+          await _exitFullscreen();
+          break;
+        case 'back':
+          if (mounted) {
+            Navigator.of(context).maybePop();
+          }
+          break;
+        case 'requestAppData':
+          await _sendAppData();
+          break;
+        case 'score':
+          final score = (data['score'] as num?)?.toInt() ?? 0;
+          await _handlePuanMessage(score.toString());
+          break;
+        case 'event':
+          debugPrint('🎮 Game event: ${data['event']} ${data['data']}');
+          break;
+      }
+    } catch (e) {
+      debugPrint('GameUi mesajı parse edilemedi: $e');
+    }
+  }
+
+  Future<void> _sendAppData() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final payload = {
+      'userId': currentUser?.uid ?? '',
+      'userName': currentUser?.displayName ?? 'Anonim Oyuncu',
+      'userEmail': currentUser?.email ?? '',
+      'userAvatar': currentUser?.photoURL ?? '',
+      'gameId': widget.gameId ?? '',
+      'gameTitle': widget.gameTitle,
+      'platform': 'flutter',
+    };
+
+    final js = 'if (window.onAppData) { window.onAppData(${jsonEncode(payload)}); }';
+    await controller.runJavaScript(js);
+  }
+
+  Future<void> _enterFullscreen() async {
+    if (_isFullscreen) return;
+    _isFullscreen = true;
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+  }
+
+  Future<void> _exitFullscreen() async {
+    if (!_isFullscreen) return;
+    _isFullscreen = false;
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
   }
 
   Future<Map<String, dynamic>> _updateUserScoreAndRank(String userId, int newScore) async {
@@ -400,25 +476,44 @@ class _WebViewPageState extends State<WebViewPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.gameTitle),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => controller.reload(),
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          WebViewWidget(controller: controller),
-          if (isLoading)
-            const Center(child: CircularProgressIndicator()),
-        ],
+    return WillPopScope(
+      onWillPop: () async {
+        if (_isFullscreen) {
+          await _exitFullscreen();
+          return false;
+        }
+        if (await controller.canGoBack()) {
+          await controller.goBack();
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.gameTitle),
+          backgroundColor: Colors.deepPurple,
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () => controller.reload(),
+            ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            WebViewWidget(controller: controller),
+            if (isLoading)
+              const Center(child: CircularProgressIndicator()),
+          ],
+        ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _exitFullscreen();
+    super.dispose();
   }
 }

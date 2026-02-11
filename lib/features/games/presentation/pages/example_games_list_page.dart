@@ -92,7 +92,7 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
                       crossAxisCount: 2,
                       mainAxisSpacing: 16,
                       crossAxisSpacing: 16,
-                      childAspectRatio: 0.85,
+                      childAspectRatio: 0.78,
                     ),
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -124,62 +124,59 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
               colors: _getGradientColors(game.type),
             ),
           ),
-          child: Stack(
+          child: Column(
             children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          game.type.emoji,
-                          style: TextStyle(fontSize: 40),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(14, 14, 14, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        game.type.emoji,
+                        style: TextStyle(fontSize: 38),
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        game.title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.4,
                         ),
-                        SizedBox(height: 12),
-                        Text(
-                          game.title,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.4),
+                      width: 2,
                     ),
                   ),
-                  Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.25),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.4),
-                          width: 2,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '🎮 OYNA',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1,
-                          ),
-                        ),
+                  child: Center(
+                    child: Text(
+                      '🎮 OYNA',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
             ],
           ),
