@@ -2,6 +2,7 @@
 // Gemini kullanarak doğal dil açıklamasından oyun configuration üretir
 
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import '../../domain/entities/game_template.dart';
 
@@ -147,8 +148,14 @@ $_gameJsonSchema
   }) async {
     print('🎮 Eğitim Oyunu üretiliyor: "$userDescription"');
 
+    final referenceHtml = await _loadReferenceHtmlSamples();
+    final referenceBlock = _buildReferenceBlock(referenceHtml);
+
      final prompt = '''
 Sen http-css-javascript-games repository'sinin yapısını bilen ve bunun 30 oyununu (01-Candy-Crush, 02-Archery, 03-Speed-Typing, 04-Breakout, 05-Minesweeper, 07-Ping-Pong, 08-Tetris, 10-Memory-Card, 13-Tic-Tac-Toe, 14-Snake, 18-Hangman, 19-Flappy-Bird, 27-Quiz-Game vb.) analiz edip öğrenen deneyimli oyun ve eğitim tasarımcısısın.
+
+UYGULAMADAKI GERCEK HTML OYUN REFERANSLARI (KOD OZETLERI):
+$referenceBlock
 
 REFERANS OYUN MİMARİLERİ:
 1. Quiz-Game (27): Soru-cevap, çoktan seçmeli, score tracking, result screen
@@ -188,6 +195,8 @@ TEKNIK GEREKLER:
 - Mobile + Desktop uyumlu
 - Dokunma + Klavye kontrol
 - Minimal assets (base64 veya Unicode karakterler kullan)
+- Kod kisa olmasin: en az 12000 karakter ve birden fazla oyun ekranina sahip olsun
+- Baslangic, oyun, sonuc ekranlari ve puan/ilerleme HUD'u zorunlu
 
 HTML YAPISI:
 1. Loading başlangıcı
@@ -237,6 +246,13 @@ PUAN HESAPLAMASI:
         }
       }
 
+      if (htmlContent.length < 12000) {
+        htmlContent = await _expandHtmlOutput(
+          htmlContent: htmlContent,
+          userDescription: userDescription,
+        );
+      }
+
       print('✅ HTML 3D oyun başarıyla oluşturuldu (${htmlContent.length} karakter)');
       return htmlContent;
     } catch (e) {
@@ -278,6 +294,104 @@ ONEMLI KURALLAR:
 - 3-5 soru kullan
 - Baslik yaratici ve cekici olmali
 ''';
+  }
+
+  Future<List<Map<String, String>>> _loadReferenceHtmlSamples() async {
+    const assetPaths = [
+      'assets/html_games/example_games/besin_ninja.html',
+      'assets/html_games/example_games/lazer_fizik.html',
+      'assets/html_games/example_games/matematik_okcusu.html',
+      'assets/html_games/example_games/araba_surtunme.html',
+    ];
+
+    final samples = <Map<String, String>>[];
+    for (final path in assetPaths) {
+      try {
+        final html = await rootBundle.loadString(path);
+        samples.add({'path': path, 'html': html});
+      } catch (e) {
+        print('⚠️ Referans HTML yüklenemedi: $path - $e');
+      }
+    }
+
+    return samples;
+  }
+
+  String _buildReferenceBlock(List<Map<String, String>> samples) {
+    if (samples.isEmpty) {
+      return 'Referans bulunamadi. Tipik HTML oyun yapisini takip et.';
+    }
+
+    final buffer = StringBuffer();
+    for (final sample in samples) {
+      final path = sample['path'] ?? '';
+      final html = sample['html'] ?? '';
+
+      final style = _extractSection(html, 'style', 1200);
+      final script = _extractSection(html, 'script', 1400);
+      final head = _truncate(_stripTags(html), 600);
+
+      buffer.writeln('--- REF: $path ---');
+      buffer.writeln('HEAD_SNIPPET:\n$head');
+      if (style.isNotEmpty) buffer.writeln('STYLE_SNIPPET:\n$style');
+      if (script.isNotEmpty) buffer.writeln('SCRIPT_SNIPPET:\n$script');
+      buffer.writeln('--- END REF ---\n');
+    }
+
+    return buffer.toString();
+  }
+
+  String _extractSection(String html, String tag, int maxLen) {
+    final regex = RegExp('<$tag[^>]*>([\s\S]*?)</$tag>', caseSensitive: false);
+    final match = regex.firstMatch(html);
+    if (match == null) return '';
+    final content = match.group(1) ?? '';
+    return _truncate(content, maxLen);
+  }
+
+  String _stripTags(String html) {
+    return html.replaceAll(RegExp('<[^>]*>'), ' ').replaceAll(RegExp('\s+'), ' ').trim();
+  }
+
+  String _truncate(String text, int maxLen) {
+    if (text.length <= maxLen) return text;
+    return text.substring(0, maxLen) + '...';
+  }
+
+  Future<String> _expandHtmlOutput({
+    required String htmlContent,
+    required String userDescription,
+  }) async {
+    final expandPrompt = '''
+Onceki HTML ciktisi kisa kaldigi icin GENISLET.
+
+KURALLAR:
+- Mevcut HTML'yi temel al, yapisini bozma
+- En az 12000 karaktere ulas
+- Baslangic, oyun, sonuc ekranlarini koru ve zenginlestir
+- Yeni HUD, seviye/ilerleme, ek animasyonlar ve daha fazla oyun ici mantik ekle
+- Tek HTML dosyasi olarak dondur, aciklama yazma
+
+OYUN TANIMI: "$userDescription"
+
+MEVCUT HTML:
+$htmlContent
+''';
+
+    final response = await _model.generateContent([Content.text(expandPrompt)]);
+    if (response.text == null || response.text!.isEmpty) {
+      return htmlContent;
+    }
+
+    String expanded = response.text!;
+    if (expanded.contains('<!DOCTYPE')) {
+      final startIdx = expanded.indexOf('<!DOCTYPE');
+      if (startIdx >= 0) {
+        expanded = expanded.substring(startIdx);
+      }
+    }
+
+    return expanded;
   }
 
   /// 📝 Template promptu oluştur

@@ -25,6 +25,7 @@ import 'config/app_theme.dart';
 import 'core/services/gemini_game_service_v2.dart';
 import 'features/flame_game/presentation/pages/flame_game_page.dart';
 import 'features/ai_game_engine/presentation/pages/ai_game_creator_page.dart';
+import 'features/ai_game_engine/data/services/ai_game_generator_service.dart';
 import 'features/webview/presentation/pages/webview_page.dart';
 import 'features/games/presentation/pages/example_games_list_page.dart';
 
@@ -76,12 +77,15 @@ void main() async {
     );
   }
 
-  // 🤖 Gemini API başlat (API Key: AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw)
-  const String geminiApiKey = 'AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw';
+  // 🤖 Gemini API başlat (API Key: --dart-define=GEMINI_API_KEY=...)
+  const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
+  if (geminiApiKey.isEmpty) {
+    print('⚠️ GEMINI_API_KEY tanımlı değil. AI özellikleri çalışmayabilir.');
+  }
   final geminiService = GeminiService(apiKey: geminiApiKey);
 
   // 📦 Dependency Injection setup
-  _setupDependencies(firebaseService, geminiService);
+  _setupDependencies(firebaseService, geminiService, geminiApiKey);
 
   runApp(const MyApp());
 }
@@ -90,16 +94,17 @@ void main() async {
 void _setupDependencies(
   FirebaseService firebaseService,
   GeminiService geminiService,
+  String geminiApiKey,
 ) {
   // Core Services
   getIt.registerSingleton<FirebaseService>(firebaseService);
   getIt.registerSingleton<GeminiService>(geminiService);
   getIt.registerSingleton<GeminiGameService>(
-    GeminiGameService(apiKey: 'AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw'),
+    GeminiGameService(apiKey: geminiApiKey),
   );
   // ✨ Yeni refactored service (test aşaması)
   getIt.registerSingleton<GeminiGameServiceV2>(
-    GeminiGameServiceV2(apiKey: 'AIzaSyBFjZqUjXIbyLI-h4ieboHkJQM6qRvt3Qw'),
+    GeminiGameServiceV2(apiKey: geminiApiKey),
   );
   getIt.registerSingleton<GameService>(
     GameService(
@@ -109,6 +114,11 @@ void _setupDependencies(
   );
   getIt.registerSingleton<ScoreService>(
     ScoreService(firebaseService: firebaseService),
+  );
+
+  // 🤖 AI Game Generator Service
+  getIt.registerSingleton<AIGameGeneratorService>(
+    AIGameGeneratorService(apiKey: geminiApiKey),
   );
 
   // Datasources

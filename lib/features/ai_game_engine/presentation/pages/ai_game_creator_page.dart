@@ -2,9 +2,9 @@
 // Kullanici dogal dilde oyun tarif eder, AI oyun olusturur
 
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import '../../data/services/ai_game_generator_service.dart';
 import '../../domain/entities/game_template.dart';
-import '../../../../config/firebase_options.dart';
 import '../../../../core/services/ai_game_social_service.dart';
 import '../../../../core/services/firebase_service.dart';
 import '../../../webview/presentation/pages/webview_page.dart';
@@ -18,8 +18,7 @@ class AIGameCreatorPage extends StatefulWidget {
 
 class _AIGameCreatorPageState extends State<AIGameCreatorPage> {
   final TextEditingController _descriptionController = TextEditingController();
-  final AIGameGeneratorService _aiService =
-      AIGameGeneratorService(apiKey: DefaultFirebaseOptions.geminiApiKey);
+  late final AIGameGeneratorService _aiService;
   final AIGameSocialService _socialService = AIGameSocialService();
 
   bool _isGenerating = false;
@@ -31,6 +30,13 @@ class _AIGameCreatorPageState extends State<AIGameCreatorPage> {
   String _selectedDifficulty = 'medium';
   int _selectedAge = 8;
   GameTemplate? _selectedTemplate;
+
+  @override
+  void initState() {
+    super.initState();
+    final getIt = GetIt.instance;
+    _aiService = getIt<AIGameGeneratorService>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -362,16 +368,7 @@ class _AIGameCreatorPageState extends State<AIGameCreatorPage> {
       return;
     }
 
-    // API key check
-    if (DefaultFirebaseOptions.geminiApiKey == 'SENIN_YENI_API_KEY_BURAYA') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Gemini API Key ayarlanmamis!'),
-          duration: Duration(seconds: 5),
-        ),
-      );
-      return;
-    }
+    // 🤖 AI oyunu oluştur
 
     setState(() {
       _isGenerating = true;

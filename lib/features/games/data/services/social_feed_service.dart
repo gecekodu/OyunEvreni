@@ -43,14 +43,22 @@ class SocialFeedService {
           .where('createdAt',
               isGreaterThanOrEqualTo: Timestamp.fromDate(sevenDaysAgo))
           .orderBy('createdAt', descending: true)
-          .orderBy('averageRating', descending: true)
-          .orderBy('ratingCount', descending: true)
-          .limit(10)
+          .limit(50) // Daha fazla al, sonra client-side sırala
           .get();
 
-      return snapshot.docs
+      final games = snapshot.docs
           .map((doc) => Game.fromFirestore(doc))
           .toList();
+
+      // 🔧 Client-side sorting - rating'e göre sırala
+      games.sort((a, b) {
+        if (a.averageRating != b.averageRating) {
+          return b.averageRating.compareTo(a.averageRating);
+        }
+        return b.ratingCount.compareTo(a.ratingCount);
+      });
+
+      return games.take(10).toList();
     } catch (e) {
       print('Hata - En beğenilen oyunlar getirilemedi: $e');
       return [];
@@ -82,14 +90,18 @@ class SocialFeedService {
       final snapshot = await _firestore
           .collection('games')
           .where('isPublished', isEqualTo: true)
-          .where('metadata.isEditorsChoice', isEqualTo: true)
-          .orderBy('createdAt', descending: true)
-          .limit(10)
+          .where('isEditorsChoice', isEqualTo: true)
+          .limit(20) // Daha fazla al
           .get();
 
-      return snapshot.docs
+      final games = snapshot.docs
           .map((doc) => Game.fromFirestore(doc))
           .toList();
+
+      // Client-side sorting
+      games.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
+      return games.take(10).toList();
     } catch (e) {
       print('Hata - Editörün seçimleri getirilemedi: $e');
       return [];
