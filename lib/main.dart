@@ -432,7 +432,7 @@ class HomeTabView extends StatelessWidget {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => WebViewPage(
-                          htmlPath: 'assets/html_games/friction_test.html',
+                          htmlPath: 'assets/html_games/example_games/friction_experiment.html',
                           gameTitle: 'Sürtünme Deneyi',
                         ),
                       ),
@@ -480,17 +480,15 @@ class HomeTabView extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Diğer özellikler
-            Expanded(
-              child: _buildFeatureCard(
-                context: context,
-                icon: Icons.videogame_asset,
-                title: 'Örnek Oyunlar',
-                subtitle: 'Hazır oyunları oyna',
-                color: Colors.indigo,
-                onTap: () {
-                  Navigator.pushNamed(context, '/example-games');
-                },
-              ),
+            _buildFeatureCard(
+              context: context,
+              icon: Icons.videogame_asset,
+              title: 'Örnek Oyunlar',
+              subtitle: 'Hazır oyunları oyna',
+              color: Colors.indigo,
+              onTap: () {
+                Navigator.pushNamed(context, '/example-games');
+              },
             ),
             const SizedBox(height: 12),
             Row(

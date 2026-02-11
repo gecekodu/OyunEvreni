@@ -84,6 +84,15 @@ flutter:
   assets:
     - assets/images/logo.jpeg
     - assets/html_games/
+    - assets/html_games/example_games/
+    - assets/html_games/example_games/friction_experiment.html
+    - assets/html_games/example_games/tetris.html
+    - assets/html_games/example_games/memory_game.html
+    - assets/html_games/example_games/snake_game.html
+    - assets/html_games/example_games/besin_ninja.html
+    - assets/html_games/example_games/lazer_fizik.html
+    - assets/html_games/example_games/matematik_okcusu.html
+    - assets/html_games/example_games/araba_surtunme.html
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

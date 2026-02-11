@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Matematik Okcusu - Mobil Uyumlu</title>
+    <style>
+        body {
+            margin: 0;
+            background: #1a1a1a;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+            user-select: none;
+            touch-action: none;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            background: #222;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+            touch-action: none;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 15px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            width: 90%;
+            margin: 0 auto;
+        }
+
+        .math-question {
+            position: absolute;
+            top: 12%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 36px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 10px 40px;
+            border-radius: 20px;
+            border: 3px solid #ffcc00;
+            color: #ffcc00;
+            text-shadow: 2px 2px 0 #000;
+            z-index: 5;
+            white-space: nowrap;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 80%;
+            max-width: 400px;
+        }
+
+        h1 { color: #ffcc00; margin-bottom: 10px; font-size: 2em; margin-top: 0; }
+        p { font-size: 1.2em; margin: 15px 0; color: #ddd; }
+
+        button {
+            background: linear-gradient(to bottom, #ffcc00, #ffaa00);
+            border: none;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 5px 0 #b37700;
+            color: #222;
+            transition: transform 0.1s;
+        }
+
+        button:active { transform: translateY(4px); box-shadow: none; }
+
+        #rotate-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            color: #ffcc00;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            text-align: center;
+        }
+
+        #rotate-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: rotate-anim 2s infinite;
+        }
+
+        @keyframes rotate-anim {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .target-text {
+            font-family: 'Arial Black', sans-serif;
+            font-weight: 900;
+            font-size: 28px;
+            fill: #222;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+        }
+
+        @media screen and (orientation: landscape) {
+            #rotate-warning { display: none; }
+            #game-container { display: block; }
+        }
+
+        @media screen and (orientation: portrait) {
+            #rotate-warning { display: flex; }
+            #game-container { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="rotate-warning">
+        <div id="rotate-icon">📱</div>
+        <h2>Lutfen Telefonu Yan Cevirin</h2>
+        <p>Oyun deneyimi icin yatay mod gereklidir.</p>
+    </div>
+
+    <div id="game-container">
+        <svg id="game-svg" viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet">
+            <defs>
+                <g id="arrow-def">
+                    <line x1="0" y1="0" x2="70" y2="0" stroke="#ecf0f1" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M70,0 L60,-5 L60,5 Z" fill="#95a5a6" />
+                    <path d="M0,0 L-10,-5 L-5,0 L-10,5 Z" fill="#e74c3c" />
+                </g>
+
+                <g id="target-def">
+                    <circle cx="0" cy="0" r="45" fill="#ecf0f1" stroke="#333" stroke-width="2"/>
+                    <circle cx="0" cy="0" r="35" fill="#e74c3c" />
+                    <circle cx="0" cy="0" r="25" fill="#ecf0f1" />
+                    <circle cx="0" cy="0" r="15" fill="#e74c3c" />
+                </g>
+            </defs>
+
+            <line x1="150" y1="0" x2="150" y2="500" stroke="#444" stroke-width="2" stroke-dasharray="5,5" opacity="0.3"/>
+
+            <g id="bow-system" transform="translate(150, 250)">
+                <path id="bow-body" d="M-10,-60 Q40,0 -10,60" fill="none" stroke="#88ce02" stroke-width="6" stroke-linecap="round" />
+                <polyline id="bow-string" points="-10,-60 -10,0 -10,60" fill="none" stroke="#fff" stroke-width="2" />
+
+                <g id="aim-arrow" style="display: none;">
+                    <use href="#arrow-def" x="-70" y="0" transform="scale(0.8)" />
+                </g>
+            </g>
+
+            <g id="targets-layer"></g>
+            <g id="arrows-layer"></g>
+        </svg>
+
+        <div class="ui-layer">
+            <div class="hud-top">
+                <div id="level-txt">Seviye: 1/10</div>
+                <div id="score-txt" style="color:#ffcc00;">Puan: 0</div>
+                <div id="timer-txt" style="color: #2ecc71;">Sure: 15</div>
+            </div>
+            <div id="question-box" class="math-question">...</div>
+        </div>
+    </div>
+
+    <div id="start-modal" class="modal">
+        <div class="modal-content">
+            <h1>Matematik Okcusu</h1>
+            <p>Soruyu Coz, Hedefi Vur!</p>
+            <p style="font-size:14px; color:#aaa;">Yayi cekmek icin ekrana dokun ve surukle.</p>
+            <button onclick="initGame()">OYUNA BASLA</button>
+        </div>
+    </div>
+
+    <div id="end-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h1 id="end-title">Oyun Bitti!</h1>
+            <p id="end-msg">Puan: 0</p>
+            <button id="end-btn" onclick="nextLevelAction()">DEVAM ET</button>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'shoot') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'hit_correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(500, now);
+                osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.linearRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'hit_wrong') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.1);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now); osc.stop(now + 0.2);
+            }
+        }
+
+        const svg = document.getElementById('game-svg');
+        const arrowsLayer = document.getElementById('arrows-layer');
+        const targetsLayer = document.getElementById('targets-layer');
+        const bowString = document.getElementById('bow-string');
+        const aimArrow = document.getElementById('aim-arrow');
+
+        const BOW_X = 150;
+        const BOW_Y = 250;
+        const TARGET_X = 850;
+
+        let level = 1;
+        const maxLevels = 10;
+        let score = 0;
+        let timeLeft = 15;
+        let timerInterval;
+        let isGameActive = false;
+        let correctAnswer = 0;
+
+        let isDragging = false;
+        let startPos = { x: 0, y: 0 };
+        let lastPull = { dx: 0, dy: 0, dist: 0 };
+
+        const MAX_PULL = 130;
+        const GRAVITY = 0.35;
+        const POWER_FACTOR = 0.28;
+
+        let arrows = [];
+        let targets = [];
+
+        function initGame() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(() => {});
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            }
+
+            document.getElementById('start-modal').style.display = 'none';
+            score = 0;
+            level = 1;
+            requestAnimationFrame(gameLoop);
+            startLevel();
+        }
+
+        function startLevel() {
+            if (level > maxLevels) {
+                showEndScreen("TEBRIKLER!", `Toplam Puan: ${score}`, "YENIDEN OYNA");
+                return;
+            }
+            isGameActive = true;
+            timeLeft = 15;
+            isDragging = false;
+            arrowsLayer.innerHTML = '';
+            arrows = [];
+
+            updateHUD();
+            createTargets();
+            generateMathQuestion();
+            resetBowVisuals();
+
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!isGameActive) return;
+                timeLeft--;
+                updateHUD();
+                if (timeLeft <= 0) {
+                    handleLevelFinish(false, "Sure Doldu!");
+                }
+            }, 1000);
+        }
+
+        function createTargets() {
+            targetsLayer.innerHTML = '';
+            targets = [];
+            const positions = [120, 250, 380];
+            positions.forEach((yPos) => {
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                let scale = Math.max(0.7, 1 - (level * 0.04));
+
+                g.setAttribute("transform", `translate(${TARGET_X}, ${yPos}) scale(${scale})`);
+
+                const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+                use.setAttribute("href", "#target-def");
+                g.appendChild(use);
+
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("class", "target-text");
+                text.setAttribute("y", "10");
+                text.textContent = "?";
+                g.appendChild(text);
+
+                targetsLayer.appendChild(g);
+                targets.push({ x: TARGET_X, y: yPos, radius: 45 * scale, value: 0, textElement: text, hit: false });
+            });
+        }
+
+        function generateMathQuestion() {
+            let opType = Math.floor(Math.random() * 3);
+            let n1, n2, symbol;
+            if (opType === 0) {
+                let difficulty = level * 6 + 5;
+                n1 = Math.floor(Math.random() * difficulty) + 2;
+                n2 = Math.floor(Math.random() * difficulty) + 2;
+                correctAnswer = n1 + n2; symbol = "+";
+            } else if (opType === 1) {
+                let difficulty = level * 6 + 10;
+                n1 = Math.floor(Math.random() * difficulty) + 5;
+                n2 = Math.floor(Math.random() * (n1 - 1)) + 1;
+                correctAnswer = n1 - n2; symbol = "-";
+            } else {
+                let maxFactor = Math.min(12, 2 + level);
+                n1 = Math.floor(Math.random() * maxFactor) + 2;
+                n2 = Math.floor(Math.random() * maxFactor) + 2;
+                correctAnswer = n1 * n2; symbol = "x";
+            }
+            document.getElementById('question-box').textContent = `${n1} ${symbol} ${n2} = ?`;
+
+            let correctIndex = Math.floor(Math.random() * 3);
+            targets.forEach((t, i) => {
+                if (i === correctIndex) {
+                    t.value = correctAnswer;
+                } else {
+                    let wrong;
+                    do {
+                        let offset = Math.floor(Math.random() * 10) + 1;
+                        wrong = Math.random() > 0.5 ? correctAnswer + offset : correctAnswer - offset;
+                        if(wrong < 0) wrong = correctAnswer + offset;
+                    } while (wrong === correctAnswer);
+                    t.value = wrong;
+                }
+                t.textElement.textContent = t.value;
+            });
+        }
+
+        window.addEventListener('mousedown', onInputStart);
+        window.addEventListener('touchstart', onInputStart, {passive: false});
+        window.addEventListener('mousemove', onInputMove);
+        window.addEventListener('touchmove', onInputMove, {passive: false});
+        window.addEventListener('mouseup', onInputEnd);
+        window.addEventListener('touchend', onInputEnd);
+
+        function getSVGPoint(evt) {
+            const pt = svg.createSVGPoint();
+            if(evt.touches && evt.touches.length > 0) {
+                pt.x = evt.touches[0].clientX; pt.y = evt.touches[0].clientY;
+            } else if (evt.changedTouches && evt.changedTouches.length > 0) {
+                pt.x = evt.changedTouches[0].clientX; pt.y = evt.changedTouches[0].clientY;
+            } else {
+                pt.x = evt.clientX; pt.y = evt.clientY;
+            }
+            return pt.matrixTransform(svg.getScreenCTM().inverse());
+        }
+
+        function onInputStart(evt) {
+            if (!isGameActive) return;
+            const pt = getSVGPoint(evt);
+            if (pt.x > 400) return;
+
+            isDragging = true;
+            startPos = pt;
+            aimArrow.style.display = "block";
+            lastPull = { dx: 0, dy: 0, dist: 0 };
+
+            if(evt.cancelable) evt.preventDefault();
+        }
+
+        function onInputMove(evt) {
+            if (!isDragging) return;
+            if(evt.cancelable) evt.preventDefault();
+
+            const pt = getSVGPoint(evt);
+            let dx = pt.x - startPos.x;
+            let dy = pt.y - startPos.y;
+
+            if (dx > 0) dx = 0;
+
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > MAX_PULL) {
+                let angle = Math.atan2(dy, dx);
+                dx = Math.cos(angle) * MAX_PULL;
+                dy = Math.sin(angle) * MAX_PULL;
+                dist = MAX_PULL;
+            }
+            lastPull = { dx, dy, dist };
+            updateBowVisuals(dx, dy);
+        }
+
+        function updateBowVisuals(dx, dy) {
+            let pullX = -10 + dx;
+            let pullY = dy;
+            let angle = Math.atan2(dy, dx);
+            aimArrow.setAttribute("transform", `translate(${pullX}, ${pullY}) rotate(${angle * 180 / Math.PI})`);
+            bowString.setAttribute("points", `-10,-60 ${pullX},${pullY} -10,60`);
+        }
+
+        function onInputEnd(evt) {
+            if (!isDragging) return;
+            isDragging = false;
+            shootArrow();
+            resetBowVisuals();
+            if(evt && evt.cancelable) evt.preventDefault();
+        }
+
+        function shootArrow() {
+            if (lastPull.dist < 10) return;
+            playSound('shoot');
+            let angle = Math.atan2(lastPull.dy, lastPull.dx);
+            let velocity = lastPull.dist * POWER_FACTOR;
+            let fireAngle = angle + Math.PI;
+
+            const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+            use.setAttribute("href", "#arrow-def");
+            use.setAttribute("transform", `translate(${BOW_X}, ${BOW_Y}) scale(0.8)`);
+            arrowsLayer.appendChild(use);
+
+            arrows.push({
+                x: BOW_X + lastPull.dx,
+                y: BOW_Y + lastPull.dy,
+                vx: Math.cos(fireAngle) * velocity,
+                vy: Math.sin(fireAngle) * velocity,
+                angle: fireAngle,
+                active: true,
+                el: use
+            });
+            lastPull = { dx: 0, dy: 0, dist: 0 };
+        }
+
+        function resetBowVisuals() {
+            aimArrow.style.display = 'none';
+            bowString.setAttribute("points", "-10,-60 -10,0 -10,60");
+        }
+
+        function gameLoop() {
+            requestAnimationFrame(gameLoop);
+            if (!isGameActive) return;
+
+            for (let i = 0; i < arrows.length; i++) {
+                let a = arrows[i];
+                if (!a.active) continue;
+
+                a.x += a.vx;
+                a.y += a.vy;
+                a.vy += GRAVITY;
+                a.angle = Math.atan2(a.vy, a.vx);
+
+                if(a.el) a.el.setAttribute("transform", `translate(${a.x}, ${a.y}) rotate(${a.angle * 180 / Math.PI}) scale(0.8)`);
+
+                let tipX = a.x + Math.cos(a.angle) * 60;
+                let tipY = a.y + Math.sin(a.angle) * 60;
+
+                for (let t of targets) {
+                    if (t.hit) continue;
+                    let dx = tipX - t.x; let dy = tipY - t.y;
+                    if (Math.sqrt(dx*dx + dy*dy) < t.radius) {
+                        a.active = false; a.el.remove(); arrows.splice(i, 1); i--;
+                        if (t.value === correctAnswer) {
+                            playSound('hit_correct'); score += 10;
+                            handleLevelFinish(true, "Harika Atis!");
+                        } else {
+                            playSound('hit_wrong');
+                            handleLevelFinish(true, "Yanlis Hedef! (0 Puan)");
+                        }
+                        return;
+                    }
+                }
+                if (a.x > 1200 || a.y > 800) {
+                    a.active = false; a.el.remove(); arrows.splice(i, 1); i--;
+                }
+            }
+        }
+
+        function handleLevelFinish(success, msg) {
+            isGameActive = false;
+            clearInterval(timerInterval);
+            if (level >= maxLevels) {
+                showEndScreen("OYUN BITTI", `Tebrikler! Toplam: ${score}`, "TEKRAR");
+            } else {
+                showEndScreen("SEVIYE " + level + " BITTI", msg, "SONRAKI");
+            }
+        }
+
+        function nextLevelAction() {
+            document.getElementById('end-modal').style.display = 'none';
+            if (level >= maxLevels) { initGame(); } else { level++; startLevel(); }
+        }
+
+        function showEndScreen(title, msg, btnText) {
+            const modal = document.getElementById('end-modal');
+            document.getElementById('end-title').innerText = title;
+            document.getElementById('end-msg').innerText = msg;
+            const btn = document.getElementById('end-btn');
+            btn.innerText = btnText;
+
+            if (title.includes("OYUN BITTI") || title.includes("TEBRIKLER")) {
+                 if (document.fullscreenElement) {
+                    if (document.exitFullscreen) document.exitFullscreen();
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                }
+                btn.onclick = function() { initGame(); };
+            } else {
+                btn.onclick = function() { nextLevelAction(); };
+            }
+            modal.style.display = 'flex';
+        }
+
+        function updateHUD() {
+            document.getElementById('level-txt').innerText = `Seviye: ${level}/${maxLevels}`;
+            document.getElementById('score-txt').innerText = `Puan: ${score}`;
+            const timerEl = document.getElementById('timer-txt');
+            timerEl.innerText = `Sure: ${timeLeft}`;
+            timerEl.style.color = timeLeft < 5 ? '#e74c3c' : '#2ecc71';
+        }
+    </script>
+</body>
+</html>

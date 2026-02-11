@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/services.dart';
@@ -50,28 +52,42 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   Future<void> _loadAssetHtml(String assetPath) async {
+    final normalizedPath = assetPath.startsWith('/')
+        ? assetPath.substring(1)
+        : assetPath;
+
     try {
-      String html = await rootBundle.loadString(assetPath);
-      controller.loadHtmlString(html, baseUrl: 'http://localhost/assets/');
+      await controller.loadFlutterAsset(normalizedPath);
     } catch (e) {
-      debugPrint('Asset loading error: $e');
-      final errorHtml = '''
-        <html>
-          <head>
-            <style>
-              body { font-family: Arial; padding: 20px; text-align: center; }
-              .error { color: red; }
-              .details { color: #666; margin-top: 20px; }
-            </style>
-          </head>
-          <body>
-            <h1 class="error">⚠️ Oyun Yüklenemedi</h1>
-            <p class="details">Path: $assetPath</p>
-            <p class="details">Hata: $e</p>
-          </body>
-        </html>
-      ''';
-      controller.loadHtmlString(errorHtml);
+      debugPrint('Asset loading error (loadFlutterAsset): $e');
+      try {
+        final html = await rootBundle.loadString(normalizedPath);
+        final htmlData = Uri.dataFromString(
+          html,
+          mimeType: 'text/html',
+          encoding: utf8,
+        );
+        await controller.loadRequest(htmlData);
+      } catch (e2) {
+        debugPrint('Asset loading error (loadString): $e2');
+        final errorHtml = '''
+          <html>
+            <head>
+              <style>
+                body { font-family: Arial; padding: 20px; text-align: center; }
+                .error { color: red; }
+                .details { color: #666; margin-top: 20px; }
+              </style>
+            </head>
+            <body>
+              <h1 class="error">⚠️ Oyun Yüklenemedi</h1>
+              <p class="details">Path: $assetPath</p>
+              <p class="details">Hata: $e2</p>
+            </body>
+          </html>
+        ''';
+        await controller.loadHtmlString(errorHtml);
+      }
     }
   }
 

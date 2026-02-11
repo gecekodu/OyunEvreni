@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Besin Ninja: Mobil</title>
+    <style>
+        /* TEMEL AYARLAR */
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            background: #2c3e50;
+            color: white;
+            user-select: none;
+            touch-action: none; /* Mobilde kaydirma engeli */
+        }
+
+        /* --- YATAY EKRAN UYARISI --- */
+        #rotate-warning {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #e74c3c;
+            color: white;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        /* Sadece DIK (Portrait) modda uyariyi goster */
+        @media screen and (orientation: portrait) {
+            #rotate-warning { display: flex; }
+            #game-container { display: none; }
+        }
+
+        /* --- OYUN KAPLAYICISI --- */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* ORTAK ARAYUZ STILERI */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(44, 62, 80, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 { margin: 10px; color: #f39c12; font-size: 5vh; text-shadow: 2px 2px 0 #000; }
+        p { font-size: 3vh; text-align: center; max-width: 80%; }
+
+        .btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 4vh;
+            border-radius: 50px;
+            margin-top: 20px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #1e8449;
+        }
+        .btn:active { transform: translateY(5px); box-shadow: none; }
+
+        /* TABLO */
+        .table-wrap {
+            width: 90%;
+            max-height: 50vh;
+            overflow-y: auto;
+            background: white;
+            border-radius: 10px;
+            color: #333;
+            margin: 10px 0;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 2.5vh; }
+        th, td { border: 1px solid #ccc; padding: 5px; text-align: center; }
+        .th-c { background: #e67e22; color: white; }
+        .th-p { background: #c0392b; color: white; }
+        .th-y { background: #f1c40f; color: #333; }
+
+        /* OYUN ICI HUD */
+        #hud {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            pointer-events: none;
+            display: none;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .hud-box {
+            font-size: 4vh;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        #target-display {
+            position: absolute;
+            top: 10%; width: 100%;
+            text-align: center;
+            font-size: 6vh;
+            font-weight: bold;
+            color: rgba(255,255,255,0.15);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Geri Sayim Ekrani */
+        #round-screen { display: none; }
+        .big-text { font-size: 8vh; color: #f1c40f; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div id="rotate-warning">
+        <div style="font-size: 10vh;">🔄</div>
+        <h1>Lutfen Ekrani Cevirin</h1>
+        <p>Bu oyun sadece yatay modda oynanabilir.</p>
+    </div>
+
+    <div id="game-container">
+
+        <div id="start-screen" class="overlay">
+            <h1>🥗 Besin Ninja Mobil</h1>
+            <p>3 Turda 100 puani topla! Her tur 20 saniye.</p>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th class="th-c">Karbonhidrat</th><th class="th-p">Protein</th><th class="th-y">Yag</th></tr>
+                    </thead>
+                    <tbody id="data-table"></tbody>
+                </table>
+            </div>
+
+            <button class="btn" onclick="initGame()">OYNA</button>
+        </div>
+
+        <div id="round-screen" class="overlay">
+            <h2 style="font-size: 5vh; color:white;">TUR <span id="r-num">1</span></h2>
+            <p>HEDEFIN:</p>
+            <div class="big-text" id="r-target">PROTEIN</div>
+            <div style="font-size: 10vh; margin-top:20px;" id="countdown">3</div>
+        </div>
+
+        <canvas id="canvas"></canvas>
+
+        <div id="hud" style="display: none;">
+            <div class="hud-box" style="color:#2ecc71;">SKOR: <span id="score-val">0</span>/100</div>
+            <div class="hud-box" style="color:#e74c3c;">SURE: <span id="time-val">20</span></div>
+        </div>
+        <div id="target-display">HEDEF: ?</div>
+
+        <div id="end-screen" class="overlay" style="display: none;">
+            <h1>OYUN BITTI</h1>
+            <div class="big-text" id="final-score">0</div>
+            <p>Toplam Puan</p>
+            <button class="btn" onclick="location.reload()">TEKRAR</button>
+        </div>
+
+    </div>
+
+<script>
+    // --- SES SISTEMI (AudioContext) ---
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioContext();
+
+    function playSound(type) {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        const now = audioCtx.currentTime;
+
+        if (type === 'cut') {
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'good') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, now);
+            osc.frequency.exponentialRampToValueAtTime(1800, now + 0.15);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.3);
+            osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'bad') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.3);
+            osc.start(now); osc.stop(now + 0.3);
+        }
+    }
+
+    // --- VERILER ---
+    const dataSet = {
+        'Karbonhidrat': [
+            {n:'Ekmek', i:'🍞'}, {n:'Makarna', i:'🍝'}, {n:'Pirinc', i:'🍚'}, {n:'Patates', i:'🥔'}, {n:'Muz', i:'🍌'},
+            {n:'Bal', i:'🍯'}, {n:'Yulaf', i:'🌾'}, {n:'Misir', i:'🌽'}, {n:'Elma', i:'🍎'}, {n:'Mercimek', i:'🍲'}
+        ],
+        'Protein': [
+            {n:'Yumurta', i:'🥚'}, {n:'Tavuk', i:'🍗'}, {n:'Et', i:'🥩'}, {n:'Balik', i:'🐟'}, {n:'Sut', i:'🥛'},
+            {n:'Yogurt', i:'🥣'}, {n:'Peynir', i:'🧀'}, {n:'Nohut', i:'🧆'}, {n:'Fasulye', i:'🫘'}, {n:'Badem', i:'🥜'}
+        ],
+        'Yag': [
+            {n:'Zeytinyagi', i:'🫗'}, {n:'Tereyagi', i:'🧈'}, {n:'Ayciçek', i:'🌻'}, {n:'Avokado', i:'🥑'}, {n:'Ceviz', i:'🌰'},
+            {n:'Zeytin', i:'🫒'}, {n:'Findik', i:'🥜'}, {n:'Susam', i:'🥯'}, {n:'Misir Ozu', i:'🟡'}, {n:'Kaymak', i:'🍮'}
+        ]
+    };
+
+    // --- OYUN DEGISKENLERI ---
+    let canvas, ctx;
+    let score = 0;
+    let rounds = ['Karbonhidrat', 'Protein', 'Yag'];
+    let currentRoundIdx = 0;
+    let currentTarget = '';
+    let gameActive = false;
+    let roundTime = 20;
+    let timerInt;
+
+    let foods = [];
+    let particles = [];
+    let touchPath = [];
+
+    // --- BASLATMA ---
+    window.onload = function() {
+        canvas = document.getElementById('canvas');
+        ctx = canvas.getContext('2d');
+        resize();
+        window.addEventListener('resize', resize);
+
+        // Tabloyu Doldur
+        const tb = document.getElementById('data-table');
+        for(let i=0; i<10; i++) {
+            tb.innerHTML += `<tr>
+                <td>${dataSet['Karbonhidrat'][i].i} ${dataSet['Karbonhidrat'][i].n}</td>
+                <td>${dataSet['Protein'][i].i} ${dataSet['Protein'][i].n}</td>
+                <td>${dataSet['Yag'][i].i} ${dataSet['Yag'][i].n}</td>
+            </tr>`;
+        }
+
+        // Dokunmatik ve Mouse Olaylari
+        canvas.addEventListener('touchstart', handleStart, {passive: false});
+        canvas.addEventListener('touchmove', handleMove, {passive: false});
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        // Dokunma bitince yolu temizle
+        canvas.addEventListener('touchend', () => touchPath = []);
+        canvas.addEventListener('mouseup', () => touchPath = []);
+    };
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    function initGame() {
+        // Ses kilidini ac
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+
+        // Tam ekran istegi (opsiyonel)
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        }
+
+        rounds.sort(() => Math.random() - 0.5); // Turlari karistir
+        currentRoundIdx = 0;
+        score = 0;
+        document.getElementById('start-screen').style.display = 'none';
+
+        startRoundSequence();
+        requestAnimationFrame(loop);
+    }
+
+    // --- TUR SISTEMI ---
+    function startRoundSequence() {
+        gameActive = false;
+        foods = [];
+        touchPath = [];
+
+        if (currentRoundIdx >= 3) {
+            endGame();
+            return;
+        }
+
+        currentTarget = rounds[currentRoundIdx];
+
+        // Ara Ekran Ayarlari
+        const rScreen = document.getElementById('round-screen');
+        document.getElementById('hud').style.display = 'none';
+        rScreen.style.display = 'flex';
+
+        document.getElementById('r-num').innerText = currentRoundIdx + 1;
+        const tTxt = document.getElementById('r-target');
+        tTxt.innerText = currentTarget.toUpperCase();
+
+        if(currentTarget === 'Karbonhidrat') tTxt.style.color = '#e67e22';
+        else if(currentTarget === 'Protein') tTxt.style.color = '#c0392b';
+        else tTxt.style.color = '#f1c40f';
+
+        // Geri Sayim
+        let c = 3;
+        document.getElementById('countdown').innerText = c;
+        let cInt = setInterval(() => {
+            c--;
+            if(c > 0) document.getElementById('countdown').innerText = c;
+            else {
+                clearInterval(cInt);
+                rScreen.style.display = 'none';
+                startRoundPlay();
+            }
+        }, 1000);
+    }
+
+    function startRoundPlay() {
+        gameActive = true;
+        document.getElementById('hud').style.display = 'flex';
+        document.getElementById('target-display').innerText = currentTarget;
+
+        roundTime = 20;
+        document.getElementById('time-val').innerText = roundTime;
+
+        if(timerInt) clearInterval(timerInt);
+        timerInt = setInterval(() => {
+            if(!gameActive) return;
+            roundTime--;
+            document.getElementById('time-val').innerText = roundTime;
+            if(roundTime <= 0) {
+                clearInterval(timerInt);
+                currentRoundIdx++;
+                startRoundSequence();
+            }
+        }, 1000);
+    }
+
+    // --- OYUN NESNELERI ---
+    class Food {
+        constructor() {
+            // Hedef gelme sansi %50
+            const isT = Math.random() < 0.5;
+            this.cat = isT ? currentTarget : rounds[Math.floor(Math.random()*3)];
+
+            const list = dataSet[this.cat];
+            const item = list[Math.floor(Math.random()*list.length)];
+
+            this.name = item.n;
+            this.icon = item.i;
+
+            // Fizik
+            this.x = Math.random() * (canvas.width - 100) + 50;
+            this.y = canvas.height + 100;
+            // Mobilde ekran boyutuna gore hiz ayarla
+            this.vx = (Math.random() - 0.5) * (canvas.width * 0.005);
+            this.vy = -(Math.random() * (canvas.height * 0.01) + (canvas.height * 0.015));
+
+            this.r = canvas.height * 0.08;
+            this.angle = 0;
+            this.spin = (Math.random() - 0.5) * 0.1;
+            this.sliced = false;
+        }
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vy += canvas.height * 0.0002;
+            this.angle += this.spin;
+        }
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.angle);
+
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "white";
+
+            // Emoji Boyutu
+            ctx.font = (this.r * 2) + "px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(this.icon, 0, 0);
+
+            // Yazi
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = "white";
+            ctx.font = "bold " + (this.r * 0.4) + "px Arial";
+            ctx.strokeText(this.name, 0, this.r);
+            ctx.fillText(this.name, 0, this.r);
+
+            ctx.restore();
+        }
+    }
+
+    class Particle {
+        constructor(x, y, color) {
+            this.x = x; this.y = y;
+            this.vx = (Math.random()-0.5)*10;
+            this.vy = (Math.random()-0.5)*10;
+            this.life = 1;
+            this.c = color;
+        }
+        update() { this.x+=this.vx; this.y+=this.vy; this.life-=0.05; }
+        draw() {
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = this.c;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 5, 0, Math.PI*2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+    }
+
+    // --- KONTROL (TOUCH & MOUSE) ---
+    function handleStart(e) {
+        e.preventDefault();
+        touchPath = [];
+        addPoint(e);
+    }
+
+    function handleMove(e) {
+        e.preventDefault();
+        if(e.type === 'mousemove' && e.buttons !== 1) return;
+        addPoint(e);
+    }
+
+    function addPoint(e) {
+        let x, y;
+        if(e.touches) {
+            x = e.touches[0].clientX;
+            y = e.touches[0].clientY;
+        } else {
+            x = e.clientX;
+            y = e.clientY;
+        }
+        touchPath.push({x, y});
+        if(touchPath.length > 8) touchPath.shift();
+        checkCut(x, y);
+    }
+
+    function checkCut(mx, my) {
+        if(!gameActive) return;
+        for(let i=foods.length-1; i>=0; i--) {
+            let f = foods[i];
+            let dist = Math.sqrt((mx-f.x)**2 + (my-f.y)**2);
+            if(dist < f.r && !f.sliced) {
+                slice(i);
+            }
+        }
+    }
+
+    function slice(idx) {
+        let f = foods[idx];
+        f.sliced = true;
+        playSound('cut');
+
+        let col = '#fff';
+        if(f.cat === 'Karbonhidrat') col = '#e67e22';
+        else if(f.cat === 'Protein') col = '#c0392b';
+        else col = '#f1c40f';
+
+        for(let k=0; k<10; k++) particles.push(new Particle(f.x, f.y, col));
+
+        if(f.cat === currentTarget) {
+            score = Math.min(score + 5, 100);
+            playSound('good');
+        } else {
+            score = Math.max(score - 5, 0);
+            playSound('bad');
+        }
+
+        document.getElementById('score-val').innerText = score;
+        foods.splice(idx, 1);
+    }
+
+    function endGame() {
+        gameActive = false;
+        clearInterval(timerInt);
+        document.getElementById('hud').style.display = 'none';
+        document.getElementById('end-screen').style.display = 'flex';
+        document.getElementById('final-score').innerText = score;
+    }
+
+    // --- LOOP ---
+    let frame = 0;
+    function loop() {
+        ctx.clearRect(0,0, canvas.width, canvas.height);
+
+        if(gameActive) {
+            frame++;
+            if(frame % 60 === 0) foods.push(new Food());
+
+            for(let i=foods.length-1; i>=0; i--) {
+                foods[i].update();
+                foods[i].draw();
+                if(foods[i].y > canvas.height + 200) foods.splice(i,1);
+            }
+
+            // Bicak Izi
+            if(touchPath.length > 1) {
+                ctx.beginPath();
+                ctx.strokeStyle = "cyan";
+                ctx.lineWidth = 5;
+                ctx.lineCap = "round";
+                ctx.moveTo(touchPath[0].x, touchPath[0].y);
+                for(let p of touchPath) ctx.lineTo(p.x, p.y);
+                ctx.stroke();
+            }
+        }
+
+        for(let i=particles.length-1; i>=0; i--) {
+            particles[i].update();
+            particles[i].draw();
+            if(particles[i].life <= 0) particles.splice(i,1);
+        }
+
+        requestAnimationFrame(loop);
+    }
+
+</script>
+</body>
+</html>
