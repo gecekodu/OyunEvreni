@@ -5,6 +5,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/services.dart';
 import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../games/data/services/leaderboard_service.dart';
 
 class WebViewPage extends StatefulWidget {
@@ -28,6 +29,8 @@ class WebViewPage extends StatefulWidget {
 class _WebViewPageState extends State<WebViewPage> {
   late final WebViewController controller;
   bool isLoading = true;
+  int lastScore = 0;
+  String lastRank = 'Başlangıç';
 
   @override
   void initState() {
@@ -51,6 +54,11 @@ class _WebViewPageState extends State<WebViewPage> {
       ..addJavaScriptChannel('GameScoreListener',
         onMessageReceived: (JavaScriptMessage message) {
           _handleGameScore(message.message);
+        },
+      )
+      ..addJavaScriptChannel('PuanKanali',
+        onMessageReceived: (JavaScriptMessage message) {
+          _handlePuanMessage(message.message);
         },
       );
 
@@ -103,6 +111,251 @@ class _WebViewPageState extends State<WebViewPage> {
     } catch (e) {
       debugPrint('❌ Skor işleme hatası: $e');
     }
+  }
+
+  Future<void> _handlePuanMessage(String puanStr) async {
+    try {
+      // Puanı int'e çevir
+      int puan = int.parse(puanStr);
+      debugPrint('🎮 Puan Alındı: $puan');
+
+      // Firebase Auth'dan mevcut kullanıcıyı al
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        debugPrint('❌ Kullanıcı giriş yapmamıştır');
+        return;
+      }
+
+      // Kullanıcı ID'si
+      final userId = currentUser.uid;
+
+      // Profil puanını ve rank'ı güncelle
+      final rankData = await _updateUserScoreAndRank(userId, puan);
+      
+      lastScore = rankData['totalScore'];
+      lastRank = rankData['rank'];
+
+      if (mounted) {
+        // Oyun sonu dialogunu göster
+        _showGameOverDialog(puan, rankData['totalScore'], rankData['rank']);
+      }
+    } catch (e) {
+      debugPrint('❌ Puan işleme hatası: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> _updateUserScoreAndRank(String userId, int newScore) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // 1. Mevcut puanı çek (yoksa sıfırdan başla)
+      final userDoc = await firestore.collection('users').doc(userId).get();
+      int totalScore = userDoc.data()?['toplam_puan'] ?? 0;
+
+      // 2. Yeni puanı ekle
+      totalScore += newScore;
+
+      // 3. Rank'ı hesapla
+      String yeniRank = _calculateRank(totalScore);
+
+      // 4. Veritabanında güncelle
+      await firestore.collection('users').doc(userId).update({
+        'toplam_puan': totalScore,
+        'rank': yeniRank,
+        'son_oyun_tarihi': FieldValue.serverTimestamp(),
+      });
+
+      debugPrint('✅ Kullanıcı Puanı Güncellendi: $totalScore | Rank: $yeniRank');
+      
+      return {
+        'totalScore': totalScore,
+        'rank': yeniRank,
+      };
+    } catch (e) {
+      debugPrint('❌ Profil güncelleme hatası: $e');
+      return {
+        'totalScore': 0,
+        'rank': 'Başlangıç',
+      };
+    }
+  }
+
+  String _calculateRank(int totalScore) {
+    if (totalScore < 100) return 'Başlangıç';
+    if (totalScore < 500) return 'Bronz';
+    if (totalScore < 1000) return 'Gümüş';
+    if (totalScore < 2000) return 'Altın';
+    if (totalScore < 5000) return 'Elmas';
+    return 'Büyücü';
+  }
+
+  void _showGameOverDialog(int earnedPoints, int totalPoints, String rank) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Başlık
+                const Text(
+                  '🎮 Oyun Bitti!',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // Kazanılan Puan
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Kazandığın Puan',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '+$earnedPoints',
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                // Toplam Puan ve Rank
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'Toplam Puan',
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$totalPoints',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'Rütben',
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              rank,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.purple,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                
+                // Butonlar
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          // Oyunu yeniden yükle
+                          controller.reload();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.replay, color: Colors.white),
+                        label: const Text(
+                          'Tekrar Oyna',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop(); // WebView'u kapat
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.home, color: Colors.white),
+                        label: const Text(
+                          'Ana Menü',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _loadAssetHtml(String assetPath) async {

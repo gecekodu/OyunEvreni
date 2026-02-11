@@ -83,13 +83,12 @@ flutter:
   # Assets
   assets:
     - assets/images/logo.jpeg
-    - assets/html_games/
-    - assets/html_games/example_games/
-    - assets/html_games/example_games/besin_ninja.html
-    - assets/html_games/example_games/lazer_fizik.html
-    - assets/html_games/example_games/matematik_okcusu.html
-    - assets/html_games/example_games/araba_surtunme.html
-    - assets/html_games/example_games/gezegenibul.html
+    - assets/Oyunlar/
+    - assets/Oyunlar/besin_ninja.html
+    - assets/Oyunlar/lazer_fizik.html
+    - assets/Oyunlar/matematik_okcusu.html
+    - assets/Oyunlar/araba_surtunme.html
+    - assets/Oyunlar/gezegen_bul.html
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

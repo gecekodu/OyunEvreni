@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gezegen Bul: Sınav</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #010103; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-user-select: none; touch-action: none; }
+        #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #050a15 0%, #000000 100%); }
+        .ui-layer { position: absolute; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
+        .interactive { pointer-events: auto; background: rgba(15, 23, 42, 0.95); padding: 30px; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.3); backdrop-filter: blur(20px); max-width: 90%; width: 600px; text-align: center; color: white; box-shadow: 0 0 60px rgba(56, 189, 248, 0.2); }
+        h1 { margin: 0 0 15px 0; font-size: 2.2rem; color: #fbbf24; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 2px 15px rgba(251, 191, 36, 0.6); }
+        p { color: #cbd5e1; margin-bottom: 20px; font-size: 1.1rem; line-height: 1.6; }
+        button { background: linear-gradient(135deg, #0ea5e9, #3b82f6); border: none; padding: 15px 50px; color: white; font-size: 1.3rem; font-weight: bold; border-radius: 30px; cursor: pointer; transition: all 0.2s; margin-top: 15px; box-shadow: 0 5px 25px rgba(14, 165, 233, 0.6); text-transform: uppercase; }
+        button:active { transform: scale(0.97); }
+        .guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(65px, 1fr)); gap: 10px; margin: 20px 0; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .guide-item { display: flex; flex-direction: column; align-items: center; }
+        .guide-circle { border-radius: 50%; margin-bottom: 5px; box-shadow: inset -3px -3px 8px rgba(0,0,0,0.8), 0 0 10px rgba(255,255,255,0.1); position: relative; }
+        .guide-circle.ring::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 170%; height: 45%; border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; }
+        .guide-name { font-size: 0.7rem; color: #bae6fd; font-weight: 600; }
+        #hud { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; display: none; justify-content: space-between; box-sizing: border-box; pointer-events: none; z-index: 10; }
+        .hud-panel { background: rgba(0,0,0,0.8); padding: 10px 25px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2); color: white; display: flex; align-items: center; gap: 15px; backdrop-filter: blur(5px); }
+        .hud-left { display: flex; flex-direction: column; align-items: flex-start; }
+        .hud-label { font-size: 0.7rem; color: #aaa; letter-spacing: 1px; text-transform: uppercase; }
+        .hud-value { font-size: 1.8rem; font-weight: 800; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.3); line-height: 1; }
+        .target-hl { color: #fbbf24; }
+        .question-counter { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 15px; font-weight: bold; color: #fff; border: 1px solid #444; font-size: 1.1rem; }
+        #message-box { position: absolute; top: 30%; width: 100%; text-align: center; font-size: 2.5rem; font-weight: 900; text-shadow: 0 5px 15px rgba(0,0,0,0.9); pointer-events: none; opacity: 0; transition: opacity 0.3s, transform 0.3s; z-index: 30; transform: scale(0.5); }
+
+        /* DİKEY EKRAN UYARISI */
+        #rotate-warning {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #020202; color: #fbbf24;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 9999; text-align: center;
+        }
+        #rotate-icon { font-size: 60px; margin-bottom: 20px; animation: rotate-anim 2s infinite; }
+        @keyframes rotate-anim { 0% { transform: rotate(-90deg); } 50% { transform: rotate(0deg); } 100% { transform: rotate(-90deg); } }
+
+        /* Sadece Mobilde ve Yatay Modda Uyarı Göster */
+        @media screen and (orientation: landscape) and (max-height: 600px) {
+            #rotate-warning { display: flex; }
+            #game-container, .ui-layer, #hud { display: none !important; }
+        }
+    </style>
+
+    <style>
+/* OYUN SONU MODAL STİLLERİ */
+.gameOverModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.gameOverModal.hidden {
+    display: none;
+    opacity: 0;
+}
+
+.gameOverModalContent {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    max-width: 90%;
+    animation: modalSlideIn 0.5s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.gameOverModalContent h2 {
+    font-size: 28px;
+    margin: 0 0 20px 0;
+}
+
+.gameOverInfo {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.gameOverInfo p {
+    margin: 10px 0;
+    font-size: 18px;
+}
+
+.earnedPoints {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ffd700;
+}
+
+#earnedPointsDisplay {
+    font-size: 26px;
+    font-weight: bold;
+    color: #ffff00;
+}
+
+.gameOverBtn {
+    background-color: white;
+    color: #667eea;
+    border: none;
+    padding: 15px 40px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.3s ease;
+    min-width: 200px;
+}
+
+.gameOverBtn:hover {
+    transform: scale(1.05);
+}
+
+.gameOverBtn:active {
+    transform: scale(0.95);
+}
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    
+    <div id="rotate-warning">
+        <div id="rotate-icon">📱</div>
+        <h2>Lütfen Telefonu Dik Çevirin</h2>
+        <p>Bu oyun dikey modda oynanmak üzere tasarlanmıştır.</p>
+    </div>
+    
+    <div id="start-screen" class="ui-layer">
+        <div class="interactive">
+            <h1>NASIL OYNANIR?</h1>
+            <p style="text-align: left; font-size: 1rem; margin-bottom: 10px;">
+                1. Sana ismi verilen <strong>HEDEF GEZEGENİ</strong> bul.<br>
+                2. Gemiyi sağa-sola sürükleyerek doğru gezegene çarp.<br>
+                3. <span style="color:#fbbf24">DİKKAT:</span> Her soru için tek hakkın var. Yanlış yaparsan puan alamazsın.
+            </p>
+            
+            <div id="guide-grid" class="guide-grid"></div>
+            
+            <p style="font-size: 0.9rem; color: #4ade80; font-weight:bold;">8 Soru | Toplam 100 Puan</p>
+            <button onclick="startGame()">ANLADIM, BAŞLAT</button>
+        </div>
+    </div>
+
+    <div id="hud">
+        <div class="hud-panel">
+            <div class="hud-left">
+                <span class="hud-label">HEDEF</span>
+                <span id="target-name" class="hud-value target-hl">???</span>
+            </div>
+        </div>
+        <div class="question-counter">SORU: <span id="q-num">1</span> / 8</div>
+        <div class="hud-panel">
+            <div class="hud-left" style="align-items: flex-end;">
+                <span class="hud-label">PUAN</span>
+                <span id="score" class="hud-value" style="color: #4ade80;">0</span>
+            </div>
+        </div>
+    </div>
+    <div id="message-box"></div>
+    <div id="end-screen" class="ui-layer" style="display: none;">
+        <div class="interactive">
+            <h1 style="color: #4ade80;">SINAV SONUCU</h1>
+            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; margin: 20px 0; width: 100%; box-sizing: border-box;">
+                <h2 style="margin:0 0 10px 0; color:#aaa; font-size:1rem;">TOPLAM PUAN</h2>
+                <div id="final-score" style="font-size: 5rem; font-weight:900; color:#fff; line-height: 1;">0</div>
+                <div id="final-rank" style="color: #fbbf24; font-size: 1.2rem; font-weight:bold; margin-top:10px;">ÖĞRENCİ</div>
+            </div>
+            <button onclick="resetGame()">YENİDEN DENE</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        const planetsData = [
+            { name: "MERKÜR", hex: 0x8c8c94, radius: 0.4, isGiant: false, type: 'cratered' },
+            { name: "VENÜS",  hex: 0xe6dbb2, radius: 0.6, isGiant: false, type: 'venusian' },
+            { name: "DÜNYA",  hex: 0x287ab8, radius: 0.65, isGiant: false, type: 'earthlike' },
+            { name: "MARS",   hex: 0xc1440e, radius: 0.5, isGiant: false, type: 'martian' },
+            { name: "JÜPİTER",hex: 0xc99039, radius: 2.8, isGiant: true, type: 'jovian', hasSpot: true },
+            { name: "SATÜRN", hex: 0xe3c98d, radius: 2.4, isGiant: true, hasRing: true, type: 'saturnian' },
+            { name: "URANÜS", hex: 0x75cdda, radius: 1.8, isGiant: true, hasRing: true, type: 'icegiant' },
+            { name: "NEPTÜN", hex: 0x4b70dd, radius: 1.7, isGiant: true, type: 'icegiant' }
+        ];
+
+        let scene, camera, renderer, spaceship, starField;
+        let obstacles = [];
+        let gameActive = false;
+        let missionQueue = [];
+        let currentTarget = null;
+        let score = 0;
+        let questionCount = 0;
+        let speed = 0.40;
+        let laneWidth = 7; 
+        let targetX = 0;
+        let isTransitioning = false;
+        let audioCtx, engineSoundNode, engineGainNode;
+        const textures = {}; 
+
+        // --- GELİŞMİŞ DOKULAR ---
+        function generateProceduralTextures() {
+            const size = 1024;
+            planetsData.forEach(data => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size; canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                const baseColor = '#' + data.hex.toString(16).padStart(6, '0');
+
+                ctx.fillStyle = baseColor; ctx.fillRect(0, 0, size, size);
+
+                if (data.type === 'cratered' || data.type === 'martian') {
+                    ctx.globalCompositeOperation = 'multiply';
+                    for (let i = 0; i < 300; i++) {
+                        const x = Math.random() * size; const y = Math.random() * size; const r = Math.random() * 40 + 5;
+                        const grd = ctx.createRadialGradient(x, y, r*0.8, x, y, r);
+                        grd.addColorStop(0, 'transparent'); grd.addColorStop(1, 'rgba(0,0,0,0.4)');
+                        ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+                    }
+                    if(data.type === 'martian') {
+                         ctx.globalCompositeOperation = 'source-over';
+                         ctx.fillStyle = 'rgba(60, 20, 0, 0.3)';
+                         for(let i=0; i<20; i++) {
+                             ctx.beginPath(); ctx.ellipse(Math.random()*size, Math.random()*size, Math.random()*200+100, Math.random()*100+50, Math.random(), 0, Math.PI*2); ctx.fill();
+                         }
+                         ctx.fillStyle = '#ffffff';
+                         ctx.beginPath(); ctx.ellipse(size/2, 0, size/3, 60, 0, 0, Math.PI*2); ctx.fill();
+                         ctx.beginPath(); ctx.ellipse(size/2, size, size/3, 60, 0, 0, Math.PI*2); ctx.fill();
+                    }
+
+                } else if (data.type === 'venusian') {
+                    ctx.globalCompositeOperation = 'soft-light';
+                    for(let i=0; i<100; i++) {
+                         ctx.strokeStyle = Math.random()>0.5 ? 'rgba(255,255,200,0.2)' : 'rgba(200,150,50,0.2)';
+                         ctx.lineWidth = Math.random()*50+20;
+                         ctx.beginPath();
+                         ctx.moveTo(0, Math.random()*size);
+                         ctx.bezierCurveTo(size/3, Math.random()*size, size*2/3, Math.random()*size, size, Math.random()*size);
+                         ctx.stroke();
+                    }
+                } else if (data.type === 'earthlike') {
+                    ctx.fillStyle = '#287ab8'; ctx.fillRect(0,0,size,size);
+                    ctx.fillStyle = '#3a5f2a';
+                    for(let i=0; i<30; i++) {
+                         ctx.beginPath(); ctx.arc(Math.random()*size, Math.random()*size, Math.random() * 150 + 50, 0, Math.PI*2); ctx.fill();
+                    }
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                    for (let i = 0; i < 50; i++) {
+                        ctx.beginPath(); ctx.ellipse(Math.random()*size, Math.random()*size, Math.random()*100+30, Math.random()*50+15, Math.random()*Math.PI, 0, Math.PI*2); ctx.fill();
+                    }
+
+                } else if (data.type === 'jovian' || data.type === 'saturnian') {
+                    const bands = data.type === 'jovian' ? 15 : 25;
+                    const bandH = size / bands;
+                    for (let i = 0; i < bands; i++) {
+                        const variance = (Math.random()-0.5) * 40;
+                        let r = (data.hex >> 16 & 255) + variance;
+                        let g = (data.hex >> 8 & 255) + variance;
+                        let b = (data.hex & 255) + variance;
+                        ctx.fillStyle = `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+                        ctx.beginPath(); ctx.moveTo(0, i*bandH); ctx.lineTo(size, i*bandH); ctx.lineTo(size, (i+1)*bandH + Math.sin(i)*10); ctx.lineTo(0, (i+1)*bandH + Math.sin(i)*10); ctx.fill();
+                    }
+                    if(data.hasSpot) {
+                         ctx.fillStyle = 'rgba(180, 50, 20, 0.8)';
+                         ctx.beginPath(); ctx.ellipse(size/1.5, size/1.7, 120, 60, 0.1, 0, Math.PI*2); ctx.fill();
+                    }
+                     if(data.type === 'jovian') {
+                          ctx.globalCompositeOperation = 'overlay'; ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                          for(let i=0; i<200; i++) ctx.fillRect(Math.random()*size, Math.random()*size, Math.random()*100, 4);
+                     }
+
+                } else if (data.type === 'icegiant') {
+                    const grd = ctx.createLinearGradient(0,0,0,size);
+                    grd.addColorStop(0, baseColor); grd.addColorStop(1, '#' + (data.hex - 0x111111).toString(16).padStart(6,'0'));
+                    ctx.fillStyle = grd; ctx.fillRect(0,0,size,size);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 4;
+                    for(let i=0; i<10; i++) {
+                         ctx.beginPath(); ctx.moveTo(0, Math.random()*size); ctx.lineTo(size, Math.random()*size); ctx.stroke();
+                    }
+                }
+                const tex = new THREE.CanvasTexture(canvas);
+                textures[data.name] = tex;
+            });
+        }
+
+        window.onload = () => { renderGuide(); generateProceduralTextures(); initThreeJS(); };
+
+        // --- SES ---
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        function startEngineSound() {
+            if (!audioCtx) initAudio();
+            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            engineSoundNode = audioCtx.createBufferSource(); engineSoundNode.buffer = buffer; engineSoundNode.loop = true;
+            const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400;
+            engineGainNode = audioCtx.createGain(); engineGainNode.gain.value = 0.1;
+            engineSoundNode.connect(filter); filter.connect(engineGainNode); engineGainNode.connect(audioCtx.destination);
+            engineSoundNode.start(); engineSoundNode.filterNode = filter;
+        }
+        function stopEngineSound() { if (engineSoundNode) { try{engineSoundNode.stop()}catch(e){}; engineSoundNode = null; } }
+        function playSound(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination); const now = audioCtx.currentTime;
+            if (type === 'win') { osc.type = 'sine'; osc.frequency.setValueAtTime(500, now); osc.frequency.exponentialRampToValueAtTime(1000, now+0.1); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.5); }
+            else { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(50, now+0.3); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now+0.3); }
+            osc.start(now); osc.stop(now+0.5);
+        }
+
+        // --- OYUN AKIŞI ---
+        function renderGuide() {
+            const grid = document.getElementById('guide-grid');
+            planetsData.forEach(p => {
+                const item = document.createElement('div'); item.className = 'guide-item';
+                const circle = document.createElement('div'); circle.className = p.hasRing ? 'guide-circle ring' : 'guide-circle';
+                const sizePx = p.radius * 18; circle.style.width = sizePx + 'px'; circle.style.height = sizePx + 'px';
+                circle.style.backgroundColor = '#' + p.hex.toString(16).padStart(6, '0');
+                const name = document.createElement('span'); name.className = 'guide-name'; name.innerText = p.name;
+                item.appendChild(circle); item.appendChild(name); grid.appendChild(item);
+            });
+        }
+        function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } return array; }
+
+        function startGame() {
+            // TAM EKRAN (Fullscreen)
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) { elem.requestFullscreen(); }
+            else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen(); }
+
+            initAudio(); startEngineSound();
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'none';
+            document.getElementById('hud').style.display = 'flex';
+            
+            score = 0;
+            questionCount = 0;
+            document.getElementById('score').innerText = 0;
+            
+            speed = 0.40; 
+            spaceship.position.x = 0; spaceship.rotation.z = 0; targetX = 0;
+            missionQueue = shuffleArray([...planetsData]); 
+            gameActive = true;
+            isTransitioning = false;
+            
+            nextLevel();
+        }
+
+        function nextLevel() {
+            obstacles.forEach(o => scene.remove(o)); obstacles = [];
+            isTransitioning = false;
+
+            if (missionQueue.length === 0) {
+                gameOver();
+                return;
+            }
+
+            questionCount++;
+            document.getElementById('q-num').innerText = questionCount;
+            currentTarget = missionQueue.pop();
+            document.getElementById('target-name').innerText = currentTarget.name;
+            
+            spawnObstacles();
+        }
+
+        function spawnObstacles() {
+            if (!gameActive) return;
+            const distractors = planetsData.filter(p => p.name !== currentTarget.name);
+            shuffleArray(distractors);
+            let set = [currentTarget, distractors[0], distractors[1]];
+            shuffleArray(set);
+            if (set[0].isGiant && set[1].isGiant) [set[0], set[2]] = [set[2], set[0]];
+            if (set[1].isGiant && set[2].isGiant) [set[0], set[2]] = [set[2], set[0]];
+            
+            const lanes = [-laneWidth, 0, laneWidth];
+            set.forEach((data, index) => {
+                const mesh = createPlanetMesh(data);
+                mesh.position.set(lanes[index], 0, -120);
+                if (data.name === currentTarget.name) mesh.userData.isTarget = true;
+                scene.add(mesh); obstacles.push(mesh);
+            });
+        }
+
+        function handleAnswer(isCorrect) {
+            isTransitioning = true; 
+            
+            if (isCorrect) {
+                playSound('win');
+                score += 12.5; 
+                showMessage("DOĞRU! (+12.5)", "good");
+            } else {
+                playSound('lose');
+                showMessage("BİLEMEDİN!", "bad");
+            }
+            
+            const displayScore = Number.isInteger(score) ? score : score.toFixed(1);
+            document.getElementById('score').innerText = displayScore;
+            
+            setTimeout(() => { nextLevel(); }, 2000);
+        }
+
+        function gameOver() {
+            gameActive = false; stopEngineSound();
+            document.getElementById('hud').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'flex';
+            
+            const finalScore = Number.isInteger(score) ? score : score.toFixed(1);
+            document.getElementById('final-score').innerText = finalScore;
+            
+            let rank = "ACEMİ";
+            let color = "#aaa";
+            if (score > 99) { rank = "EFSANEVİ (TAM PUAN)"; color = "#d4af37"; }
+            else if (score >= 80) { rank = "UZMAN PİLOT"; color = "#4ade80"; }
+            else if (score >= 50) { rank = "ASTRONOT"; color = "#fbbf24"; }
+            else { rank = "STAJYER"; color = "#ef4444"; }
+            
+            const rankEl = document.getElementById('final-rank');
+            rankEl.innerText = rank; rankEl.style.color = color;
+        }
+
+        function resetGame() { location.reload(); }
+        function showMessage(text, type) {
+            const el = document.getElementById('message-box');
+            el.innerText = text; el.style.color = type === 'good' ? '#4ade80' : '#ef4444';
+            el.style.opacity = 1; el.style.transform = "scale(1)";
+            setTimeout(() => { el.style.opacity = 0; el.style.transform = "scale(0.5)"; }, 1500);
+        }
+
+        function handleInput(e) {
+            if (!gameActive) return; 
+            e.preventDefault();
+            const cx = e.touches ? e.touches[0].clientX : e.clientX;
+            // Dikey modda genişlik hesabı
+            const norm = (cx / window.innerWidth) * 2 - 1;
+            targetX = norm * (laneWidth + 2);
+        }
+
+        // --- THREE.JS ---
+        function initThreeJS() {
+            scene = new THREE.Scene(); scene.fog = new THREE.FogExp2(0x020205, 0.01);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+            // Dikey modda kamera pozisyonunu biraz daha geri alabiliriz
+            camera.position.set(0, 7, 16); camera.lookAt(0, 0, -5);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.getElementById('game-container').appendChild(renderer.domElement);
+            
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            const sunLight = new THREE.DirectionalLight(0xfff5e6, 2.0); sunLight.position.set(1, 0.5, -1); scene.add(sunLight); 
+            const rimLight = new THREE.DirectionalLight(0x4455ff, 0.4); rimLight.position.set(-1, -1, 1); scene.add(rimLight); 
+            
+            createStarField(); createSpaceship();
+            window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+            document.addEventListener('mousemove', handleInput); document.addEventListener('touchmove', handleInput, { passive: false });
+            animate();
+        }
+
+        function createStarField() {
+            const geo = new THREE.BufferGeometry(); const pos = []; const cols = [];
+            for (let i = 0; i < 30000; i++) { 
+                pos.push((Math.random()-0.5)*1200, (Math.random()-0.5)*1200, (Math.random()-0.5)*1200-200);
+                const c = new THREE.Color(); c.setHSL(Math.random(), 0.2, Math.random()*0.5+0.5); cols.push(c.r, c.g, c.b);
+            }
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+            starField = new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.3, vertexColors: true })); scene.add(starField);
+        }
+
+        function createSpaceship() {
+            const group = new THREE.Group();
+            const hullMat = new THREE.MeshPhongMaterial({ color: 0x38bdf8, shininess: 120, specular: 0x88ccff });
+            const darkMat = new THREE.MeshPhongMaterial({ color: 0x1e293b, shininess: 60 });
+            const cockpitMat = new THREE.MeshPhongMaterial({ color: 0x111111, shininess: 150, specular: 0xffffff, transparent: true, opacity: 0.95 });
+            const engineGlowMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+
+            const fuselage = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.7, 4, 16).rotateX(Math.PI/2), hullMat); group.add(fuselage);
+            const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 12).scale(1, 0.5, 1.8), cockpitMat); cockpit.position.set(0, 0.45, -0.5); group.add(cockpit);
+
+            const sideEngine = (s) => {
+                const g = new THREE.Group();
+                g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 2.5, 12).rotateX(Math.PI/2), darkMat));
+                const w = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.1, 2.2), hullMat); w.rotation.z=s*0.3; w.position.x=s*-0.7; g.add(w);
+                const f = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 1), hullMat); f.position.set(0,0.5,0.5); f.rotation.z=s*-0.5; g.add(f);
+                const n = new THREE.Mesh(new THREE.CircleGeometry(0.3, 12), engineGlowMat); n.position.z=1.26; g.add(n);
+                const fl = new THREE.Mesh(new THREE.ConeGeometry(0.25, 1.8, 8).rotateX(-Math.PI/2).translate(0,0,2.2), new THREE.MeshBasicMaterial({color:0xff6600, transparent:true, opacity:0.7})); fl.name="flame"; g.add(fl);
+                g.position.set(s*1.4, -0.2, 0.8); return g;
+            };
+            group.add(sideEngine(1)); group.add(sideEngine(-1));
+            const mn = new THREE.Mesh(new THREE.CircleGeometry(0.6, 16), engineGlowMat); mn.position.z=2.01; group.add(mn);
+            const mf = new THREE.Mesh(new THREE.ConeGeometry(0.5, 2.5, 8).rotateX(-Math.PI/2).translate(0,0,3.3), new THREE.MeshBasicMaterial({color:0xffaa00, transparent:true, opacity:0.85})); mf.name="flame"; group.add(mf);
+            group.position.y = 0.5; group.scale.set(0.7, 0.7, 0.7); spaceship = group; scene.add(spaceship);
+        }
+
+        function createPlanetMesh(data) {
+            const group = new THREE.Group();
+            const texture = textures[data.name];
+            const mat = new THREE.MeshStandardMaterial({ 
+                map: texture, 
+                color: 0xffffff, 
+                roughness: data.type.includes('giant') ? 0.6 : 0.9,
+                metalness: 0.1,
+                bumpMap: (data.type === 'cratered' || data.type === 'martian') ? texture : null,
+                bumpScale: 0.015
+            });
+            if (data.type.includes('jovian') || data.type.includes('saturnian')) mat.userData.isGassy = true;
+            if (data.type === 'earthlike') mat.userData.isEarth = true;
+
+            group.add(new THREE.Mesh(new THREE.SphereGeometry(data.radius, 64, 64), mat));
+            if (data.hasRing) {
+                const ringGeo = new THREE.TorusGeometry(data.radius * 1.6, 0.35, 2, 120); ringGeo.rotateX(Math.PI / 1.8);
+                const c = document.createElement('canvas'); c.width=256; c.height=32; const cx=c.getContext('2d');
+                const g = cx.createLinearGradient(0,0,256,0); 
+                g.addColorStop(0,'transparent'); g.addColorStop(0.1,'rgba(200,180,150,0.8)'); g.addColorStop(0.3,'rgba(150,130,100,0.5)'); g.addColorStop(0.5,'transparent'); g.addColorStop(0.7,'rgba(220,200,170,0.9)'); g.addColorStop(1,'transparent');
+                cx.fillStyle=g; cx.fillRect(0,0,256,32);
+                group.add(new THREE.Mesh(ringGeo, new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(c), opacity: 0.9, transparent: true, side: THREE.DoubleSide })));
+            }
+            group.userData = { name: data.name, isTarget: false };
+            return group;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const stars = starField.geometry.attributes.position.array;
+            for(let i=2; i<stars.length; i+=3){ stars[i]+=speed*10; if(stars[i]>200) stars[i]=-800; }
+            starField.geometry.attributes.position.needsUpdate=true; starField.rotation.z+=0.0003;
+            if(spaceship) spaceship.traverse(c=>{if(c.name==="flame"){c.scale.y=1+Math.random()*0.2; c.scale.x=1+Math.random()*0.1;}});
+            
+            if(gameActive){
+                if(engineSoundNode && engineSoundNode.filterNode) engineSoundNode.filterNode.frequency.value = 400 + (speed*500);
+                
+                spaceship.position.x += (targetX - spaceship.position.x)*0.1;
+                spaceship.rotation.z = -(targetX - spaceship.position.x)*0.35;
+                spaceship.rotation.z = Math.max(-0.7, Math.min(0.7, spaceship.rotation.z));
+                
+                if(obstacles.length === 0 && !isTransitioning) spawnObstacles();
+                
+                for(let i=obstacles.length-1; i>=0; i--){
+                    let obj = obstacles[i];
+                    obj.position.z += speed; 
+                    obj.rotation.y += 0.01;
+                    if(obj.children[0].material.userData.isGassy) obj.children[0].material.map.offset.x+=0.003;
+                    if(obj.children[0].material.userData.isEarth) obj.children[0].material.map.offset.x+=0.001;
+
+                    if (isTransitioning) continue; 
+
+                    if(obj.position.z > -2.5 && obj.position.z < 2){
+                        const r = obj.children[0].geometry.parameters.radius;
+                        if(Math.abs(spaceship.position.x - obj.position.x) < (r+0.8)){
+                            handleAnswer(obj.userData.isTarget);
+                        }
+                    }
+                    if(obj.position.z > 25){
+                        if(obj.userData.isTarget && !isTransitioning){
+                            showMessage("KAÇIRDIN!", "bad");
+                            handleAnswer(false);
+                        }
+                        scene.remove(obj); obstacles.splice(i, 1);
+                    }
+                }
+            }
+            renderer.render(scene, camera);
+        }
+    </script>
+<script>
+/* OYUN SONU FONKSIYONLARI */
+function showGameOverModal(puanKazandigi, aciklama) {
+    aciklama = aciklama || 'Oyunu tamamladın!';
+    const modal = document.getElementById('gameOverModal');
+    if (modal) {
+        document.getElementById('gameOverTitle').textContent = '🎮 Oyun Bitti!';
+        document.getElementById('gameOverMessage').textContent = aciklama;
+        document.getElementById('earnedPointsDisplay').textContent = puanKazandigi;
+        modal.classList.remove('hidden');
+    }
+    oyunBitti(puanKazandigi);
+}
+
+function closeGameOverModal() {
+    const modal = document.getElementById('gameOverModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+function restartGameFromModal() {
+    closeGameOverModal();
+    location.reload();
+}
+
+function oyunBitti(puan) {
+    if (window.PuanKanali) {
+        window.PuanKanali.postMessage(puan.toString());
+    } else {
+        console.log("Flutter baglansi bulunamadi");
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    if (playAgainBtn) {
+        playAgainBtn.addEventListener('click', restartGameFromModal);
+    }
+});
+</script>
+
+    <!-- Game Over Modal -->
+    <div id="gameOverModal" class="gameOverModal hidden">
+        <div class="gameOverModalContent">
+            <h2 id="gameOverTitle">🎮 Oyun Bitti!</h2>
+            <div class="gameOverInfo">
+                <p id="gameOverMessage">Oyunu tamamladın!</p>
+                <p class="earnedPoints">Kazandığın Puan: <span id="earnedPointsDisplay">0</span></p>
+            </div>
+            <button id="playAgainBtn" class="gameOverBtn">Tekrar Oyna 🔁</button>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -28,6 +28,7 @@ import 'features/ai_game_engine/presentation/pages/ai_game_creator_page.dart';
 import 'features/ai_game_engine/data/services/ai_game_generator_service.dart';
 import 'features/webview/presentation/pages/webview_page.dart';
 import 'features/games/presentation/pages/example_games_list_page.dart';
+import 'features/games/presentation/pages/leaderboard_page.dart';
 
 // GetIt - Dependency Injection
 final getIt = GetIt.instance;
@@ -158,7 +159,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignupPage(),
         '/home': (context) => const HomePage(),
         '/profile': (context) => const ProfilePage(),
-        '/leaderboard': (context) => const LeaderboardPage(),
+        '/leaderboard': (context) => LeaderboardPage(),
         '/flame-game': (context) => const FlameGamePage(),
         '/ai-game-creator': (context) => const AIGameCreatorPage(),
         '/example-games': (context) => const ExampleGamesListPage(),
@@ -187,63 +188,98 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (!mounted) return;
 
-    // 🐛 DEBUG MODE: Direkt ana sayfaya git (geliştirme için)
-    const bool debugSkipAuth = false; // Firebase bağlantısı yoksa true yapın
+    // Firebase Auth kontrol
+    final user = FirebaseAuth.instance.currentUser;
 
-    if (debugSkipAuth) {
+    if (user != null) {
+      // User zaten giriş yapmış - Ana sayfaya git
       Navigator.of(context).pushReplacementNamed('/home');
-      return;
+    } else {
+      // User giriş yapmamış - Login sayfasına git
+      Navigator.of(context).pushReplacementNamed('/login');
     }
-
-    Navigator.of(context).pushReplacementNamed('/login');
   }
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+            colors: [Color(0xFFFF9500), Color(0xFF7B1FA2)],
           ),
         ),
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.asset(
-                  'assets/images/logo.jpeg',
-                  width: 140,
-                  height: 140,
-                  fit: BoxFit.cover,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo Container
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 25,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(25),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(isMobile ? 75 : 120),
+                    child: Image.asset(
+                      'assets/images/logo.jpeg',
+                      width: isMobile ? 150 : 200,
+                      height: isMobile ? 150 : 200,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Oyun Olustur',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 40),
+                const Text(
+                  'Oyun Oluştur',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'AI ile eğitici oyunlar oluştur',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 16,
+                const SizedBox(height: 12),
+                Text(
+                  'AI ile eğitici oyunlar oluştur',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w300,
+                    letterSpacing: 0.5,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-              const SizedBox(height: 50),
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ],
+                const SizedBox(height: 60),
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 2.5,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Yükleniyor...',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -263,24 +299,47 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(initialPage: _selectedIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final pages = [
       const HomeTabView(),
+      const ExampleGamesListPage(),
       const SocialFeedPage(),
-      const CreateGameFlowPage(),
       const ProfilePage(),
     ];
 
     return Scaffold(
-      body: pages[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
           setState(() {
             _selectedIndex = index;
           });
+        },
+        children: pages,
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
         },
         destinations: const [
           NavigationDestination(
@@ -289,14 +348,14 @@ class _HomePageState extends State<HomePage> {
             label: 'Ana Sayfa',
           ),
           NavigationDestination(
+            icon: Icon(Icons.games_outlined),
+            selectedIcon: Icon(Icons.games),
+            label: 'Oyunlar',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.public_outlined),
             selectedIcon: Icon(Icons.public),
             label: 'Sosyal',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.add_circle_outline),
-            selectedIcon: Icon(Icons.add_circle),
-            label: 'Oluştur',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
@@ -321,259 +380,60 @@ class HomeTabView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Uygulama Logosu
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: Image.asset(
-                'assets/images/logo.jpeg',
-                width: 120,
-                height: 120,
-                fit: BoxFit.cover,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'AI Oyun Dünyası',
-              style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Hayal gücünle oyun yarat!',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 48),
-
-            // 🤖 AI OYUN OLUŞTURUCU - ANA BUTON
+            // Uygulama Logosu - Elegant Container
             Container(
-              width: double.infinity,
-              height: 120,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Colors.orange, Colors.deepOrange],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
+                shape: BoxShape.circle,
+                color: Colors.orangeAccent.withOpacity(0.1),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.orange.withOpacity(0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+                    color: Colors.orangeAccent.withOpacity(0.3),
+                    blurRadius: 30,
+                    spreadRadius: 8,
                   ),
                 ],
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.of(context).pushNamed('/ai-game-creator');
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        Icon(Icons.auto_awesome, size: 60, color: Colors.white),
-                        SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '🤖 AI Oyun Oluştur',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              SizedBox(height: 2),
-                              Text(
-                                'Gemini AI ile orijinal oyunlar',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white70,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                      ],
-                    ),
-                  ),
+              padding: const EdgeInsets.all(20),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(75),
+                child: Image.asset(
+                  'assets/images/logo.jpeg',
+                  width: 150,
+                  height: 150,
+                  fit: BoxFit.cover,
                 ),
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // Profilim ve İstatistikler
-            _buildFeatureCard(
-              context: context,
-              icon: Icons.person,
-              title: 'Profilim',
-              subtitle: 'İstatistikler',
-              color: Colors.purple,
-              onTap: () {
-                // Profil sayfasına git
-                Navigator.pushNamed(context, '/profile');
-              },
-            ),
-
-            const SizedBox(height: 24),
-
-            // Klasik Oyunlar Bölümü
-            const Divider(height: 40),
             const Text(
-              'Klasik Oyunlar',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-
-            // HTML Oyun Oluştur
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const CreateGameFlowPage(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.code),
-              label: const Text('HTML Oyun Oluştur'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                minimumSize: const Size(double.infinity, 50),
+              'AI Oyun Dünyası',
+              style: TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
             ),
-            const SizedBox(height: 12),
-
-            // Oyunları Listele
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (context) => GameListPage()));
-              },
-              icon: const Icon(Icons.list),
-              label: const Text('HTML Oyunları Listele'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                minimumSize: const Size(double.infinity, 50),
+            const SizedBox(height: 10),
+            Text(
+              'Hayal gücünle oyun yarat!',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 12),
-
-            // Örnek Oyunlar
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).pushNamed('/example-games');
-              },
-              icon: const Icon(Icons.games),
-              label: const Text('🎮 Örnek Oyunlar'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                minimumSize: const Size(double.infinity, 50),
+            const SizedBox(height: 80),
+            Text(
+              '👉 Oyunlar sekmesine kaydırarak geçin',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade500,
+                fontStyle: FontStyle.italic,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  static Widget _buildFeatureCard({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Icon(icon, size: 40, color: color),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGameCard(
-    BuildContext context, {
-    required String title,
-    required String description,
-    required String icon,
-    required int plays,
-    required String gameType,
-  }) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.blue.shade50,
-          child: Text(icon, style: const TextStyle(fontSize: 24)),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(description),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.play_circle_outline, size: 20),
-            Text('$plays kez', style: const TextStyle(fontSize: 11)),
-          ],
-        ),
-        onTap: () {
-          // Navigate to Social Feed to play games
-          // or implement PlayGamePage if needed
-        },
       ),
     );
   }
