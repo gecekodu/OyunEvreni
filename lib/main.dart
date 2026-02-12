@@ -204,17 +204,20 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  late Animation<double> _progressAnimation;
   late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2500),
       vsync: this,
     );
 
     _fadeAnimation =
+        Tween<double>(begin: 0, end: 1).animate(_animationController);
+    _progressAnimation =
         Tween<double>(begin: 0, end: 1).animate(_animationController);
     _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
         .animate(_animationController);
@@ -255,8 +258,10 @@ class _SplashScreenState extends State<SplashScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFFFF9500),
-              const Color(0xFF7B1FA2),
+              const Color(0xFF0A0E27),
+              const Color(0xFF16213E),
+              const Color(0xFF1A2F5A),
+              const Color(0xFF0F3460),
             ],
           ),
         ),
@@ -271,17 +276,21 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Animated Logo
+                      // Animated Logo with Glow
                       Container(
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.15),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 30 +
-                                  (10 * (0.5 - (_fadeAnimation.value - 0.5).abs())),
-                              spreadRadius: 8,
+                              color: Colors.deepOrange.withOpacity(0.4),
+                              blurRadius: 40 +
+                                  (20 * (0.5 - (_fadeAnimation.value - 0.5).abs())),
+                              spreadRadius: 15,
+                            ),
+                            BoxShadow(
+                              color: Colors.deepOrange.withOpacity(0.2),
+                              blurRadius: 60,
+                              spreadRadius: 25,
                             ),
                           ],
                         ),
@@ -299,78 +308,172 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 50),
 
-                      // Animated Title
-                      Text(
-                        'NEMOS',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 2,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
+                      // Futuristic Title
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          children: [
+                            Text(
+                              'NEMOS',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 42,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 3,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.deepOrange.withOpacity(0.5),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 0),
+                                  ),
+                                  Shadow(
+                                    color: Colors.blue.withOpacity(0.3),
+                                    blurRadius: 15,
+                                    offset: const Offset(2, 2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Öğrenmenin oyun hali',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.85),
+                                fontSize: 16,
+                                fontStyle: FontStyle.italic,
+                                letterSpacing: 1,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Öğrenmenin oyun hali',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 16,
-                          fontStyle: FontStyle.italic,
-                          letterSpacing: 0.5,
+                      const SizedBox(height: 60),
+
+                      // Futuristic Progress Bar
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Column(
+                          children: [
+                            // Progress percentage text
+                            Text(
+                              '${(_progressAnimation.value * 100).toStringAsFixed(0)}%',
+                              style: const TextStyle(
+                                color: Colors.deepOrange,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            // Main progress bar
+                            Container(
+                              height: 8,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.deepOrange.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.deepOrange.withOpacity(0.15),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Stack(
+                                  children: [
+                                    // Backg round
+                                    Container(
+                                      color: Colors.white.withOpacity(0.05),
+                                    ),
+                                    // Progress fill with gradient
+                                    FractionallySizedBox(
+                                      widthFactor: _progressAnimation.value,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.centerLeft,
+                                            end: Alignment.centerRight,
+                                            colors: [
+                                              Colors.deepOrange,
+                                              Colors.deepOrange
+                                                  .withOpacity(0.7),
+                                              Colors.amber,
+                                            ],
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.deepOrange
+                                                  .withOpacity(0.6),
+                                              blurRadius: 10,
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 40),
 
-                      // Loading Indicators
-                      Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
-                            width: 3,
-                          ),
-                        ),
-                        child: Center(
-                          child: Transform.rotate(
-                            angle: _fadeAnimation.value * 6.28,
-                            child: Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border(
-                                  top: BorderSide(
-                                    color: Colors.white,
-                                    width: 3,
-                                  ),
-                                  right: BorderSide(
-                                    color: Colors.white,
-                                    width: 3,
-                                  ),
+                      // Animated dots for loading effect
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(3, (index) {
+                          final delay = index * 0.1;
+                          final value =
+                              ((_progressAnimation.value + delay) % 1.0);
+                          final isActive = value > 0.6;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: ScaleTransition(
+                              scale: AlwaysStoppedAnimation(
+                                isActive ? 1.2 : 0.6,
+                              ),
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isActive
+                                      ? Colors.deepOrange
+                                      : Colors.deepOrange.withOpacity(0.4),
+                                  boxShadow: isActive
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.deepOrange
+                                                .withOpacity(0.6),
+                                            blurRadius: 8,
+                                            spreadRadius: 2,
+                                          ),
+                                        ]
+                                      : [],
                                 ),
                               ),
                             ),
-                          ),
-                        ),
+                          );
+                        }),
                       ),
                       const SizedBox(height: 20),
                       Text(
                         'Yükleniyor...',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withOpacity(0.7),
                           fontSize: 14,
-                          letterSpacing: 0.5,
+                          letterSpacing: 1,
                         ),
                       ),
                     ],
@@ -378,29 +481,6 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               );
             },
-          ),
-        ),
-      ),
-    );
-  }
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 60),
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  strokeWidth: 2.5,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Yükleniyor...',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
