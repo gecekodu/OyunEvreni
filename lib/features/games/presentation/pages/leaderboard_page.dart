@@ -22,7 +22,7 @@ class _LeaderboardPageState extends State<LeaderboardPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -35,14 +35,17 @@ class _LeaderboardPageState extends State<LeaderboardPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('🏆 Sıralamalar'),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
+        title: const Text('Siralamalar'),
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Colors.deepOrange,
+          labelColor: Colors.deepOrange,
+          unselectedLabelColor: Colors.grey,
           tabs: const [
-            Tab(text: '🌍 Global'),
-            Tab(text: '📊 Bu Ay'),
+            Tab(text: 'Global'),
+            Tab(text: 'Bu Ay'),
+            Tab(text: 'Elmas'),
+            Tab(text: 'Kupa'),
           ],
         ),
       ),
@@ -51,6 +54,8 @@ class _LeaderboardPageState extends State<LeaderboardPage>
         children: [
           _buildGlobalLeaderboard(),
           _buildTrendingGames(),
+          _buildDiamondsLeaderboard(),
+          _buildTrophiesLeaderboard(),
         ],
       ),
     );
@@ -112,12 +117,20 @@ class _LeaderboardPageState extends State<LeaderboardPage>
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                title: Text(
-                  userName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
+                title: Row(
+                  children: [
+                    _buildAvatar(user),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        userName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(
@@ -238,6 +251,203 @@ class _LeaderboardPageState extends State<LeaderboardPage>
           },
         );
       },
+    );
+  }
+
+  /// 💎 ELMAS LEADERBOARD
+  Widget _buildDiamondsLeaderboard() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _leaderboardService.getDiamondsLeaderboard(limit: 100),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(
+            child: Text('Elmas siralamasi bulunamadi.'),
+          );
+        }
+
+        final leaderboard = snapshot.data!;
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: leaderboard.length,
+          itemBuilder: (context, index) {
+            final user = leaderboard[index];
+            final rank = index + 1;
+            final diamonds = user['diamonds'] ?? 0;
+            final userName = user['userName'] ?? 'Anonim';
+
+            return Container(
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.cyan.withOpacity(0.2),
+                    Colors.blue.withOpacity(0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.cyan.withOpacity(0.4)),
+              ),
+              child: ListTile(
+                leading: Text(
+                  '#$rank',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                title: Row(
+                  children: [
+                    _buildAvatar(user),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        userName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.cyan.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.cyan),
+                  ),
+                  child: Text(
+                    '💎 $diamonds',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.cyan,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// 🏆 KUPA LEADERBOARD
+  Widget _buildTrophiesLeaderboard() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _leaderboardService.getTrophiesLeaderboard(limit: 100),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(
+            child: Text('Kupa siralamasi bulunamadi.'),
+          );
+        }
+
+        final leaderboard = snapshot.data!;
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: leaderboard.length,
+          itemBuilder: (context, index) {
+            final user = leaderboard[index];
+            final rank = index + 1;
+            final trophies = user['trophies'] ?? 0;
+            final userName = user['userName'] ?? 'Anonim';
+
+            return Container(
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.amber.withOpacity(0.2),
+                    Colors.orange.withOpacity(0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.withOpacity(0.4)),
+              ),
+              child: ListTile(
+                leading: Text(
+                  '#$rank',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                title: Row(
+                  children: [
+                    _buildAvatar(user),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        userName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.amber),
+                  ),
+                  child: Text(
+                    '🏆 $trophies',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildAvatar(Map<String, dynamic> user) {
+    final avatarEmoji = (user['avatarEmoji'] as String?) ?? '';
+    final avatarUrl = (user['userAvatar'] as String?) ?? '';
+
+    if (avatarEmoji.isNotEmpty) {
+      return CircleAvatar(
+        radius: 16,
+        backgroundColor: Colors.deepOrange.withOpacity(0.15),
+        child: Text(
+          avatarEmoji,
+          style: const TextStyle(fontSize: 16),
+        ),
+      );
+    }
+
+    if (avatarUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: 16,
+        backgroundImage: NetworkImage(avatarUrl),
+      );
+    }
+
+    return CircleAvatar(
+      radius: 16,
+      backgroundColor: Colors.grey.shade300,
+      child: const Icon(Icons.person, size: 18, color: Colors.black54),
     );
   }
 

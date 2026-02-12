@@ -107,6 +107,11 @@ class _WebViewPageState extends State<WebViewPage> {
         userAvatar: userAvatar,
       );
 
+      await _updateUserScoreAndRank(userId, score.toInt());
+      if (currentUser != null) {
+        await _awardDiamonds(currentUser.uid, score.toInt());
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -135,6 +140,9 @@ class _WebViewPageState extends State<WebViewPage> {
 
       // Kullanıcı ID'si
       final userId = currentUser.uid;
+
+      await _saveScoreToLeaderboard(currentUser, puan);
+      await _awardDiamonds(currentUser.uid, puan);
 
       // Profil puanını ve rank'ı güncelle
       final rankData = await _updateUserScoreAndRank(userId, puan);
@@ -175,8 +183,15 @@ class _WebViewPageState extends State<WebViewPage> {
           final score = (data['score'] as num?)?.toInt() ?? 0;
           await _handlePuanMessage(score.toString());
           break;
+        case 'badge':
+          await _saveBadge(data);
+          break;
         case 'event':
-          debugPrint('🎮 Game event: ${data['event']} ${data['data']}');
+          if (data['event'] == 'badge') {
+            await _saveBadge(data['data'] ?? {});
+          } else {
+            debugPrint('🎮 Game event: ${data['event']} ${data['data']}');
+          }
           break;
       }
     } catch (e) {
@@ -186,18 +201,73 @@ class _WebViewPageState extends State<WebViewPage> {
 
   Future<void> _sendAppData() async {
     final currentUser = FirebaseAuth.instance.currentUser;
+    final userId = currentUser?.uid;
+    final stats = userId == null ? <String, dynamic>{} : await _fetchUserStatsForApp(userId);
     final payload = {
-      'userId': currentUser?.uid ?? '',
+      'userId': userId ?? '',
       'userName': currentUser?.displayName ?? 'Anonim Oyuncu',
       'userEmail': currentUser?.email ?? '',
       'userAvatar': currentUser?.photoURL ?? '',
+      'avatarEmoji': stats['avatarEmoji'] ?? '',
       'gameId': widget.gameId ?? '',
       'gameTitle': widget.gameTitle,
       'platform': 'flutter',
+      'totalScore': stats['totalScore'] ?? 0,
+      'globalRank': stats['globalRank'] ?? '---',
+      'rank': stats['rank'] ?? 'Baslangic',
+      'bestScore': stats['bestScore'] ?? 0,
+      'diamonds': stats['diamonds'] ?? 0,
+      'trophies': stats['trophies'] ?? 0,
     };
 
     final js = 'if (window.onAppData) { window.onAppData(${jsonEncode(payload)}); }';
     await controller.runJavaScript(js);
+  }
+
+  Future<void> _saveBadge(dynamic rawData) async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return;
+
+      final data = rawData is Map ? rawData : <String, dynamic>{};
+      final badgeId = (data['id'] as String?) ??
+          '${widget.gameId ?? 'game'}-${DateTime.now().millisecondsSinceEpoch}';
+      final badgeName = (data['name'] as String?) ?? 'Rozet';
+      final badgeDesc = (data['desc'] as String?) ?? '';
+
+      final badgeRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('badges')
+          .doc(badgeId);
+
+      final existingBadge = await badgeRef.get();
+      if (existingBadge.exists) {
+        return;
+      }
+
+      await badgeRef.set({
+        'id': badgeId,
+        'name': badgeName,
+        'desc': badgeDesc,
+        'gameId': widget.gameId ?? '',
+        'gameTitle': widget.gameTitle,
+        'earnedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .set({'trophies': FieldValue.increment(1)}, SetOptions(merge: true));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Rozet kazanildi: $badgeName')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Rozet kaydetme hatasi: $e');
+    }
   }
 
   Future<void> _enterFullscreen() async {
@@ -223,29 +293,26 @@ class _WebViewPageState extends State<WebViewPage> {
   Future<Map<String, dynamic>> _updateUserScoreAndRank(String userId, int newScore) async {
     try {
       final firestore = FirebaseFirestore.instance;
+      final leaderboardService = GetIt.instance<LeaderboardService>();
 
-      // 1. Mevcut puanı çek (yoksa sıfırdan başla)
-      final userDoc = await firestore.collection('users').doc(userId).get();
-      int totalScore = userDoc.data()?['toplam_puan'] ?? 0;
+      final totalScoreRaw = await leaderboardService.getUserTotalScore(userId);
+      final totalScore = totalScoreRaw.toInt();
+      final yeniRank = _calculateRank(totalScore);
+      final globalRank = await leaderboardService.getUserGlobalRank(userId);
 
-      // 2. Yeni puanı ekle
-      totalScore += newScore;
-
-      // 3. Rank'ı hesapla
-      String yeniRank = _calculateRank(totalScore);
-
-      // 4. Veritabanında güncelle
-      await firestore.collection('users').doc(userId).update({
-        'toplam_puan': totalScore,
+      await firestore.collection('users').doc(userId).set({
+        'totalScore': totalScore,
         'rank': yeniRank,
-        'son_oyun_tarihi': FieldValue.serverTimestamp(),
-      });
+        'globalRank': globalRank > 0 ? globalRank : null,
+        'lastGameTime': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
       debugPrint('✅ Kullanıcı Puanı Güncellendi: $totalScore | Rank: $yeniRank');
-      
+
       return {
         'totalScore': totalScore,
         'rank': yeniRank,
+        'globalRank': globalRank,
       };
     } catch (e) {
       debugPrint('❌ Profil güncelleme hatası: $e');
@@ -253,6 +320,83 @@ class _WebViewPageState extends State<WebViewPage> {
         'totalScore': 0,
         'rank': 'Başlangıç',
       };
+    }
+  }
+
+  Future<void> _saveScoreToLeaderboard(User currentUser, int score) async {
+    try {
+      final leaderboardService = GetIt.instance<LeaderboardService>();
+      final userName = currentUser.displayName ?? 'Anonim Oyuncu';
+      final userAvatar = currentUser.photoURL ??
+          'https://ui-avatars.com/api/?name=${Uri.encodeComponent(userName)}';
+      final gameId = widget.gameId ?? widget.gameTitle;
+
+      await leaderboardService.saveGameScore(
+        gameId: gameId,
+        userId: currentUser.uid,
+        userName: userName,
+        score: score,
+        userAvatar: userAvatar,
+      );
+    } catch (e) {
+      debugPrint('Skor kayit hatasi: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> _fetchUserStatsForApp(String userId) async {
+    try {
+      final leaderboardService = GetIt.instance<LeaderboardService>();
+      final totalScoreRaw = await leaderboardService.getUserTotalScore(userId);
+      final totalScore = totalScoreRaw.toInt();
+      final bestScore = widget.gameId == null
+          ? 0
+          : await leaderboardService.getUserGameHighScore(userId, widget.gameId!);
+      final globalRank = await leaderboardService.getUserGlobalRank(userId);
+
+      final firestore = FirebaseFirestore.instance;
+      final userDoc = await firestore.collection('users').doc(userId).get();
+      final rank = userDoc.data()?['rank'] as String? ?? _calculateRank(totalScore);
+      final diamonds = (userDoc.data()?['diamonds'] as num?)?.toInt() ?? 0;
+      final avatarEmoji = userDoc.data()?['avatarEmoji'] as String? ?? '';
+      final badgesSnapshot = await firestore
+          .collection('users')
+          .doc(userId)
+          .collection('badges')
+          .get();
+      final trophies = badgesSnapshot.docs.length;
+
+      return {
+        'totalScore': totalScore,
+        'bestScore': bestScore,
+        'globalRank': globalRank > 0 ? globalRank : '---',
+        'rank': rank,
+        'diamonds': diamonds,
+        'trophies': trophies,
+        'avatarEmoji': avatarEmoji,
+      };
+    } catch (e) {
+      debugPrint('App verisi yuklenemedi: $e');
+      return {
+        'totalScore': 0,
+        'bestScore': 0,
+        'globalRank': '---',
+        'rank': 'Baslangic',
+        'diamonds': 0,
+        'trophies': 0,
+        'avatarEmoji': '',
+      };
+    }
+  }
+
+  Future<void> _awardDiamonds(String userId, int score) async {
+    try {
+      final earned = (score / 50).floor().clamp(1, 100);
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'diamonds': FieldValue.increment(earned),
+        'lastDiamondAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Elmas guncelleme hatasi: $e');
     }
   }
 
@@ -491,8 +635,6 @@ class _WebViewPageState extends State<WebViewPage> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.gameTitle),
-          backgroundColor: Colors.deepPurple,
-          foregroundColor: Colors.white,
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh),

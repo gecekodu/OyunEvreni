@@ -183,6 +183,56 @@ class LeaderboardService {
     }
   }
 
+  /// 💎 Elmas sıralaması (kullanıcılar koleksiyonu)
+  Future<List<Map<String, dynamic>>> getDiamondsLeaderboard({int limit = 50}) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .orderBy('diamonds', descending: true)
+          .limit(limit)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'userId': doc.id,
+          'userName': data['displayName'] ?? data['userName'] ?? 'Anonim',
+          'userAvatar': data['photoURL'] ?? '',
+          'avatarEmoji': data['avatarEmoji'] ?? '',
+          'diamonds': data['diamonds'] ?? 0,
+        };
+      }).toList();
+    } catch (e) {
+      print('Elmas leaderboard hatasi: $e');
+      return [];
+    }
+  }
+
+  /// 🏆 Kupa sıralaması (kullanıcılar koleksiyonu)
+  Future<List<Map<String, dynamic>>> getTrophiesLeaderboard({int limit = 50}) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .orderBy('trophies', descending: true)
+          .limit(limit)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'userId': doc.id,
+          'userName': data['displayName'] ?? data['userName'] ?? 'Anonim',
+          'userAvatar': data['photoURL'] ?? '',
+          'avatarEmoji': data['avatarEmoji'] ?? '',
+          'trophies': data['trophies'] ?? 0,
+        };
+      }).toList();
+    } catch (e) {
+      print('Kupa leaderboard hatasi: $e');
+      return [];
+    }
+  }
+
   /// 🎮 Kullanıcının oyun bazlı sıraması
   Future<int> getUserGameRank(String userId, String gameId) async {
     try {

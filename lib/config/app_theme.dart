@@ -29,11 +29,18 @@ class AppTheme {
       tertiary: accentColor,
     ),
     appBarTheme: const AppBarTheme(
-      elevation: 2,
+      elevation: 0,
       centerTitle: true,
-      backgroundColor: primaryColor,
-      foregroundColor: Colors.white,
-      iconTheme: IconThemeData(color: Colors.white),
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black87,
+      surfaceTintColor: Colors.transparent,
+      iconTheme: IconThemeData(color: Colors.black87),
+      titleTextStyle: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: Colors.black87,
+        letterSpacing: 0.2,
+      ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(

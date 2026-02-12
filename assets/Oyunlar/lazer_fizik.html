@@ -253,6 +253,12 @@
     min-width: 200px;
 }
 
+.gameOverBtn.secondary {
+    background: transparent;
+    color: #fff;
+    border: 2px solid rgba(255,255,255,0.6);
+}
+
 .gameOverBtn:hover {
     transform: scale(1.05);
 }
@@ -353,6 +359,8 @@ const Vector = {
     add: (v1, v2) => ({ x: v1.x + v2.x, y: v1.y + v2.y }),
     dist: (p1, p2) => Math.hypot(p2.x - p1.x, p2.y - p1.y)
 };
+
+let isPaused = false;
 
 class Game {
     constructor() {
@@ -598,7 +606,14 @@ class Game {
         this.updateParticles();
     }
 
-    loop() { this.calculateAndDrawRay(); requestAnimationFrame(this.loop); }
+    loop() {
+        if (isPaused) {
+            requestAnimationFrame(this.loop);
+            return;
+        }
+        this.calculateAndDrawRay();
+        requestAnimationFrame(this.loop);
+    }
     drawWall(w) {
         const x = w.x * this.width, y = w.y * this.height, wid = w.w * this.width, hei = w.h * this.height;
         this.ctx.fillStyle = '#444'; this.ctx.fillRect(x - wid/2, y - hei/2, wid, hei);
@@ -664,12 +679,24 @@ function oyunBitti(puan) {
     if (window.GameBridge && typeof window.GameBridge.sendScore === 'function') {
         window.GameBridge.sendScore(puan, { source: 'gameOver' });
     }
+
+    if (window.sendBadgeForScore) {
+        window.sendBadgeForScore(puan);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     const playAgainBtn = document.getElementById('playAgainBtn');
+    const exitBtn = document.getElementById('exitBtn');
     if (playAgainBtn) {
         playAgainBtn.addEventListener('click', restartGameFromModal);
+    }
+    if (exitBtn) {
+        exitBtn.addEventListener('click', function () {
+            if (window.GameBridge && window.GameBridge.backToApp) {
+                window.GameBridge.backToApp();
+            }
+        });
     }
 });
 </script>
@@ -683,12 +710,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p class="earnedPoints">Kazandığın Puan: <span id="earnedPointsDisplay">0</span></p>
             </div>
             <button id="playAgainBtn" class="gameOverBtn">Tekrar Oyna 🔁</button>
+            <button id="exitBtn" class="gameOverBtn secondary">Ana Menu</button>
         </div>
     </div>
 
     <div id="app-controls" class="app-controls">
         <button id="app-back" class="app-ctrl-btn" type="button">⟵</button>
+        <button id="app-pause" class="app-ctrl-btn" type="button">⏸</button>
         <button id="app-full" class="app-ctrl-btn" type="button">⛶</button>
+    </div>
+
+    <div id="pause-overlay" class="pause-overlay hidden">
+        <div class="pause-card">
+            <h3>Oyun Duraklatildi</h3>
+            <button id="pause-resume" class="pause-btn">Devam Et</button>
+            <button id="pause-home" class="pause-btn secondary">Ana Menu</button>
+        </div>
+    </div>
+
+    <div id="badge-toast" class="badge-toast hidden">
+        <div class="badge-icon">🏅</div>
+        <div class="badge-text">
+            <div class="badge-title">Rozet Kazandin!</div>
+            <div class="badge-name" id="badge-name">Rozet</div>
+        </div>
     </div>
 
     <style>
@@ -705,11 +750,72 @@ document.addEventListener('DOMContentLoaded', function() {
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.35);
             border-radius: 10px;
-            padding: 8px 10px;
-            font-size: 14px;
+            padding: 10px 12px;
+            font-size: 16px;
             cursor: pointer;
         }
         .app-ctrl-btn:active { transform: scale(0.96); }
+        .pause-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10002;
+        }
+        .pause-overlay.hidden { display: none; }
+        .pause-card {
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            padding: 20px 24px;
+            color: #fff;
+            text-align: center;
+            width: 80%;
+            max-width: 320px;
+        }
+        .pause-btn {
+            margin-top: 12px;
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            background: #27ae60;
+            color: #fff;
+        }
+        .pause-btn.secondary { background: #34495e; }
+        .badge-toast {
+            position: fixed;
+            left: 16px;
+            bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: rgba(15, 15, 20, 0.9);
+            color: #fff;
+            border: 1px solid rgba(255, 215, 0, 0.6);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.35);
+            z-index: 10003;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .badge-toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .badge-toast.hidden { display: none; }
+        .badge-icon { font-size: 22px; }
+        .badge-title { font-size: 12px; color: #ffd966; font-weight: bold; }
+        .badge-name { font-size: 14px; font-weight: bold; }
     </style>
 
     <script>
@@ -737,7 +843,49 @@ document.addEventListener('DOMContentLoaded', function() {
 
             var fullBtn = document.getElementById('app-full');
             var backBtn = document.getElementById('app-back');
+            var pauseBtn = document.getElementById('app-pause');
+            var pauseOverlay = document.getElementById('pause-overlay');
+            var pauseResume = document.getElementById('pause-resume');
+            var pauseHome = document.getElementById('pause-home');
             var isFull = false;
+            var isPausedLocal = false;
+
+            function setPaused(next) {
+                isPausedLocal = next;
+                isPaused = next;
+                if (pauseOverlay) {
+                    pauseOverlay.classList.toggle('hidden', !next);
+                }
+                if (pauseBtn) {
+                    pauseBtn.textContent = next ? '▶' : '⏸';
+                }
+            }
+
+            function showBadgeToast(badge) {
+                var toast = document.getElementById('badge-toast');
+                var nameEl = document.getElementById('badge-name');
+                if (!toast || !nameEl || !badge) return;
+                nameEl.textContent = badge.name || 'Rozet';
+                toast.classList.remove('hidden');
+                toast.classList.add('show');
+                setTimeout(function () {
+                    toast.classList.remove('show');
+                }, 1800);
+                setTimeout(function () {
+                    toast.classList.add('hidden');
+                }, 2100);
+            }
+
+            window.sendBadgeForScore = function (score) {
+                var badge = null;
+                if (score >= 90) badge = { id: 'lazer-fizik-ustasi', name: 'Lazer Fizik Ustasi', desc: '90+ puan' };
+                else if (score >= 70) badge = { id: 'lazer-fizik-gumus', name: 'Lazer Fizik Gumus', desc: '70+ puan' };
+                else if (score >= 40) badge = { id: 'lazer-fizik-bronz', name: 'Lazer Fizik Bronz', desc: '40+ puan' };
+                if (badge && window.GameBridge && window.GameBridge.sendEvent) {
+                    showBadgeToast(badge);
+                    window.GameBridge.sendEvent('badge', badge);
+                }
+            };
 
             if (backBtn) backBtn.addEventListener('click', function () { window.GameBridge.backToApp(); });
             if (fullBtn) fullBtn.addEventListener('click', function () {
@@ -746,10 +894,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (isFull) window.GameBridge.enterFullscreen();
                 else window.GameBridge.exitFullscreen();
             });
+            if (pauseBtn) pauseBtn.addEventListener('click', function () { setPaused(!isPausedLocal); });
+            if (pauseResume) pauseResume.addEventListener('click', function () { setPaused(false); });
+            if (pauseHome) pauseHome.addEventListener('click', function () { window.GameBridge.backToApp(); });
 
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') window.GameBridge.backToApp();
                 if (e.key && e.key.toLowerCase() === 'f' && fullBtn) fullBtn.click();
+                if (e.key && e.key.toLowerCase() === 'p' && pauseBtn) pauseBtn.click();
             });
 
             window.onAppData = function (dataJson) {

@@ -28,11 +28,13 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
   Future<void> _loadGames() async {
     try {
       final games = await _repository.getAllExamples();
+      if (!mounted) return;
       setState(() {
         _games = games;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -49,6 +51,7 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
         builder: (context) => WebViewPage(
           gameTitle: game.title,
           htmlPath: game.htmlContent,
+          gameId: game.id,
         ),
       ),
     );
@@ -62,7 +65,9 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
         elevation: 0,
         centerTitle: true,
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black87,
+        foregroundColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : Colors.black87,
       ),
       body: _isLoading
           ? Center(
@@ -125,35 +130,34 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
             ),
           ),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(14, 14, 14, 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        game.type.emoji,
-                        style: TextStyle(fontSize: 38),
+              Padding(
+                padding: EdgeInsets.fromLTRB(14, 14, 14, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      game.type.emoji,
+                      style: TextStyle(fontSize: 38),
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      game.title,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.4,
                       ),
-                      SizedBox(height: 10),
-                      Text(
-                        game.title,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.4,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
               Padding(
-                padding: EdgeInsets.fromLTRB(12, 0, 12, 12),
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 child: Container(
                   width: double.infinity,
                   padding: EdgeInsets.symmetric(vertical: 8),
