@@ -1,4 +1,4 @@
-// 🔐 FIRESTORE SECURITY RULES
+git // 🔐 FIRESTORE SECURITY RULES
 // Firebase Console: Firestore Database → Rules kısmına kopyala
 // Tüm kullanıcıları korur, aynı anda binlerce puan işlemini güvenle yönetir
 
@@ -32,10 +32,10 @@ service cloud.firestore {
       allow write: if request.auth != null;  // Admin kontrol edilmeli
     }
 
-    // ✅ LEADERBOARD KOLEKSİYONU (isteğe bağlı)
-    match /leaderboard/{leaderboardId} {
-      allow read: if true;
-      allow write: if false;  // Sadece backend tarafından yazılır
+    // ✅ LEADERBOARD KOLEKSİYONU (Genel Sıralama)
+    match /leaderboard/{document=**} {
+      allow read: if true;  // Herkese leaderboard okuma izni
+      allow write: if request.auth != null;  // Authenticated kullanıcılar yazabilir
     }
 
     // ✅ USER SESSIONS (isteğe bağlı - öğrenme verisi)

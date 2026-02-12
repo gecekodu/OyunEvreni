@@ -45,10 +45,16 @@ class AuthRemoteDataSource {
         lastLogin: DateTime.now(),
       );
 
+      // Firestore'a yazarken totalScore ve username ekle
+      final userData = userModel.toJson();
+      userData['totalScore'] = 0; // 🏆 Başlangıç puanı
+      userData['username'] = displayName; // 👤 Kullanıcı adı
+      userData['userAvatar'] = ''; // Default avatar
+
       await _firebaseService.firestore
           .collection('users')
           .doc(firebaseUser.uid)
-          .set(userModel.toJson());
+          .set(userData);
 
       return userModel;
     } on FirebaseAuthException catch (e) {

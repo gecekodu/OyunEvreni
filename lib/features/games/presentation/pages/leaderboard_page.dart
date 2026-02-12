@@ -1,8 +1,7 @@
-// 🏆 LEADERBOARD PAGE - Global ve Oyun Bazlı Sıralamalar
+// 🏆 LEADERBOARD PAGE - Genel Sıralama
 
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import '../../data/services/leaderboard_service.dart';
 import '../../data/services/score_service.dart';
 
 class LeaderboardPage extends StatefulWidget {
@@ -14,60 +13,25 @@ class LeaderboardPage extends StatefulWidget {
   State<LeaderboardPage> createState() => _LeaderboardPageState();
 }
 
-class _LeaderboardPageState extends State<LeaderboardPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final LeaderboardService _leaderboardService =
-      GetIt.instance<LeaderboardService>();
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+class _LeaderboardPageState extends State<LeaderboardPage> {
+  final ScoreService _scoreService = GetIt.instance<ScoreService>();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Siralamalar'),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.deepOrange,
-          labelColor: Colors.deepOrange,
-          unselectedLabelColor: Colors.grey,
-          tabs: const [
-            Tab(text: 'Global'),
-            Tab(text: 'Bu Ay'),
-            Tab(text: 'Elmas'),
-            Tab(text: 'Kupa'),
-          ],
-        ),
+        title: const Text('🏆 Genel Sıralama'),
+        elevation: 0,
+        backgroundColor: Colors.deepOrange.withOpacity(0.1),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildGlobalLeaderboard(),
-          _buildTrendingGames(),
-          _buildDiamondsLeaderboard(),
-          _buildTrophiesLeaderboard(),
-        ],
-      ),
+      body: _buildGlobalLeaderboard(),
     );
   }
 
-  /// 🌍 GLOBAL LEADERBOARD
+  /// 🌍 GLOBAL LEADERBOARD - Tüm Kullanıcıların Genel Puanlarına Göre Sıralama
   Widget _buildGlobalLeaderboard() {
-    final scoreService = GetIt.instance<ScoreService>();
-    
     return StreamBuilder<List<Map<String, dynamic>>>(
-      stream: scoreService.getGlobalUserLeaderboard(limit: 100),
+      stream: _scoreService.getGlobalUserLeaderboard(limit: 100),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -78,13 +42,28 @@ class _LeaderboardPageState extends State<LeaderboardPage>
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.show_chart, size: 48, color: Colors.grey),
-                SizedBox(height: 16),
-                Text('📋 Henüz sıralama verisi yok'),
+                const Icon(Icons.show_chart, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                Text(
+                  'Henüz sıralama verisi yok',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Oyunları oynayarak puan topla!',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade500,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               ],
             ),
           );
@@ -96,406 +75,125 @@ class _LeaderboardPageState extends State<LeaderboardPage>
           padding: const EdgeInsets.all(12),
           itemCount: leaderboard.length,
           itemBuilder: (context, index) {
-            final user = leaderboard[index];
-            final rank = index + 1;
-            final score = user['totalScore'] ?? 0;
-            final userName = user['username'] ?? 'Kullanıcı';
-
-            // Madalya emojisi
-            String medalEmoji = '';
-            Color medalColor = Colors.grey;
-            
-            if (rank == 1) {
-              medalEmoji = '🥇';
-              medalColor = Colors.amber;
-            } else if (rank == 2) {
-              medalEmoji = '🥈';
-              medalColor = Colors.grey[400]!;
-            } else if (rank == 3) {
-              medalEmoji = '🥉';
-              medalColor = Colors.orange;
-            }
-
-            return Container(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.deepPurple.withOpacity(0.3),
-                    Colors.blue.withOpacity(0.1),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.deepPurple.withOpacity(0.5),
-                ),
-              ),
-              child: ListTile(
-                leading: Container(
-                  width: 40,
-                  alignment: Alignment.center,
-                  child: medalEmoji.isNotEmpty
-                      ? Text(
-                          medalEmoji,
-                          style: const TextStyle(fontSize: 24),
-                        )
-                      : Text(
-                          '#$rank',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey,
-                          ),
-                        ),
-                ),
-                title: Text(
-                  userName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  'Seviyi ${(score ~/ 100) + 1}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade400,
-                  ),
-                ),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.green),
-                  ),
-                  child: Text(
-                    '$score',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ),
-            );
+            return _buildLeaderboardItem(leaderboard[index], index + 1);
           },
         );
       },
     );
   }
 
-  /// 📊 BU AY TRENDİNG OYUNLAR
-  Widget _buildTrendingGames() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _leaderboardService.getTrendingThisMonth(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+  Widget _buildLeaderboardItem(Map<String, dynamic> user, int rank) {
+    final userName = user['username'] ?? 'Kullanıcı';
+    final totalScore = user['totalScore'] ?? 0;
 
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(
-            child: Text('📊 Henüz oynanmış oyun yok.'),
-          );
-        }
+    // Madalya emojisi ve renk
+    String medalEmoji = '';
+    Color medalColor = Colors.grey;
+    Color bgColor = Colors.deepOrange.withOpacity(0.08);
+    Color borderColor = Colors.deepOrange.withOpacity(0.3);
+    
+    if (rank == 1) {
+      medalEmoji = '🥇';
+      medalColor = Colors.amber;
+      bgColor = Colors.amber.withOpacity(0.12);
+      borderColor = Colors.amber.withOpacity(0.5);
+    } else if (rank == 2) {
+      medalEmoji = '🥈';
+      medalColor = Colors.grey[400]!;
+      bgColor = Colors.grey.withOpacity(0.08);
+      borderColor = Colors.grey.withOpacity(0.3);
+    } else if (rank == 3) {
+      medalEmoji = '🥉';
+      medalColor = Colors.orange;
+      bgColor = Colors.orange.withOpacity(0.1);
+      borderColor = Colors.orange.withOpacity(0.4);
+    }
 
-        final trending = snapshot.data!;
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: trending.length,
-          itemBuilder: (context, index) {
-            final game = trending[index];
-            final gameId = game['gameId'] ?? 'Bilinmiyor';
-            final playCount = game['playCount'] ?? 0;
-            final avgScore = (game['avgScore'] as num?)?.toStringAsFixed(1) ?? '0';
-
-            // Oyun adına göre emoji
-            final gameEmojis = {
-              'besin-ninja': '🥗',
-              'lazer-fizik': '🔦',
-              'matematik-okcusu': '🏹',
-              'araba-surtunme': '🚗',
-              'gezegenibul': '🪐',
-              'tetris': '🧱',
-              'memory': '🧠',
-              'snake': '🐍',
-              'friction': '🔬',
-            };
-
-            final emoji = gameEmojis[gameId] ?? '🎮';
-            final displayName = _formatGameName(gameId);
-
-            return Container(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.orange.withOpacity(0.2),
-                    Colors.red.withOpacity(0.1),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.withOpacity(0.5)),
-              ),
-              child: ListTile(
-                leading: Text(
-                  emoji,
-                  style: const TextStyle(fontSize: 32),
-                ),
-                title: Text(
-                  displayName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-                subtitle: Text(
-                  'Oynayan: $playCount kişi',
-                  style: TextStyle(color: Colors.grey.shade400),
-                ),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '⌀ $avgScore',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.orange,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  /// 💎 ELMAS LEADERBOARD
-  Widget _buildDiamondsLeaderboard() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _leaderboardService.getDiamondsLeaderboard(limit: 100),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(
-            child: Text('Elmas siralamasi bulunamadi.'),
-          );
-        }
-
-        final leaderboard = snapshot.data!;
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: leaderboard.length,
-          itemBuilder: (context, index) {
-            final user = leaderboard[index];
-            final rank = index + 1;
-            final diamonds = user['diamonds'] ?? 0;
-            final userName = user['userName'] ?? 'Anonim';
-
-            return Container(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.cyan.withOpacity(0.2),
-                    Colors.blue.withOpacity(0.1),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.cyan.withOpacity(0.4)),
-              ),
-              child: ListTile(
-                leading: Text(
-                  '#$rank',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                title: Row(
-                  children: [
-                    _buildAvatar(user),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        userName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.cyan.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.cyan),
-                  ),
-                  child: Text(
-                    '💎 $diamonds',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.cyan,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  /// 🏆 KUPA LEADERBOARD
-  Widget _buildTrophiesLeaderboard() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _leaderboardService.getTrophiesLeaderboard(limit: 100),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(
-            child: Text('Kupa siralamasi bulunamadi.'),
-          );
-        }
-
-        final leaderboard = snapshot.data!;
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(12),
-          itemCount: leaderboard.length,
-          itemBuilder: (context, index) {
-            final user = leaderboard[index];
-            final rank = index + 1;
-            final trophies = user['trophies'] ?? 0;
-            final userName = user['userName'] ?? 'Anonim';
-
-            return Container(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.amber.withOpacity(0.2),
-                    Colors.orange.withOpacity(0.1),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.amber.withOpacity(0.4)),
-              ),
-              child: ListTile(
-                leading: Text(
-                  '#$rank',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                title: Row(
-                  children: [
-                    _buildAvatar(user),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        userName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                trailing: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.amber),
-                  ),
-                  child: Text(
-                    '🏆 $trophies',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.amber,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildAvatar(Map<String, dynamic> user) {
-    final avatarEmoji = (user['avatarEmoji'] as String?) ?? '';
-    final avatarUrl = (user['userAvatar'] as String?) ?? '';
-
-    if (avatarEmoji.isNotEmpty) {
-      return CircleAvatar(
-        radius: 16,
-        backgroundColor: Colors.deepOrange.withOpacity(0.15),
-        child: Text(
-          avatarEmoji,
-          style: const TextStyle(fontSize: 16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [bgColor, bgColor.withOpacity(0.5)],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: medalColor.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-      );
-    }
-
-    if (avatarUrl.isNotEmpty) {
-      return CircleAvatar(
-        radius: 16,
-        backgroundImage: NetworkImage(avatarUrl),
-      );
-    }
-
-    return CircleAvatar(
-      radius: 16,
-      backgroundColor: Colors.grey.shade300,
-      child: const Icon(Icons.person, size: 18, color: Colors.black54),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: medalColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.center,
+            child: medalEmoji.isNotEmpty
+                ? Text(
+                    medalEmoji,
+                    style: const TextStyle(fontSize: 28),
+                  )
+                : Text(
+                    '#$rank',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+          ),
+          title: Text(
+            userName,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.deepOrange.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.deepOrange.withOpacity(0.6),
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  totalScore.toString(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepOrange,
+                  ),
+                ),
+                Text(
+                  'puan',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.deepOrange.withOpacity(0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
-  }
-
-  /// Oyun adını formatla
-  String _formatGameName(String gameId) {
-    final names = {
-      'besin-ninja': 'Besin Ninja',
-      'lazer-fizik': 'Lazer Fizik',
-      'matematik-okcusu': 'Matematik Okçusu',
-      'araba-surtunme': 'Sürütüme Yarışı',
-      'gezegenibul': 'Gezegen Bul',
-      'tetris': 'Tetris',
-      'memory': 'Hafıza Oyunu',
-      'snake': 'Yılan Oyunu',
-      'friction': 'Sürtünme Deneyi',
-    };
-    return names[gameId] ?? gameId;
   }
 }

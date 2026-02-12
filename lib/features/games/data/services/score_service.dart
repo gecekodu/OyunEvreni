@@ -49,6 +49,14 @@ class ScoreService {
       // Oyunun toplam oynama sayısını artır
       await _updateGameStats(gameId);
       
+      // 👤 Kullanıcının profil puanını güncelle
+      await addScoreToUserProfile(
+        userId: userId,
+        userName: userName,
+        score: score,
+        userAvatar: userAvatar,
+      );
+      
       return gameScore;
     } catch (e) {
       print('❌ Skor kaydetme hatası: $e');
@@ -188,6 +196,8 @@ class ScoreService {
     }
   }
 
+  /// 🏆 Genel Sıralama Collection'ını Güncelle
+
   /// 👤 Kullanıcının Toplam Puanı Getir
   Future<int> getUserTotalScore(String userId) async {
     try {
@@ -206,24 +216,55 @@ class ScoreService {
     }
   }
 
-  /// 🏆 Global Leaderboard (Toplam Puanlara Göre)
+  /// 🏆 Global Leaderboard (Toplam Puanlara Göre) - Gerçek Kullanıcılar
   Stream<List<Map<String, dynamic>>> getGlobalUserLeaderboard({int limit = 100}) {
     try {
       return _firebaseService.firestore
           .collection('users')
-          .orderBy('totalScore', descending: true)
-          .limit(limit)
           .snapshots()
           .map((snapshot) {
-            return snapshot.docs
-                .map((doc) => {
-                      'uid': doc.id,
-                      'username': doc['username'] ?? 'Kullanıcı',
-                      'totalScore': doc['totalScore'] ?? 0,
-                      'userAvatar': doc['userAvatar'] ?? '',
-                      'lastUpdated': doc['lastUpdated'],
-                    })
+            print('📊 Users collection snapshot alındı: ${snapshot.docs.length} dokuman');
+            
+            // Tüm kullanıcıları al
+            final users = snapshot.docs
+                .map((doc) {
+                  final data = doc.data();
+                  final totalScore = (data['totalScore'] ?? 0) as num;
+                  final username = data['username'] ?? data['displayName'] ?? data['email'] ?? 'Kullanıcı';
+                  
+                  print('👤 Kullanıcı: $username, Puan: $totalScore, UID: ${doc.id}');
+                  
+                  return {
+                    'uid': doc.id,
+                    'username': username,
+                    'totalScore': totalScore.toInt(),
+                    'userAvatar': data['userAvatar'] ?? '',
+                    'updatedAt': data['lastUpdated'],
+                  };
+                })
                 .toList();
+            
+            print('✅ Toplam ${users.length} kullanıcı işlendi');
+            
+            // Puanı olanları filtrele
+            final scored = users
+                .where((user) => (user['totalScore'] as int) > 0)
+                .toList();
+            
+            print('🏆 ${scored.length} kullanıcının puanı var');
+            
+            // Sırala
+            scored.sort((a, b) => (b['totalScore'] as int).compareTo(a['totalScore'] as int));
+            
+            // Sıralanmış listeyi göster
+            for (var i = 0; i < scored.take(5).length; i++) {
+              final user = scored[i];
+              print('  #${i + 1}: ${user['username']} - ${user['totalScore']} puan');
+            }
+            
+            // Limit uygula
+            final result = scored.take(limit).toList();
+            return result;
           });
     } catch (e) {
       print('❌ Global leaderboard stream hatası: $e');

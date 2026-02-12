@@ -1150,6 +1150,7 @@ class _HomeTabViewState extends State<HomeTabView> {
               }),
             ),
             const SizedBox(height: 28),
+            
           Text(
             '👉 Oyunlar sekmesine kaydirarak gecin',
             style: TextStyle(
