@@ -12,11 +12,11 @@ class EnhancedWebviewPage extends StatefulWidget {
   final String? gameId;
 
   const EnhancedWebviewPage({
-    Key? key,
+    super.key,
     required this.gameUrl,
     required this.gameName,
     this.gameId,
-  }) : super(key: key);
+  });
 
   @override
   State<EnhancedWebviewPage> createState() => _EnhancedWebviewPageState();
@@ -250,10 +250,10 @@ class _EnhancedWebviewPageState extends State<EnhancedWebviewPage> {
                 Navigator.pop(context);
                 _webViewController.reload();
               },
-              child: const Text('Tekrar Oyna'),
               style: TextButton.styleFrom(
                 foregroundColor: Colors.grey,
               ),
+              child: const Text('Tekrar Oyna'),
             ),
             ElevatedButton.icon(
               onPressed: () async {

@@ -238,7 +238,7 @@ class _PlayGameSimpleState extends State<PlayGameSimple> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => LeaderboardPage(gameId: widget.game?.id),
+                    builder: (_) => LeaderboardPage(gameId: widget.game.id),
                   ),
                 );
               },

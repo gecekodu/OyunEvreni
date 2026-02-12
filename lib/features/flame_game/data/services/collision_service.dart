@@ -3,7 +3,6 @@
 
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../../domain/entities/game_constants.dart';
 
 /// 🎯 Çarpışma Sonucu
 class CollisionResult {

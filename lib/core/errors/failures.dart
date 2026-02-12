@@ -12,35 +12,35 @@ abstract class Failure {
 
 class FirebaseAuthFailure extends Failure {
   FirebaseAuthFailure({
-    required String message,
-    String? code,
-  }) : super(message: message, code: code);
+    required super.message,
+    super.code,
+  });
 }
 
 class FirestoreFailure extends Failure {
   FirestoreFailure({
-    required String message,
-    String? code,
-  }) : super(message: message, code: code);
+    required super.message,
+    super.code,
+  });
 }
 
 class GeminiFailure extends Failure {
   GeminiFailure({
-    required String message,
-    String? code,
-  }) : super(message: message, code: code);
+    required super.message,
+    super.code,
+  });
 }
 
 class NetworkFailure extends Failure {
   NetworkFailure({
-    required String message,
-    String? code,
-  }) : super(message: message, code: code);
+    required super.message,
+    super.code,
+  });
 }
 
 class GenericFailure extends Failure {
   GenericFailure({
-    required String message,
-    String? code,
-  }) : super(message: message, code: code);
+    required super.message,
+    super.code,
+  });
 }

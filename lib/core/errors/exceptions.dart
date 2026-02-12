@@ -16,39 +16,39 @@ abstract class AppException implements Exception {
 // Authentication Exceptions
 class AuthException extends AppException {
   AuthException({
-    required String message,
-    String? code,
-  }) : super(message: message, code: code);
+    required super.message,
+    super.code,
+  });
 }
 
 // Firestore Exceptions
 class FirestoreException extends AppException {
   FirestoreException({
-    required String message,
-    String? code,
-  }) : super(message: message, code: code);
+    required super.message,
+    super.code,
+  });
 }
 
 // Gemini API Exceptions
 class GeminiException extends AppException {
   GeminiException({
-    required String message,
-    String? code,
-  }) : super(message: message, code: code);
+    required super.message,
+    super.code,
+  });
 }
 
 // Network Exceptions
 class NetworkException extends AppException {
   NetworkException({
-    required String message,
-    String? code,
-  }) : super(message: message, code: code);
+    required super.message,
+    super.code,
+  });
 }
 
 // Generic App Exceptions
 class GenericException extends AppException {
   GenericException({
-    required String message,
-    String? code,
-  }) : super(message: message, code: code);
+    required super.message,
+    super.code,
+  });
 }

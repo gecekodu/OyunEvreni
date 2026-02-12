@@ -25,16 +25,11 @@ import 'features/games/data/datasources/games_remote_datasource.dart';
 import 'features/ai/data/datasources/ai_remote_datasource.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/signup_page.dart';
-import 'features/games/presentation/pages/create_game_flow_page.dart';
-import 'features/games/presentation/pages/game_list_page.dart';
-import 'features/games/presentation/pages/social_feed_page.dart';
-import 'features/admin/presentation/pages/test_panel_page.dart';
 import 'config/app_theme.dart';
 import 'core/services/gemini_game_service_v2.dart';
 import 'features/flame_game/presentation/pages/flame_game_page.dart';
 import 'features/ai_game_engine/presentation/pages/ai_game_creator_page.dart';
 import 'features/ai_game_engine/data/services/ai_game_generator_service.dart';
-import 'features/webview/presentation/pages/webview_page.dart';
 import 'features/games/presentation/pages/example_games_list_page.dart';
 import 'features/games/presentation/pages/leaderboard_page.dart';
 import 'features/clan/presentation/pages/clan_page.dart';
@@ -155,7 +150,7 @@ void _setupDependencies(
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -176,7 +171,7 @@ class _MyAppState extends State<MyApp> {
       title: 'Nemos',
       debugShowCheckedModeBanner: false,
       theme: _isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme,
-      home: const SplashScreen(),
+      home: const AuthCheckScreen(),
       routes: {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignupPage(),
@@ -192,36 +187,31 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-/// 🎨 Splash Screen (Başlangıç Ekranı)
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+/// 🔐 Auth Check Screen - Firebase Auth kontrol ve splash
+class AuthCheckScreen extends StatefulWidget {
+  const AuthCheckScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  State<AuthCheckScreen> createState() => _AuthCheckScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _AuthCheckScreenState extends State<AuthCheckScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  late Animation<double> _progressAnimation;
-  late Animation<Offset> _slideAnimation;
+  final bool _showSplash = true;
 
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
 
     _fadeAnimation =
         Tween<double>(begin: 0, end: 1).animate(_animationController);
-    _progressAnimation =
-        Tween<double>(begin: 0, end: 1).animate(_animationController);
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
-        .animate(_animationController);
-
+    
     _animationController.forward();
     _checkAuthState();
   }
@@ -233,7 +223,8 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _checkAuthState() async {
-    await Future.delayed(const Duration(milliseconds: 100));
+    // Splash ekranı 1.5 saniye göster
+    await Future.delayed(const Duration(milliseconds: 1500));
 
     if (!mounted) return;
 
@@ -242,10 +233,10 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (user != null) {
       // User zaten giriş yapmış - Ana sayfaya git
-      Navigator.of(context).pushReplacementNamed('/home');
+      if (mounted) Navigator.of(context).pushReplacementNamed('/home');
     } else {
       // User giriş yapmamış - Login sayfasına git
-      Navigator.of(context).pushReplacementNamed('/login');
+      if (mounted) Navigator.of(context).pushReplacementNamed('/login');
     }
   }
 
@@ -262,225 +253,252 @@ class _SplashScreenState extends State<SplashScreen>
               const Color(0xFF16213E),
               const Color(0xFF1A2F5A),
               const Color(0xFF0F3460),
+              const Color(0xFF2D0052),
             ],
           ),
         ),
         child: Center(
-          child: AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Animated Logo with Glow
-                      Container(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 🎮 Logo with Pulsing Animation
+                AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
+                    final pulse = 0.8 + 0.2 * sin(_animationController.value * pi * 2);
+                    return Transform.scale(
+                      scale: pulse,
+                      child: Container(
+                        width: 120,
+                        height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Colors.deepOrange.withOpacity(0.8),
+                              Colors.purple.withOpacity(0.6),
+                              Colors.cyan.withOpacity(0.5),
+                            ],
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.deepOrange.withOpacity(0.4),
-                              blurRadius: 40 +
-                                  (20 * (0.5 - (_fadeAnimation.value - 0.5).abs())),
-                              spreadRadius: 15,
+                              color: Colors.deepOrange.withOpacity(0.6),
+                              blurRadius: 30 * pulse,
+                              spreadRadius: 5,
                             ),
                             BoxShadow(
-                              color: Colors.deepOrange.withOpacity(0.2),
-                              blurRadius: 60,
-                              spreadRadius: 25,
+                              color: Colors.purple.withOpacity(0.4),
+                              blurRadius: 20,
+                              spreadRadius: 2,
                             ),
                           ],
                         ),
-                        padding: const EdgeInsets.all(25),
-                        child: Transform.scale(
-                          scale: 0.8 + (_fadeAnimation.value * 0.2),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(100),
-                            child: Image.asset(
-                              'assets/images/logo.jpeg',
-                              width: 150,
-                              height: 150,
-                              fit: BoxFit.cover,
-                            ),
+                        child: Center(
+                          child: Text(
+                            '🎮',
+                            style: TextStyle(fontSize: 70),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 50),
-
-                      // Futuristic Title
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Column(
-                          children: [
-                            Text(
-                              'NEMOS',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 42,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 3,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.deepOrange.withOpacity(0.5),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 0),
-                                  ),
-                                  Shadow(
-                                    color: Colors.blue.withOpacity(0.3),
-                                    blurRadius: 15,
-                                    offset: const Offset(2, 2),
-                                  ),
-                                ],
-                              ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 32),
+                
+                // Futuristic Title with Glitch Effect
+                AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
+                    final offset = sin(_animationController.value * pi * 2) * 2;
+                    return Transform.translate(
+                      offset: Offset(offset, 0),
+                      child: Text(
+                        'NEMO S',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 52,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 4,
+                          shadows: [
+                            Shadow(
+                              color: Colors.deepOrange.withOpacity(0.7),
+                              blurRadius: 30,
+                              offset: const Offset(0, 0),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Öğrenmenin oyun hali',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.85),
-                                fontSize: 16,
-                                fontStyle: FontStyle.italic,
-                                letterSpacing: 1,
-                              ),
+                            Shadow(
+                              color: Colors.cyan.withOpacity(0.5),
+                              blurRadius: 20,
+                              offset: const Offset(-2, 0),
+                            ),
+                            Shadow(
+                              color: Colors.purple.withOpacity(0.5),
+                              blurRadius: 20,
+                              offset: const Offset(2, 0),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 60),
-
-                      // Futuristic Progress Bar
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40),
-                        child: Column(
-                          children: [
-                            // Progress percentage text
-                            Text(
-                              '${(_progressAnimation.value * 100).toStringAsFixed(0)}%',
-                              style: const TextStyle(
-                                color: Colors.deepOrange,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Main progress bar
-                            Container(
-                              height: 8,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: Colors.deepOrange.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.deepOrange.withOpacity(0.15),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                
+                // Subtitle with Animation
+                AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
+                    final opacity = 0.5 + 0.5 * sin(_animationController.value * pi * 2);
+                    return Opacity(
+                      opacity: opacity,
+                      child: Text(
+                        'Eğitici Oyun Platformu',
+                        style: TextStyle(
+                          color: Colors.cyan.withOpacity(0.8),
+                          fontSize: 14,
+                          letterSpacing: 2,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 50),
+                
+                // Animated Progress Bar with Gradient
+                SizedBox(
+                  width: 220,
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return Stack(
+                              children: [
+                                // Background
+                                Container(
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Stack(
-                                  children: [
-                                    // Backg round
-                                    Container(
-                                      color: Colors.white.withOpacity(0.05),
+                                ),
+                                // Animated Fill
+                                Container(
+                                  height: 8,
+                                  width: 220 * _animationController.value,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.deepOrange,
+                                        Colors.red,
+                                        Colors.purple,
+                                        Colors.cyan,
+                                      ],
                                     ),
-                                    // Progress fill with gradient
-                                    FractionallySizedBox(
-                                      widthFactor: _progressAnimation.value,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.centerLeft,
-                                            end: Alignment.centerRight,
-                                            colors: [
-                                              Colors.deepOrange,
-                                              Colors.deepOrange
-                                                  .withOpacity(0.7),
-                                              Colors.amber,
-                                            ],
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.deepOrange
-                                                  .withOpacity(0.6),
-                                              blurRadius: 10,
-                                              spreadRadius: 1,
-                                            ),
-                                          ],
-                                        ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.deepOrange.withOpacity(0.6),
+                                        blurRadius: 10,
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ],
+                              ],
+                            );
+                          },
                         ),
                       ),
-                      const SizedBox(height: 40),
-
-                      // Animated dots for loading effect
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(3, (index) {
-                          final delay = index * 0.1;
-                          final value =
-                              ((_progressAnimation.value + delay) % 1.0);
-                          final isActive = value > 0.6;
-
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: ScaleTransition(
-                              scale: AlwaysStoppedAnimation(
-                                isActive ? 1.2 : 0.6,
-                              ),
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isActive
-                                      ? Colors.deepOrange
-                                      : Colors.deepOrange.withOpacity(0.4),
-                                  boxShadow: isActive
-                                      ? [
-                                          BoxShadow(
-                                            color: Colors.deepOrange
-                                                .withOpacity(0.6),
-                                            blurRadius: 8,
-                                            spreadRadius: 2,
-                                          ),
-                                        ]
-                                      : [],
-                                ),
-                              ),
+                      const SizedBox(height: 12),
+                      // Percentage Text
+                      AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          final percentage = (_animationController.value * 100).toInt();
+                          return Text(
+                            '$percentage%',
+                            style: TextStyle(
+                              color: Colors.cyan,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
                             ),
                           );
-                        }),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Yükleniyor...',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 14,
-                          letterSpacing: 1,
-                        ),
+                        },
                       ),
                     ],
                   ),
                 ),
-              );
-            },
+                const SizedBox(height: 24),
+                
+                // Orbiting Loading Dots
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Rotating circle background
+                          Transform.rotate(
+                            angle: _animationController.value * pi * 2,
+                            child: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.deepOrange.withOpacity(0.3),
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Orbiting dots
+                          for (int i = 0; i < 3; i++)
+                            Transform.rotate(
+                              angle: (_animationController.value * pi * 2) + (i * 2 * pi / 3),
+                              child: Positioned(
+                                right: 0,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: [
+                                      Colors.deepOrange,
+                                      Colors.purple,
+                                      Colors.cyan,
+                                    ][i],
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: [
+                                          Colors.deepOrange,
+                                          Colors.purple,
+                                          Colors.cyan,
+                                        ][i].withOpacity(0.6),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1577,7 +1595,7 @@ class _AiPageState extends State<AiPage> {
 // 👤 Profile Page
 class ProfilePage extends StatefulWidget {
   final Function(bool)? onThemeChanged;
-  const ProfilePage({Key? key, this.onThemeChanged}) : super(key: key);
+  const ProfilePage({super.key, this.onThemeChanged});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -2126,7 +2144,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             );
                           },
-                          activeColor: Colors.deepOrange,
+                          activeThumbColor: Colors.deepOrange,
                         ),
                       ],
                     ),

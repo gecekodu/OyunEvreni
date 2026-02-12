@@ -20,7 +20,7 @@ class PlayGamePage extends StatefulWidget {
 class _PlayGamePageState extends State<PlayGamePage> {
   int _score = 0;
   int _questionNumber = 1;
-  int _totalQuestions = 10;
+  final int _totalQuestions = 10;
   
   late int _num1;
   late int _num2;

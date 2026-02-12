@@ -26,16 +26,19 @@ class WebViewPage extends StatefulWidget {
   State<WebViewPage> createState() => _WebViewPageState();
 }
 
-class _WebViewPageState extends State<WebViewPage> {
+class _WebViewPageState extends State<WebViewPage>
+    with WidgetsBindingObserver {
   late final WebViewController controller;
   bool isLoading = true;
   int lastScore = 0;
   String lastRank = 'Başlangıç';
   bool _isFullscreen = false;
+  bool _gameOverDialogShown = false; // Çift dialog gösterilmesini önle
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black)
@@ -410,6 +413,10 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   void _showGameOverDialog(int earnedPoints, int totalPoints, String rank) {
+    // Çift gösterilmesini önle
+    if (_gameOverDialogShown) return;
+    _gameOverDialogShown = true;
+
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -654,7 +661,30 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // Oyun duraklatıl
+      controller.runJavaScript('''
+        if (window.gameInstance && window.gameInstance.pause) {
+          window.gameInstance.pause();
+        }
+        // HTML5 Audio/Video'yu duraklat
+        document.querySelectorAll('audio').forEach(a => a.pause());
+        document.querySelectorAll('video').forEach(v => v.pause());
+      ''');
+    } else if (state == AppLifecycleState.resumed) {
+      // Oyun devam et
+      controller.runJavaScript('''
+        if (window.gameInstance && window.gameInstance.resume) {
+          window.gameInstance.resume();
+        }
+      ''');
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _exitFullscreen();
     super.dispose();
   }

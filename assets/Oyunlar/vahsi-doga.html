@@ -1978,6 +1978,11 @@
         document.getElementById('weather-alert').style.display = 'none';
         document.getElementById('speed-boost-alert').style.display = 'none';
         
+        // Flutter'a puan gönder (Otomatik)
+        if (window.PuanKanali) {
+            window.PuanKanali.postMessage(score.toString());
+        }
+        
         const title = document.getElementById('end-title');
         const reason = document.getElementById('end-reason');
         const statsText = document.getElementById('end-stats');

@@ -100,7 +100,7 @@ class Player extends RectangleComponent with CollisionCallbacks, HasGameRef {
       isJumping = true;
       jumpElapsedTime = 0;
       velocityY = 0;
-      print('✨ Jump! velocityY=${velocityY}');
+      print('✨ Jump! velocityY=$velocityY');
     }
   }
 

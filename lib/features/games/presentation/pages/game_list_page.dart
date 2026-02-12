@@ -4,7 +4,7 @@ import '../../domain/entities/game_models.dart';
 import 'play_game_simple.dart';
 
 class GameListPage extends StatelessWidget {
-  GameListPage({super.key});
+  const GameListPage({super.key});
 
   Future<List<Game>> fetchGames() async {
     try {

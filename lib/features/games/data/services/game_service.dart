@@ -1,7 +1,6 @@
 // 🎮 GAME SERVICE - Oyun Oluşturma ve Kaydetme
 
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/services/firebase_service.dart';
 import '../../../../core/services/gemini_game_service.dart';
 import '../../domain/entities/game_models.dart';
@@ -594,7 +593,7 @@ class GameService {
         <button class="button" onclick="finishGame()">Oyunu Bitir</button>
     </div>
     <script>
-        const words = ${jsonEncode(words).replaceAll("'", "\\\'")};
+        const words = ${jsonEncode(words).replaceAll("'", "\\'")};
         console.log('✅ Kelime Oyunu Başladı', words.length, 'kelime ile');
         
         function finishGame() {
@@ -694,7 +693,7 @@ class GameService {
         <button class="button" onclick="finishGame()">Oyunu Bitir</button>
     </div>
     <script>
-        const puzzles = ${jsonEncode(puzzles).replaceAll("'", "\\\'")};
+        const puzzles = ${jsonEncode(puzzles).replaceAll("'", "\\'")};
         console.log('✅ Puzzle Oyunu Başladı');
         
         function finishGame() {
@@ -792,7 +791,7 @@ class GameService {
         <button class="button" onclick="finishGame()">Oyunu Bitir</button>
     </div>
     <script>
-        const colors = ${jsonEncode(colors).replaceAll("'", "\\\'")};
+        const colors = ${jsonEncode(colors).replaceAll("'", "\\'")};
         console.log('✅ Renk Oyunu Başladı');
         
         function finishGame() {

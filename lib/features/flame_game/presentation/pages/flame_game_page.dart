@@ -7,7 +7,7 @@ import '../../data/game/main_game.dart';
 import '../../domain/entities/game_constants.dart';
 
 class FlameGamePage extends StatefulWidget {
-  const FlameGamePage({Key? key}) : super(key: key);
+  const FlameGamePage({super.key});
 
   @override
   State<FlameGamePage> createState() => _FlameGamePageState();

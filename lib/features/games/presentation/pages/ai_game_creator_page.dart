@@ -1,8 +1,6 @@
 // 🤖 AI OYUN OLUŞTURMA SAYFASI
 
 import 'package:flutter/material.dart';
-import '../../../../core/services/gemini_service.dart';
-import '../../../../main.dart';
 
 class AIGameCreatorPage extends StatefulWidget {
   const AIGameCreatorPage({super.key});
@@ -166,7 +164,7 @@ class _AIGameCreatorPageState extends State<AIGameCreatorPage> {
 
               // Kategori Seçimi
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: InputDecoration(
                   labelText: 'Kategori',
                   prefixIcon: const Icon(Icons.category),
@@ -191,7 +189,7 @@ class _AIGameCreatorPageState extends State<AIGameCreatorPage> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedDifficulty,
+                      initialValue: _selectedDifficulty,
                       decoration: InputDecoration(
                         labelText: 'Zorluk',
                         prefixIcon: const Icon(Icons.speed),
@@ -213,7 +211,7 @@ class _AIGameCreatorPageState extends State<AIGameCreatorPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedAge,
+                      initialValue: _selectedAge,
                       decoration: InputDecoration(
                         labelText: 'Yaş',
                         prefixIcon: const Icon(Icons.child_care),

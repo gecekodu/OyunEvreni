@@ -28,6 +28,9 @@ class ExampleGame {
   final String category;
   final double difficulty; // 0.0 - 1.0
   final Duration estimatedDuration;
+  final String? imagePath; // Oyun görseli
+  final double? price; // Oyun fiyatı (null ise ücretsiz)
+  final double rating; // Oyun puanı (0-5 arası)
 
   const ExampleGame({
     required this.id,
@@ -40,6 +43,9 @@ class ExampleGame {
     required this.category,
     required this.difficulty,
     required this.estimatedDuration,
+    this.imagePath,
+    this.price,
+    this.rating = 4.5,
   });
 
   String get difficultyLabel {

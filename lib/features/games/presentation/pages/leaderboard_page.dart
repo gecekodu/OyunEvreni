@@ -2,14 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/services/leaderboard_service.dart';
 import '../../data/services/score_service.dart';
 
 class LeaderboardPage extends StatefulWidget {
   final String? gameId; // Oyun bazlı filtre için
   
-  const LeaderboardPage({Key? key, this.gameId}) : super(key: key);
+  const LeaderboardPage({super.key, this.gameId});
 
   @override
   State<LeaderboardPage> createState() => _LeaderboardPageState();

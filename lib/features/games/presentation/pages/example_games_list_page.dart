@@ -5,7 +5,7 @@ import '../../domain/entities/example_game.dart';
 import '../../../webview/presentation/pages/webview_page.dart';
 
 class ExampleGamesListPage extends StatefulWidget {
-  const ExampleGamesListPage({Key? key}) : super(key: key);
+  const ExampleGamesListPage({super.key});
 
   @override
   State<ExampleGamesListPage> createState() => _ExampleGamesListPageState();
@@ -92,18 +92,15 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
                 ),
                 SliverPadding(
                   padding: EdgeInsets.all(16),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      childAspectRatio: 0.78,
-                    ),
+                  sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         if (index >= _games.length) return SizedBox.shrink();
                         final game = _games[index];
-                        return _buildGameCard(game);
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 16),
+                          child: _buildGameCard(game),
+                        );
                       },
                       childCount: _games.length,
                     ),
@@ -115,12 +112,16 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
   }
 
   Widget _buildGameCard(ExampleGame game) {
-    return GestureDetector(
-      onTap: () => _launchGame(game),
-      child: Card(
-        elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    return Card(
+      elevation: 12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: InkWell(
+        onTap: () => _launchGame(game),
+        splashColor: Colors.white.withOpacity(0.4),
+        highlightColor: Colors.white.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
+          height: 150,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             gradient: LinearGradient(
@@ -129,54 +130,51 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
               colors: _getGradientColors(game.type),
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Stack(
             children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(14, 14, 14, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      game.type.emoji,
-                      style: TextStyle(fontSize: 38),
+              // Oyun görseli
+              if (game.imagePath != null)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      game.imagePath!,
+                      fit: BoxFit.cover,
                     ),
-                    SizedBox(height: 10),
-                    Text(
-                      game.title,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.4,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+
+              // Kategori etiketi (sol taraf dikey)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
                 child: Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(vertical: 8),
+                  width: 28,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.4),
-                      width: 2,
+                    color: Colors.black.withOpacity(0.85),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      bottomLeft: Radius.circular(20),
+                    ),
+                    border: Border(
+                      right: BorderSide(
+                        color: Color(0xFFFFD700),
+                        width: 2,
+                      ),
                     ),
                   ),
                   child: Center(
-                    child: Text(
-                      '🎮 OYNA',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
+                    child: RotatedBox(
+                      quarterTurns: -1,
+                      child: Text(
+                        game.category.toUpperCase(),
+                        style: TextStyle(
+                          color: Color(0xFFFFD700),
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                        ),
                       ),
                     ),
                   ),

@@ -342,7 +342,7 @@ ONEMLI KURALLAR:
   }
 
   String _extractSection(String html, String tag, int maxLen) {
-    final regex = RegExp('<$tag[^>]*>([\s\S]*?)</$tag>', caseSensitive: false);
+    final regex = RegExp('<$tag[^>]*>([sS]*?)</$tag>', caseSensitive: false);
     final match = regex.firstMatch(html);
     if (match == null) return '';
     final content = match.group(1) ?? '';
@@ -350,12 +350,12 @@ ONEMLI KURALLAR:
   }
 
   String _stripTags(String html) {
-    return html.replaceAll(RegExp('<[^>]*>'), ' ').replaceAll(RegExp('\s+'), ' ').trim();
+    return html.replaceAll(RegExp('<[^>]*>'), ' ').replaceAll(RegExp('s+'), ' ').trim();
   }
 
   String _truncate(String text, int maxLen) {
     if (text.length <= maxLen) return text;
-    return text.substring(0, maxLen) + '...';
+    return '${text.substring(0, maxLen)}...';
   }
 
   Future<String> _expandHtmlOutput({

@@ -118,10 +118,8 @@ class WebViewService {
       final result = await _controller.runJavaScriptReturningResult(
         'JSON.stringify(gameConfig)',
       );
-      if (result != null) {
-        return jsonDecode(result.toString());
-      }
-    } catch (e) {
+      return jsonDecode(result.toString());
+        } catch (e) {
       print('⚠️ Config alınırken hata: $e');
     }
     return {};

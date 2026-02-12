@@ -6,7 +6,6 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'dart:math';
 import '../../domain/entities/game_template.dart';
 

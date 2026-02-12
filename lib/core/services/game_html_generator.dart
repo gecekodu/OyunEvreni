@@ -234,19 +234,19 @@ class GameHtmlGenerator {
             const container = document.getElementById('questionsContainer');
             const q = questionsData[currentQuestion];
             
-            container.innerHTML = \`
+            container.innerHTML = `
                 <div class="question-box">
                     <div class="question-text">Soru \${currentQuestion + 1} / \${questionsData.length}</div>
                     <div class="question-text">\${q.question}</div>
                     <div>
-                        \${q.answers.map((ans, idx) => \`
+                        \${q.answers.map((ans, idx) => `
                             <div class="answer-option" onclick="selectAnswer(\${idx}, \${q.correctIndex})">
                                 \${ans}
                             </div>
-                        \`).join('')}
+                        `).join('')}
                     </div>
                 </div>
-            \`;
+            `;
         }
 
         function selectAnswer(selectedIdx, correctIdx) {
@@ -301,10 +301,10 @@ class GameHtmlGenerator {
 
             document.getElementById('resultEmoji').textContent = emoji;
             document.getElementById('resultTitle').textContent = title;
-            document.getElementById('resultMessage').textContent = \`
+            document.getElementById('resultMessage').textContent = `
                 \${correctCount} / \${questionsData.length} doğru (\${percentage}%)
                 Toplam Puan: \${score}
-            \`;
+            `;
             document.getElementById('questionsContainer').style.display = 'none';
             document.getElementById('results').classList.add('show');
         }

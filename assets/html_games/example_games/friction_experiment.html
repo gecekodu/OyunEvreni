@@ -1,0 +1,434 @@
+flu<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sürtünme Deneyi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .game-area {
+            background: #f5f5f5;
+            border-radius: 15px;
+            padding: 40px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            height: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 10px;
+            background: white;
+            cursor: grab;
+            width: 100%;
+            height: 300px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .control-group label {
+            font-size: 13px;
+            color: #333;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .slider {
+            width: 120px;
+            cursor: pointer;
+        }
+
+        .value-display {
+            text-align: center;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .surface-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .surface-btn {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+
+        .surface-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .surface-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .info-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: bold;
+            opacity: 0.9;
+        }
+
+        .info-value {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .message {
+            text-align: center;
+            padding: 15px;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .score-display {
+            text-align: center;
+            font-size: 18px;
+            color: #667eea;
+            font-weight: bold;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Sürtünme Deneyi</h1>
+        <p class="subtitle">Farklı yüzeylerde sürtünmenin ve hız etkisini öğren</p>
+
+        <div class="score-display">
+            Skor: <span id="score">0</span>
+        </div>
+
+        <div class="game-area">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Hız (İtme)</label>
+                <input type="range" id="forceSlider" class="slider" min="1" max="20" value="5">
+                <div class="value-display"><span id="forceValue">5</span></div>
+            </div>
+
+            <div class="control-group">
+                <label>Yüzey Türü</label>
+                <div class="surface-buttons">
+                    <button class="surface-btn active" data-surface="smooth">Düzgün</button>
+                    <button class="surface-btn" data-surface="rough">Pürüzlü</button>
+                    <button class="surface-btn" data-surface="ice">Buz</button>
+                    <button class="surface-btn" data-surface="sand">Kum</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <div class="info-item">
+                <span class="info-label">Yüzey:</span>
+                <span class="info-value" id="surfaceInfo">Düzgün</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Sürtünme Katsayısı (μ):</span>
+                <span class="info-value" id="frictionInfo">0.3</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Top Hızı:</span>
+                <span class="info-value" id="ballSpeedInfo">0</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Toplam Mesafe:</span>
+                <span class="info-value" id="distanceInfo">0 px</span>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="launchBall()">⚽ Topu Fırlat</button>
+            <button class="btn-secondary" onclick="reset()">🔄 Sıfırla</button>
+        </div>
+
+        <div class="message" id="message"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Canvas boyutu ayarla
+        canvas.width = canvas.offsetWidth;
+        canvas.height = 300;
+
+        // Oyun durumu
+        let gameState = {
+            ballX: 50,
+            ballY: canvas.height / 2,
+            ballVelocity: 0,
+            ballRadius: 8,
+            score: 0,
+            totalDistance: 0,
+            surface: 'smooth',
+            force: 5,
+            isMoving: false
+        };
+
+        // Yüzey özellikleri
+        const surfaces = {
+            smooth: { friction: 0.3, color: '#E8D7F1', label: 'Düzgün' },
+            rough: { friction: 0.7, color: '#BFA084', label: 'Pürüzlü' },
+            ice: { friction: 0.05, color: '#B4E7F7', label: 'Buz' },
+            sand: { friction: 1.2, color: '#F4D03F', label: 'Kum' }
+        };
+
+        // Slider event
+        document.getElementById('forceSlider').addEventListener('input', (e) => {
+            gameState.force = parseInt(e.target.value);
+            document.getElementById('forceValue').textContent = gameState.force;
+        });
+
+        // Yüzey seçimi
+        document.querySelectorAll('.surface-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.surface-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                gameState.surface = btn.dataset.surface;
+                reset();
+            });
+        });
+
+        // Top fırlat
+        window.launchBall = function() {
+            if (!gameState.isMoving) {
+                gameState.ballVelocity = gameState.force * 3;
+                gameState.isMoving = true;
+                gameState.totalDistance = 0;
+            }
+        };
+
+        // Sıfırla
+        window.reset = function() {
+            gameState.ballX = 50;
+            gameState.ballVelocity = 0;
+            gameState.isMoving = false;
+            gameState.totalDistance = 0;
+            gameState.score = 0;
+            document.getElementById('score').textContent = '0';
+            document.getElementById('message').classList.remove('show');
+        };
+
+        // Oyun loop
+        function gameLoop() {
+            // Canvas temizle
+            ctx.fillStyle = '#f5f5f5';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Yüzey çiz
+            ctx.fillStyle = surfaces[gameState.surface].color;
+            ctx.fillRect(0, canvas.height * 0.6, canvas.width, canvas.height * 0.4);
+
+            // Çizgi
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height * 0.6);
+            ctx.lineTo(canvas.width, canvas.height * 0.6);
+            ctx.stroke();
+
+            // Fizik hesaplama
+            if (gameState.isMoving && gameState.ballVelocity > 0.1) {
+                const friction = surfaces[gameState.surface].friction;
+                const deceleration = friction * 0.5;
+                gameState.ballVelocity -= deceleration;
+                gameState.ballX += gameState.ballVelocity;
+                gameState.totalDistance += gameState.ballVelocity;
+
+                if (gameState.ballX > canvas.width - gameState.ballRadius) {
+                    gameState.ballX = canvas.width - gameState.ballRadius;
+                    gameState.ballVelocity = 0;
+                    gameState.isMoving = false;
+                    calculateScore();
+                }
+            } else {
+                gameState.isMoving = false;
+            }
+
+            // Top çiz
+            ctx.fillStyle = '#FF6B6B';
+            ctx.beginPath();
+            ctx.arc(gameState.ballX, gameState.ballY, gameState.ballRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bilgileri güncelle
+            document.getElementById('surfaceInfo').textContent = surfaces[gameState.surface].label;
+            document.getElementById('frictionInfo').textContent = surfaces[gameState.surface].friction.toFixed(2);
+            document.getElementById('ballSpeedInfo').textContent = gameState.ballVelocity.toFixed(1);
+            document.getElementById('distanceInfo').textContent = Math.round(gameState.totalDistance) + ' px';
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function calculateScore() {
+            const distance = gameState.totalDistance;
+            const friction = surfaces[gameState.surface].friction;
+            
+            // Daha düşük sürtünme = daha yüksek skor
+            const points = Math.round(distance / (friction * 10));
+            gameState.score += points;
+            
+            document.getElementById('score').textContent = gameState.score;
+
+            // Mesaj göster
+            const msg = document.getElementById('message');
+            msg.textContent = `+${points} puan! Mesafe: ${Math.round(distance)}px`;
+            msg.classList.add('show');
+            setTimeout(() => msg.classList.remove('show'), 2000);
+        }
+
+        // Oyunu başlat
+        gameLoop();
+    </script>
+</body>
+</html>

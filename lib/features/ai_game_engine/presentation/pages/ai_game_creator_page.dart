@@ -10,7 +10,7 @@ import '../../../../core/services/firebase_service.dart';
 import '../../../webview/presentation/pages/webview_page.dart';
 
 class AIGameCreatorPage extends StatefulWidget {
-  const AIGameCreatorPage({Key? key}) : super(key: key);
+  const AIGameCreatorPage({super.key});
 
   @override
   State<AIGameCreatorPage> createState() => _AIGameCreatorPageState();

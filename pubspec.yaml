@@ -74,6 +74,8 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
+  test: any
+  mockito: any
 flutter:
 
   # The following line ensures that the Material Icons font is
@@ -83,13 +85,8 @@ flutter:
 
   # Assets
   assets:
-    - assets/images/logo.jpeg
+    - assets/images/
     - assets/Oyunlar/
-    - assets/Oyunlar/besin_ninja.html
-    - assets/Oyunlar/lazer_fizik.html
-    - assets/Oyunlar/matematik_okcusu.html
-    - assets/Oyunlar/araba_surtunme.html
-    - assets/Oyunlar/gezegen_bul.html
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

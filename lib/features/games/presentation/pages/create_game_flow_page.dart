@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/futuristic_animations.dart';
-import '../../../../core/services/gemini_game_service.dart';
 import '../../../../features/games/data/services/game_service.dart';
 import '../../../../features/games/presentation/pages/play_game_simple.dart';
 import '../../../../main.dart';
@@ -273,7 +272,7 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
               },
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -321,7 +320,7 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -370,7 +369,7 @@ class _CreateGameFlowPageState extends State<CreateGameFlowPage> {
               },
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

@@ -4,26 +4,16 @@ import '../../domain/entities/user.dart';
 
 class UserModel extends User {
   const UserModel({
-    required String uid,
-    required String email,
-    String? displayName,
-    String? photoUrl,
-    required DateTime createdAt,
-    DateTime? lastLogin,
-    int totalGamesCreated = 0,
-    int totalGamesPlayed = 0,
-    double averageRating = 0.0,
-  }) : super(
-    uid: uid,
-    email: email,
-    displayName: displayName,
-    photoUrl: photoUrl,
-    createdAt: createdAt,
-    lastLogin: lastLogin,
-    totalGamesCreated: totalGamesCreated,
-    totalGamesPlayed: totalGamesPlayed,
-    averageRating: averageRating,
-  );
+    required super.uid,
+    required super.email,
+    super.displayName,
+    super.photoUrl,
+    required super.createdAt,
+    super.lastLogin,
+    super.totalGamesCreated,
+    super.totalGamesPlayed,
+    super.averageRating,
+  });
 
   // ✨ JSON'dan Model'e
   factory UserModel.fromJson(Map<String, dynamic> json) {
