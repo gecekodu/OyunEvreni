@@ -1,0 +1,2374 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vahşi Doğa - Mükemmel Sürüm</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: linear-gradient(to bottom, #87CEEB 0%, #b8e6f5 50%, #87CEEB 100%);
+            font-family: 'Poppins', sans-serif;
+            touch-action: none; 
+            user-select: none;
+        }
+        
+        canvas { 
+            display: block; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            z-index: 1;
+            transition: pointer-events 0.1s;
+        }
+
+        canvas.game-over {
+            pointer-events: none !important;
+        }
+
+        #ui-layer { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+            z-index: 10;
+        }
+        
+        #score-panel {
+            position: absolute; 
+            top: 15px; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(20,20,20,0.9) 0%, rgba(40,40,40,0.85) 100%);
+            padding: 8px 20px; 
+            border-radius: 30px;
+            color: #FFD700; 
+            font-weight: 700; 
+            font-size: 16px;
+            font-family: 'Bebas Neue', sans-serif;
+            letter-spacing: 1px;
+            border: 2px solid rgba(255,215,0,0.5);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8), 0 0 10px rgba(255,215,0,0.3);
+        }
+
+        /* Stats container - sol alt (GÜNCELLENDİ: Mobil için optimize) */
+        #stats-container { 
+            position: absolute; 
+            bottom: 20px; 
+            left: 15px; 
+            width: 140px;
+        }
+        
+        /* Stat kutuları (GÜNCELLENDİ: Mobil için optimize) */
+        .stat-box { 
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, rgba(20,20,20,0.85) 0%, rgba(30,30,30,0.8) 100%);
+            padding: 5px 8px;
+            border-radius: 8px;
+            color: white; 
+            font-weight: 600; 
+            font-size: 10px;
+            text-shadow: 1px 1px 2px black;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Barlar (GÜNCELLENDİ: Mobil için optimize) */
+        .bar-bg { 
+            width: 100%; 
+            height: 8px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 4px;
+            margin-top: 3px;
+            overflow: hidden; 
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+        }
+        
+        .bar-fill { 
+            height: 100%; 
+            width: 100%; 
+            transition: width 0.3s ease;
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.3);
+        }
+
+        /* Minimap - sağ üst, mobil için küçültüldü */
+        #minimap {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 120px;
+            height: 120px;
+            background: rgba(20,20,20,0.85);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        /* Joystick Alanı - Mobil için optimize */
+        #joystick-zone {
+            position: absolute; 
+            bottom: 20px;
+            right: 15px;
+            width: 120px; 
+            height: 120px;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%);
+            border-radius: 50%; 
+            border: 2px solid rgba(255,255,255,0.4);
+            pointer-events: auto; 
+            display: none;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.3), inset 0 1px 5px rgba(255,255,255,0.2);
+        }
+        
+        #joystick-knob {
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            width: 50px; 
+            height: 50px;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+            border-radius: 50%; 
+            transform: translate(-50%, -50%);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.4), inset 0 -1px 3px rgba(0,0,0,0.2);
+            border: 2px solid rgba(255,255,255,0.8);
+        }
+
+        .overlay {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            background: linear-gradient(135deg, rgba(10,30,20,0.95) 0%, rgba(20,40,30,0.9) 100%);
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            pointer-events: auto; 
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        
+        .overlay h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            color: #FFD700;
+            font-size: 5em;
+            margin: 0;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8), 0 0 30px rgba(255,215,0,0.4);
+            letter-spacing: 8px;
+        }
+        
+        .overlay h3 {
+            color: #90EE90;
+            margin: 10px 0 30px 0;
+            font-size: 1.5em;
+            letter-spacing: 3px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+        }
+        
+        .overlay p {
+            font-size: 1.3em;
+            margin: 15px 0;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+            color: #e0e0e0;
+        }
+        
+        .btn {
+            margin-top: 30px; 
+            padding: 18px 60px; 
+            font-size: 24px;
+            font-weight: 700;
+            border: none; 
+            border-radius: 50px;
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+            cursor: pointer; 
+            box-shadow: 0 8px 0 #1e8449, 0 10px 30px rgba(0,0,0,0.4);
+            transition: all 0.15s;
+            letter-spacing: 2px;
+            font-family: 'Bebas Neue', sans-serif;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 0 #1e8449, 0 15px 35px rgba(0,0,0,0.5);
+        }
+        
+        .btn:active { 
+            transform: translateY(8px); 
+            box-shadow: 0 0 0 #1e8449, 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .hidden { 
+            display: none !important; 
+        }
+
+        #weather-alert {
+            position: absolute; 
+            top: 35%; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+            color: white; 
+            padding: 8px 20px; 
+            border-radius: 20px;
+            font-weight: 700; 
+            display: none; 
+            animation: blink 1s infinite;
+            font-size: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+            letter-spacing: 0.5px;
+            z-index: 20;
+        }
+
+        #bee-alert {
+            position: absolute; 
+            top: 42%; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white; 
+            padding: 6px 18px; 
+            border-radius: 20px;
+            font-weight: 700; 
+            display: none; 
+            animation: blink 0.5s infinite;
+            font-size: 13px;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+            letter-spacing: 0.5px;
+            z-index: 20;
+        }
+
+        #speed-boost-alert {
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white; 
+            padding: 8px 20px; 
+            border-radius: 20px;
+            font-size: 14px; 
+            font-weight: 700;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.3);
+            display: none;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            animation: pulse-glow 0.5s infinite;
+            z-index: 20;
+        }
+        
+        @keyframes blink { 
+            50% { opacity: 0.6; transform: translateX(-50%) scale(1.05); } 
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(155,89,182,0.6); 
+                transform: translateX(-50%) scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 40px rgba(155,89,182,1); 
+                transform: translateX(-50%) scale(1.05);
+            }
+        }
+
+        #help-text {
+            position: absolute;
+            bottom: 20px;
+            right: 15px;
+            color: rgba(255,255,255,0.9);
+            font-size: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 12px;
+        }
+
+        /* Medya Sorguları - Mobil Optimizasyon */
+        @media (max-width: 768px) {
+            #score-panel { font-size: 16px; padding: 8px 20px; }
+            .overlay h1 { font-size: 3em; }
+            #stats-container { 
+                width: 140px;
+                bottom: 20px;
+                left: 15px;
+            }
+            #minimap { width: 120px; height: 120px; top: 15px; right: 15px; }
+            #help-text { font-size: 9px; }
+            #joystick-zone { width: 120px; height: 120px; }
+            #joystick-knob { width: 50px; height: 50px; }
+        }
+        }
+
+        /* OYUN SONU MODAL STİLLERİ */
+        .gameOverModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none !important;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .gameOverModal.hidden {
+            display: none !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .gameOverModal.showing {
+            display: flex !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+
+        .gameOverModalContent {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            animation: modalSlideIn 0.5s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .gameOverModalContent h2 {
+            font-size: 28px;
+            margin: 0 0 20px 0;
+        }
+
+        .gameOverInfo {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .gameOverInfo p {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+
+        .earnedPoints {
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+
+        #earnedPointsDisplay {
+            font-size: 26px;
+            font-weight: bold;
+            color: #ffff00;
+        }
+
+        .gameOverBtn {
+            background-color: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 10px;
+            margin-left: 5px;
+            margin-right: 5px;
+            transition: all 0.3s ease;
+            min-width: auto;
+            flex: 1;
+        }
+
+        .gameOverBtn.primary {
+            background: #10b981;
+            color: white;
+            border: 2px solid #10b981;
+        }
+
+        .gameOverBtn.secondary {
+            background: transparent;
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.6);
+        }
+
+        .gameOverBtn:hover {
+            transform: scale(1.05);
+        }
+
+        .gameOverBtn:active {
+            transform: scale(0.95);
+        }
+
+        .gameOverBtnContainer {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="ui-layer">
+    <div id="score-panel" class="hidden">HEDEF: <span id="current-score">0</span> / 100</div>
+
+    <canvas id="minimap" class="hidden"></canvas>
+
+    <div id="stats-container" class="hidden">
+        <div class="stat-box">🍖 Tokluk 
+            <div class="bar-bg"><div id="bar-food" class="bar-fill" style="background:linear-gradient(90deg, #d35400 0%, #e67e22 100%)"></div></div>
+        </div>
+        <div class="stat-box">💧 Su 
+            <div class="bar-bg"><div id="bar-water" class="bar-fill" style="background:linear-gradient(90deg, #2471a3 0%, #3498db 100%)"></div></div>
+        </div>
+        <div class="stat-box">🔥 Isı 
+            <div class="bar-bg"><div id="bar-heat" class="bar-fill" style="background:linear-gradient(90deg, #c0392b 0%, #e74c3c 100%)"></div></div>
+        </div>
+    </div>
+
+    <div id="weather-alert">⚠️ FIRTINA! MAĞARAYA GİT!</div>
+    <div id="bee-alert">🐝 ARILAR SALDIRIYOR! KAÇIN!</div>
+    <div id="speed-boost-alert">⚡ HIZ İKSİRİ! +50% HIZ!</div>
+    <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    <div id="help-text" class="hidden">WASD: Hareket | Göletlere git, yiyecek topla | ⚡ Hız iksirlerini topla</div>
+</div>
+
+<div id="start-screen" class="overlay">
+    <h1>VAHŞİ DOĞA</h1>
+    <h3>MÜKEMMEL SÜRÜM</h3>
+    <p>🎯 100 Puana ulaş ve hayatta kal</p>
+    <p>🐟 Balık, et ve bal topla</p>
+    <p>🐝 Arı kovanlarına dikkat et!</p>
+    <p>❄️ Fırtınalarda mağaralara sığın</p>
+    <p>⚡ Hız iksirlerini topla!</p>
+    <button class="btn" onclick="startGame()">MACERAYA BAŞLA</button>
+</div>
+
+<script>
+    // ==================== SES SİSTEMİ ====================
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let walkingSoundTimer = 0;
+    
+    function playSound(type) {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        
+        switch(type) {
+            case 'eat':
+                osc.frequency.value = 400;
+                gain.gain.setValueAtTime(0.15, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 0.2);
+                break;
+            case 'water':
+                osc.type = 'sine';
+                osc.frequency.value = 300;
+                gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 0.3);
+                break;
+            case 'wind':
+                osc.type = 'sawtooth';
+                osc.frequency.value = 150 + Math.random() * 50;
+                gain.gain.setValueAtTime(0.05, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 1);
+                break;
+            case 'walk':
+                osc.type = 'sine';
+                osc.frequency.value = 80 + Math.random() * 20;
+                gain.gain.setValueAtTime(0.04, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 0.1);
+                break;
+            case 'spawn':
+                osc.type = 'sine';
+                osc.frequency.value = 600;
+                gain.gain.setValueAtTime(0.08, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 0.15);
+                break;
+            case 'bee':
+                // Arı vızıltısı
+                osc.type = 'sawtooth';
+                osc.frequency.value = 300 + Math.random() * 100;
+                gain.gain.setValueAtTime(0.12, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 0.4);
+                break;
+            case 'bee_sting':
+                // Arı sokma sesi
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(500, audioContext.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 0.3);
+                break;
+            case 'speed_boost':
+                // Hız iksiri sesi - yükselen ton
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, audioContext.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.18, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.25);
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 0.25);
+                break;
+            case 'win':
+                [262, 330, 392, 523].forEach((freq, i) => {
+                    const o = audioContext.createOscillator();
+                    const g = audioContext.createGain();
+                    o.connect(g);
+                    g.connect(audioContext.destination);
+                    o.frequency.value = freq;
+                    g.gain.setValueAtTime(0.2, audioContext.currentTime + i * 0.15);
+                    g.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + i * 0.15 + 0.3);
+                    o.start(audioContext.currentTime + i * 0.15);
+                    o.stop(audioContext.currentTime + i * 0.15 + 0.3);
+                });
+                break;
+            case 'lose':
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, audioContext.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 0.8);
+                gain.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + 0.8);
+                break;
+        }
+    }
+
+    // ==================== AYARLAR ====================
+    const WORLD_SIZE = 800;
+    let scene, camera, renderer, player;
+    let clock = new THREE.Clock();
+    let gameActive = false;
+    let stats = { food: 100, water: 100, heat: 100 };
+    let score = 0;
+    
+    let joy = { x:0, y:0, active:false };
+    let keys = { w:false, a:false, s:false, d:false };
+
+    let waterSources = [];
+    let items = [];
+    let caves = [];
+    let snowSystem, isSnowing = false, weatherTimer = 0;
+    let trees = [], rocks = [], bushes = [];
+    let beehives = []; // Arı kovanları
+    let beeSwarms = []; // Aktif arı sürüleri
+
+    // HIZ İKSİRİ SİSTEMİ
+    let speedPotions = [];
+    let speedBoostActive = false;
+    let speedBoostTimer = 0;
+    let potionSpawnTimer = 0;
+
+    let minimapCtx, minimapCanvas;
+    let foodSpawnTimer = 0;
+
+    // ==================== ARI SİSTEMİ ====================
+    // Arı sürüsü objesi
+    function createBeeSwarm(hivePosition) {
+        const swarm = new THREE.Group();
+        const beeMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+        const beeBodyMat = new THREE.MeshBasicMaterial({ color: 0x333300 });
+
+        const bees = [];
+        for(let i = 0; i < 12; i++) {
+            const bee = new THREE.Group();
+            
+            // Arı gövdesi (ufak)
+            const body = new THREE.Mesh(
+                new THREE.SphereGeometry(0.18, 6, 6),
+                beeBodyMat
+            );
+            body.scale.set(1, 0.7, 1.3);
+            
+            // Arı kanatları
+            const wingGeo = new THREE.PlaneGeometry(0.35, 0.2);
+            const wingMat = new THREE.MeshBasicMaterial({ 
+                color: 0xccffff, 
+                transparent: true, 
+                opacity: 0.6,
+                side: THREE.DoubleSide
+            });
+            const wing1 = new THREE.Mesh(wingGeo, wingMat);
+            wing1.position.set(0.22, 0.05, 0);
+            wing1.rotation.x = Math.PI / 6;
+            const wing2 = new THREE.Mesh(wingGeo, wingMat);
+            wing2.position.set(-0.22, 0.05, 0);
+            wing2.rotation.x = Math.PI / 6;
+            
+            bee.add(body, wing1, wing2);
+            bee.userData = {
+                offset: new THREE.Vector3(
+                    (Math.random() - 0.5) * 4,
+                    Math.random() * 3 + 1,
+                    (Math.random() - 0.5) * 4
+                ),
+                speed: 0.8 + Math.random() * 0.5,
+                phase: Math.random() * Math.PI * 2
+            };
+            swarm.add(bee);
+            bees.push(bee);
+        }
+        
+        swarm.position.copy(hivePosition);
+        swarm.position.y = 5;
+        swarm.userData = {
+            active: true,
+            chasing: true,
+            bees: bees,
+            stingCooldown: 0,
+            lifeTime: 0,
+            maxLife: 15 // 15 saniye sonra dağılır
+        };
+        
+        scene.add(swarm);
+        return swarm;
+    }
+
+    // ==================== HIZ İKSİRİ ====================
+    function createSpeedPotion(x, z) {
+        const potion = new THREE.Group();
+
+        // Şişe gövdesi
+        const bottleGeo = new THREE.CylinderGeometry(0.6, 0.5, 2, 16);
+        const bottleMat = new THREE.MeshStandardMaterial({
+            color: 0x9b59b6,
+            roughness: 0.2,
+            metalness: 0.6,
+            emissive: 0x6c3483,
+            emissiveIntensity: 0.4,
+            transparent: true,
+            opacity: 0.9
+        });
+        const bottle = new THREE.Mesh(bottleGeo, bottleMat);
+        bottle.position.y = 1.5;
+        bottle.castShadow = true;
+        potion.add(bottle);
+
+        // Kapak
+        const capGeo = new THREE.CylinderGeometry(0.65, 0.65, 0.4, 16);
+        const capMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.4 });
+        const cap = new THREE.Mesh(capGeo, capMat);
+        cap.position.y = 2.7;
+        cap.castShadow = true;
+        potion.add(cap);
+
+        // İç parlama efekti
+        const glowGeo = new THREE.SphereGeometry(0.4, 16, 16);
+        const glowMat = new THREE.MeshBasicMaterial({
+            color: 0xaa66ff,
+            transparent: true,
+            opacity: 0.8
+        });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.position.y = 1.5;
+        potion.add(glow);
+
+        // Dış halo
+        const haloGeo = new THREE.SphereGeometry(1.2, 16, 16);
+        const haloMat = new THREE.MeshBasicMaterial({
+            color: 0xbb77ff,
+            transparent: true,
+            opacity: 0.15,
+            side: THREE.BackSide
+        });
+        const halo = new THREE.Mesh(haloGeo, haloMat);
+        halo.position.y = 1.5;
+        potion.add(halo);
+
+        // Yıldız parçacıkları
+        const starGeo = new THREE.SphereGeometry(0.1, 8, 8);
+        const starMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        for(let i = 0; i < 5; i++) {
+            const star = new THREE.Mesh(starGeo, starMat);
+            const angle = (i / 5) * Math.PI * 2;
+            star.position.set(
+                Math.cos(angle) * 0.8,
+                1.5 + Math.sin(angle * 3) * 0.3,
+                Math.sin(angle) * 0.8
+            );
+            potion.add(star);
+        }
+
+        potion.position.set(x, 0, z);
+        potion.userData = {
+            type: 'speed_potion',
+            bobOffset: Math.random() * Math.PI * 2,
+            glowMesh: glow,
+            haloMesh: halo
+        };
+
+        scene.add(potion);
+        speedPotions.push(potion);
+        return potion;
+    }
+
+    // ==================== YİYECEK TEXTURE'LARI ====================
+    function createFoodTexture(type) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+        
+        if(type === 'meat') {
+            const gradient = ctx.createRadialGradient(128, 128, 40, 128, 128, 128);
+            gradient.addColorStop(0, '#8B1A1A');
+            gradient.addColorStop(0.3, '#A52A2A');
+            gradient.addColorStop(0.6, '#6B1010');
+            gradient.addColorStop(1, '#4A0808');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 256, 256);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.lineWidth = 4;
+            for(let i = 0; i < 20; i++) {
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * 256, Math.random() * 256);
+                ctx.quadraticCurveTo(Math.random() * 256, Math.random() * 256, Math.random() * 256, Math.random() * 256);
+                ctx.stroke();
+            }
+            for(let i = 0; i < 300; i++) {
+                ctx.fillStyle = `rgba(139, ${10 + Math.random() * 30}, ${10 + Math.random() * 20}, ${0.4 + Math.random() * 0.4})`;
+                ctx.fillRect(Math.random() * 256, Math.random() * 256, 4, 2);
+            }
+        } else if(type === 'fish') {
+            const gradient = ctx.createRadialGradient(128, 128, 30, 128, 128, 128);
+            gradient.addColorStop(0, '#E8E8E8');
+            gradient.addColorStop(0.4, '#D8D8D8');
+            gradient.addColorStop(0.7, '#B8B8B8');
+            gradient.addColorStop(1, '#989898');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 256, 256);
+            for(let i = 0; i < 120; i++) {
+                const x = Math.random() * 256;
+                const y = Math.random() * 256;
+                const size = 4 + Math.random() * 5;
+                ctx.fillStyle = `rgba(${210 + Math.random() * 45}, ${210 + Math.random() * 45}, ${210 + Math.random() * 45}, ${0.5 + Math.random() * 0.4})`;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(170, 170, 170, 0.6)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            for(let i = 0; i < 50; i++) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.4 + Math.random() * 0.5})`;
+                ctx.fillRect(Math.random() * 256, Math.random() * 256, 3, 3);
+            }
+        } else if(type === 'honey') {
+            const gradient = ctx.createRadialGradient(128, 128, 30, 128, 128, 128);
+            gradient.addColorStop(0, '#FFD700');
+            gradient.addColorStop(0.3, '#FFC700');
+            gradient.addColorStop(0.6, '#FFB000');
+            gradient.addColorStop(1, '#CC8800');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 256, 256);
+            for(let i = 0; i < 80; i++) {
+                const x = Math.random() * 256;
+                const y = Math.random() * 256;
+                ctx.fillStyle = `rgba(${240 + Math.random() * 15}, ${200 + Math.random() * 20}, 0, ${0.3 + Math.random() * 0.4})`;
+                ctx.beginPath();
+                ctx.ellipse(x, y, 6 + Math.random() * 4, 8 + Math.random() * 6, Math.random() * Math.PI, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            for(let i = 0; i < 100; i++) {
+                ctx.fillStyle = `rgba(255, 255, 200, ${0.2 + Math.random() * 0.3})`;
+                ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+            }
+        }
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        return texture;
+    }
+
+    // ==================== DÜNYA OLUŞTURMA ====================
+    function createWorld() {
+        const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 60, 60);
+        const groundMat = new THREE.MeshStandardMaterial({ 
+            color: 0x3d7a3f,
+            roughness: 0.9,
+            metalness: 0.05
+        });
+        
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // ======== GÖLETLER - KESINLIKLE EN AZ 3 TANE ========
+        waterSources = []; // Temizle
+        
+        // Sabit 5 konum - haritaya dengeli dağılmış
+        const fixedLakePositions = [
+            { x: -230, z: -230 }, // Kuzey-Batı
+            { x:  230, z: -230 }, // Kuzey-Doğu
+            { x: -230, z:  230 }, // Güney-Batı
+            { x:  230, z:  230 }, // Güney-Doğu
+            { x:    0, z:    0 }, // Merkez
+        ];
+        
+        // İLK 3 GÖLET KESINLIKLE OLUŞTURULUR - HİÇBİR KOŞUL YOK
+        for(let i = 0; i < 3; i++) {
+            const pos = fixedLakePositions[i];
+            const offsetX = (Math.random() - 0.5) * 50;
+            const offsetZ = (Math.random() - 0.5) * 50;
+            createPond(pos.x + offsetX, pos.z + offsetZ);
+        }
+        
+        // İsteğe bağlı 1-2 gölet daha (4. ve 5.)
+        const extraLakes = Math.floor(Math.random() * 3); // 0, 1 veya 2
+        for(let i = 3; i < 3 + extraLakes && i < 5; i++) {
+            const pos = fixedLakePositions[i];
+            const offsetX = (Math.random() - 0.5) * 50;
+            const offsetZ = (Math.random() - 0.5) * 50;
+            createPond(pos.x + offsetX, pos.z + offsetZ);
+        }
+        
+        console.log('✓ GÖLET SAYISI:', waterSources.length, '(Minimum 3 garantili)');
+
+        // ======== MAĞARALAR - KESINLIKLE EN AZ 3 TANE ========
+        caves = []; // Temizle
+        
+        // Sabit 5 konum - haritaya dengeli dağılmış
+        const fixedCavePositions = [
+            { x: -200, z: -200 }, // Kuzey-Batı
+            { x:  200, z: -200 }, // Kuzey-Doğu
+            { x:    0, z:    0 }, // Merkez
+            { x: -200, z:  200 }, // Güney-Batı
+            { x:  200, z:  200 }, // Güney-Doğu
+        ];
+        
+        // İLK 3 MAĞARA KESINLIKLE OLUŞTURULUR - HİÇBİR KOŞUL YOK
+        for(let i = 0; i < 3; i++) {
+            const pos = fixedCavePositions[i];
+            let cx, cz;
+            let attempts = 0;
+            let validPos = false;
+            
+            // Göletlerden uzak bir yer bulmaya çalış
+            while(!validPos && attempts < 20) {
+                const offsetX = (Math.random() - 0.5) * 80;
+                const offsetZ = (Math.random() - 0.5) * 80;
+                cx = pos.x + offsetX;
+                cz = pos.z + offsetZ;
+                
+                // Sınırlar içinde tut
+                cx = Math.max(-350, Math.min(350, cx));
+                cz = Math.max(-350, Math.min(350, cz));
+                
+                // Göletlerden uzak mı kontrol et
+                if(!isNearLake(cx, cz)) {
+                    validPos = true;
+                }
+                attempts++;
+            }
+            
+            // Yer bulunamazsa basit offset kullan (kesinlikle oluştur)
+            if(!validPos) {
+                cx = pos.x + (Math.random() - 0.5) * 40;
+                cz = pos.z + (Math.random() - 0.5) * 40;
+            }
+            
+            createCave(cx, cz);
+        }
+        
+        // İsteğe bağlı 1-2 mağara daha (4. ve 5.)
+        const extraCaves = Math.floor(Math.random() * 3); // 0, 1 veya 2
+        for(let i = 3; i < 3 + extraCaves && i < 5; i++) {
+            const pos = fixedCavePositions[i];
+            let cx, cz;
+            let attempts = 0;
+            let validPos = false;
+            
+            while(!validPos && attempts < 20) {
+                const offsetX = (Math.random() - 0.5) * 80;
+                const offsetZ = (Math.random() - 0.5) * 80;
+                cx = pos.x + offsetX;
+                cz = pos.z + offsetZ;
+                
+                cx = Math.max(-350, Math.min(350, cx));
+                cz = Math.max(-350, Math.min(350, cz));
+                
+                if(!isNearLake(cx, cz)) {
+                    validPos = true;
+                }
+                attempts++;
+            }
+            
+            if(!validPos) {
+                cx = pos.x + (Math.random() - 0.5) * 40;
+                cz = pos.z + (Math.random() - 0.5) * 40;
+            }
+            
+            createCave(cx, cz);
+        }
+        
+        console.log('✓ MAĞARA SAYISI:', caves.length, '(Minimum 3 garantili)');
+
+        // AĞAÇLAR - %40 arttırıldı
+        let treePositions = [];
+        for(let i = 0; i < 350; i++) {
+            let x = (Math.random() - 0.5) * (WORLD_SIZE - 60);
+            let z = (Math.random() - 0.5) * (WORLD_SIZE - 60);
+            if(!isNearCaveOrLake(x, z)) {
+                createTree(x, z, false); // Normal ağaç
+                treePositions.push({x, z});
+            }
+        }
+
+        // Bazı ağaçları kovanlı hale getir - Daha fazla kovan, haritaya dengeli dağılım
+        const hiveCount = Math.max(12, Math.floor(treePositions.length / 15)); // Minimum 12 kovan
+        
+        // Haritayı 4 bölgeye ayır ve her bölgeden kovan seç
+        const zones = [
+            { minX: -400, maxX: 0, minZ: -400, maxZ: 0 },    // Kuzey-Batı
+            { minX: 0, maxX: 400, minZ: -400, maxZ: 0 },     // Kuzey-Doğu
+            { minX: -400, maxX: 0, minZ: 0, maxZ: 400 },     // Güney-Batı
+            { minX: 0, maxX: 400, minZ: 0, maxZ: 400 }       // Güney-Doğu
+        ];
+        
+        let hivesPlaced = 0;
+        const hivesPerZone = Math.ceil(hiveCount / zones.length);
+        
+        zones.forEach(zone => {
+            // Bu bölgedeki ağaçları filtrele
+            const treesInZone = treePositions.filter(pos => 
+                pos.x >= zone.minX && pos.x <= zone.maxX &&
+                pos.z >= zone.minZ && pos.z <= zone.maxZ
+            );
+            
+            // Bu bölgeden rastgele ağaçlar seç
+            const shuffled = treesInZone.sort(() => Math.random() - 0.5);
+            const toPlace = Math.min(hivesPerZone, shuffled.length);
+            
+            for(let i = 0; i < toPlace && hivesPlaced < hiveCount; i++) {
+                const pos = shuffled[i];
+                
+                // O pozisyondaki normal ağacı bul ve sil
+                const oldTree = trees.find(t => 
+                    Math.abs(t.position.x - pos.x) < 0.1 && 
+                    Math.abs(t.position.z - pos.z) < 0.1
+                );
+                if(oldTree) {
+                    scene.remove(oldTree);
+                    trees = trees.filter(t => t !== oldTree);
+                }
+                
+                // Kovanlı büyük ağaç ekle
+                createTree(pos.x, pos.z, true);
+                createBeehive(pos.x, pos.z);
+                hivesPlaced++;
+            }
+        });
+
+        for(let i = 0; i < 120; i++) {
+            let x = (Math.random() - 0.5) * (WORLD_SIZE - 60);
+            let z = (Math.random() - 0.5) * (WORLD_SIZE - 60);
+            if(!isNearCaveOrLake(x, z)) createRock(x, z);
+        }
+
+        for(let i = 0; i < 150; i++) {
+            let x = (Math.random() - 0.5) * (WORLD_SIZE - 60);
+            let z = (Math.random() - 0.5) * (WORLD_SIZE - 60);
+            if(!isNearCaveOrLake(x, z)) createBush(x, z);
+        }
+
+        // Başlangıç yiyecekleri - %20 arttırıldı
+        for(let i = 0; i < 24; i++) spawnFood('meat');      // 20 -> 24
+        for(let i = 0; i < 12; i++) spawnFood('fish');      // 10 -> 12
+        for(let i = 0; i < 12; i++) spawnFood('honey');     // 10 -> 12
+        
+        // Oyun başında minimum 3 hız iksiri oluştur - haritaya dengeli dağılım
+        const potionZones = [
+            { cx: -250, cz: -250 }, // Kuzey-Batı
+            { cx:  250, cz: -250 }, // Kuzey-Doğu
+            { cx:    0, cz:    0 }, // Merkez
+            { cx: -250, cz:  250 }, // Güney-Batı
+            { cx:  250, cz:  250 }, // Güney-Doğu
+        ];
+        
+        const shuffledPotionZones = potionZones.sort(() => Math.random() - 0.5);
+        let potionsCreated = 0;
+        
+        for(let i = 0; i < 3 && i < shuffledPotionZones.length; i++) {
+            const zone = shuffledPotionZones[i];
+            let px, pz;
+            let attempts = 0;
+            
+            do {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 50 + Math.random() * 100;
+                px = zone.cx + Math.cos(angle) * radius;
+                pz = zone.cz + Math.sin(angle) * radius;
+                attempts++;
+            } while(isNearCaveOrLake(px, pz) && attempts < 20);
+            
+            if(attempts < 20) {
+                createSpeedPotion(px, pz);
+                potionsCreated++;
+            }
+        }
+        
+        // Eğer 3 iksir oluşturulamadıysa, kalan iksirler için tekrar dene
+        while(potionsCreated < 3) {
+            let px = (Math.random() - 0.5) * (WORLD_SIZE - 150);
+            let pz = (Math.random() - 0.5) * (WORLD_SIZE - 150);
+            if(!isNearCaveOrLake(px, pz)) {
+                createSpeedPotion(px, pz);
+                potionsCreated++;
+            }
+        }
+    }
+
+    // YENİ FONKSİYON (GÜNCELLENDİ: Talimat 4)
+    function isNearLake(x, z) {
+        for(let lake of waterSources) {
+            if(new THREE.Vector3(x, 0, z).distanceTo(lake.position) < 35) return true; /* 25'ten 35'e */
+        }
+        return false;
+    }
+
+    // YENİ FONKSİYON (GÜNCELLENDİ: Talimat 4)
+    function isNearCave(x, z) {
+        for(let cave of caves) {
+            if(new THREE.Vector3(x, 0, z).distanceTo(cave.position) < 40) return true;
+        }
+        return false;
+    }
+
+    // GÜNCELLENDİ: Talimat 4
+    function isNearCaveOrLake(x, z) {
+        return isNearCave(x, z) || isNearLake(x, z);
+    }
+
+    function createPond(x, z) {
+        const pond = new THREE.Mesh(
+            new THREE.CircleGeometry(20, 32),
+            new THREE.MeshStandardMaterial({ 
+                color: 0x1e6ba8,
+                roughness: 0.15,
+                metalness: 0.7,
+                emissive: 0x0a3d5c,
+                emissiveIntensity: 0.25
+            })
+        );
+        pond.rotation.x = -Math.PI/2;
+        pond.position.set(x, 0.3, z);
+        pond.receiveShadow = true;
+        scene.add(pond);
+        waterSources.push(pond);
+
+        for(let i = 0; i < 12; i++) {
+            const angle = (i / 12) * Math.PI * 2;
+            const radius = 22 + Math.random() * 4;
+            const px = x + Math.cos(angle) * radius;
+            const pz = z + Math.sin(angle) * radius;
+            if(Math.random() > 0.5) createRock(px, pz, 0.4 + Math.random() * 0.3);
+            else createBush(px, pz);
+        }
+    }
+
+    function createCave(x, z) {
+        const cave = new THREE.Group();
+        
+        const rockMat = new THREE.MeshStandardMaterial({
+            color: 0x505050,
+            roughness: 0.95,
+            metalness: 0.05
+        });
+        
+        const mainRock = new THREE.Mesh(new THREE.DodecahedronGeometry(12, 1), rockMat);
+        mainRock.castShadow = true;
+        mainRock.receiveShadow = true;
+        mainRock.position.y = 6;
+        
+        const sideRock1 = new THREE.Mesh(new THREE.DodecahedronGeometry(7, 0), rockMat);
+        sideRock1.position.set(-9, 3.5, 2);
+        sideRock1.castShadow = true;
+        
+        const sideRock2 = new THREE.Mesh(new THREE.DodecahedronGeometry(6, 0), rockMat);
+        sideRock2.position.set(8, 2.5, -3);
+        sideRock2.castShadow = true;
+        
+        const sideRock3 = new THREE.Mesh(new THREE.DodecahedronGeometry(5, 0), rockMat);
+        sideRock3.position.set(-3, 2, -8);
+        sideRock3.castShadow = true;
+        
+        const entrance = new THREE.Mesh(
+            new THREE.CircleGeometry(8, 16),
+            new THREE.MeshBasicMaterial({color: 0x000000})
+        );
+        entrance.position.set(0, 5, 9);
+        entrance.rotation.y = Math.PI;
+        
+        cave.add(mainRock, sideRock1, sideRock2, sideRock3, entrance);
+        cave.position.set(x, 0, z);
+        cave.rotation.y = Math.random() * Math.PI * 2;
+        scene.add(cave);
+        caves.push(cave);
+    }
+
+    // ==================== ARI KOVANI ====================
+    function createBeehive(treeX, treeZ) {
+        const hive = new THREE.Group();
+
+        // --- Destek direği (ağaç dalından inen ip/çubuk) ---
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x5C3A1E, roughness: 0.95 });
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.5, 8), poleMat);
+        pole.position.y = -1.5;
+        hive.add(pole);
+
+        // --- Ana kovan gövdesi — büyük, damla/küre şekli ---
+        const hiveMat = new THREE.MeshStandardMaterial({
+            color: 0xE8A000,
+            roughness: 0.55,
+            metalness: 0.15,
+            emissive: 0x7A4A00,
+            emissiveIntensity: 0.25
+        });
+        const hiveBody = new THREE.Mesh(
+            new THREE.SphereGeometry(2.2, 16, 16),
+            hiveMat
+        );
+        hiveBody.scale.set(1, 1.25, 1); // dikey olarak biraz uzun
+        hiveBody.castShadow = true;
+        hiveBody.receiveShadow = true;
+        hive.add(hiveBody);
+
+        // --- Petek çizgileri (yatay halkalar) ---
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x5C3000 });
+        for(let r = 0; r < 5; r++) {
+            const y = -1.5 + r * 0.75;
+            const rad = Math.sqrt(Math.max(0, 2.2*2.2 - (y/1.25)*(y/1.25)));
+            if(rad < 0.1) continue;
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(rad * 0.98, 0.09, 6, 32),
+                ringMat
+            );
+            ring.position.y = y;
+            hive.add(ring);
+        }
+
+        // --- Dikey çizgiler (dilim ayırıcı) ---
+        for(let s = 0; s < 8; s++) {
+            const pts = [];
+            const angle = (s / 8) * Math.PI * 2;
+            for(let t = 0; t <= 12; t++) {
+                const phi = -Math.PI/2 + (t / 12) * Math.PI;
+                const y = 2.2 * 1.25 * Math.sin(phi);
+                const xr = 2.2 * Math.cos(phi);
+                pts.push(new THREE.Vector3(
+                    xr * Math.cos(angle),
+                    y,
+                    xr * Math.sin(angle)
+                ));
+            }
+            const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+            const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x5C3000 }));
+            hive.add(line);
+        }
+
+        // --- Tepe konik kapak ---
+        const capMat = new THREE.MeshStandardMaterial({ color: 0x8B5A00, roughness: 0.85, metalness: 0.1 });
+        const cap = new THREE.Mesh(new THREE.ConeGeometry(1.3, 1.2, 12), capMat);
+        cap.position.y = 2.6;
+        cap.castShadow = true;
+        hive.add(cap);
+
+        // --- Giriş deliği ---
+        const holeMat = new THREE.MeshBasicMaterial({ color: 0x1A0800 });
+        const hole = new THREE.Mesh(new THREE.CircleGeometry(0.35, 12), holeMat);
+        hole.position.set(0, -0.4, 2.17);
+        hole.rotation.y = 0;
+        hive.add(hole);
+
+        // --- Bal damlası sarkan süs ---
+        const dropMat = new THREE.MeshStandardMaterial({ color: 0xFFD000, roughness: 0.2, metalness: 0.3, transparent: true, opacity: 0.92 });
+        for(let d = 0; d < 3; d++) {
+            const drop = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), dropMat);
+            drop.scale.y = 1.5;
+            drop.position.set(
+                Math.cos(d * 2.1) * 1.0,
+                -2.3 - d * 0.15,
+                Math.sin(d * 2.1) * 1.0
+            );
+            hive.add(drop);
+        }
+
+        // --- Sürekli görünen sarı ışık halesi (uzaktan fark edilsin) ---
+        const haloMat = new THREE.MeshBasicMaterial({ color: 0xFFE000, transparent: true, opacity: 0.18, side: THREE.BackSide });
+        const halo = new THREE.Mesh(new THREE.SphereGeometry(3.8, 12, 12), haloMat);
+        hive.add(halo);
+
+        // --- Yakında pulse eden parlak iç ışık ---
+        const glowMat = new THREE.MeshBasicMaterial({ color: 0xFFFF00, transparent: true, opacity: 0.0 });
+        const glow = new THREE.Mesh(new THREE.SphereGeometry(3.2, 10, 10), glowMat);
+        hive.add(glow);
+
+        // --- 3D "🐝" ikaz tabelası (sprite düzlem) ---
+        const signCanvas = document.createElement('canvas');
+        signCanvas.width = 128; signCanvas.height = 64;
+        const sctx = signCanvas.getContext('2d');
+        sctx.fillStyle = 'rgba(255,220,0,0.92)';
+        sctx.beginPath();
+        sctx.roundRect(4, 4, 120, 56, 12);
+        sctx.fill();
+        sctx.strokeStyle = '#7A4A00';
+        sctx.lineWidth = 3;
+        sctx.stroke();
+        sctx.font = 'bold 28px sans-serif';
+        sctx.textAlign = 'center';
+        sctx.fillStyle = '#3A1A00';
+        sctx.fillText('🐝 KOVAN', 64, 40);
+        const signTex = new THREE.CanvasTexture(signCanvas);
+        const sign = new THREE.Mesh(
+            new THREE.PlaneGeometry(3.5, 1.75),
+            new THREE.MeshBasicMaterial({ map: signTex, transparent: true, depthWrite: false, side: THREE.DoubleSide })
+        );
+        sign.position.set(0, 4.2, 0);
+        sign.userData.isSign = true; // her frame camera'ya baksın
+        hive.add(sign);
+
+        hive.position.set(treeX, 7.5, treeZ);
+        hive.userData = {
+            isBeehive: true,
+            triggered: false,
+            glowMesh: glow,
+            haloMesh: halo,
+            signMesh: sign,
+            bobPhase: Math.random() * Math.PI * 2
+        };
+
+        scene.add(hive);
+        beehives.push(hive);
+        return hive;
+    }
+
+    function createTree(x, z, hasHive = false) {
+        const tree = new THREE.Group();
+        
+        // Kovanlı ağaçlar %40 daha büyük ve farklı renk
+        const scale = hasHive ? 1.4 : (0.7 + Math.random() * 0.6);
+        const trunkColor = hasHive ? 0x6B4423 : 0x4a3428;
+        const leafColor = hasHive ? 0x3d7a27 : 0x2d5a27;
+        
+        const trunkGeo = new THREE.CylinderGeometry(0.7, 1, 5, 12);
+        const trunkMat = new THREE.MeshStandardMaterial({
+            color: trunkColor,
+            roughness: 0.98,
+            metalness: 0
+        });
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        trunk.position.y = 2.5;
+        trunk.castShadow = true;
+        trunk.receiveShadow = true;
+        
+        const leafMat = new THREE.MeshStandardMaterial({
+            color: leafColor,
+            roughness: 0.85,
+            metalness: 0,
+            emissive: hasHive ? 0x1a3d13 : 0x000000,
+            emissiveIntensity: hasHive ? 0.2 : 0
+        });
+        
+        const leaf1 = new THREE.Mesh(new THREE.ConeGeometry(5, 6, 10), leafMat);
+        leaf1.position.y = 6.5;
+        leaf1.castShadow = true;
+        
+        const leaf2 = new THREE.Mesh(new THREE.ConeGeometry(4.2, 5, 10), leafMat);
+        leaf2.position.y = 9.5;
+        leaf2.castShadow = true;
+        
+        const leaf3 = new THREE.Mesh(new THREE.ConeGeometry(3, 4, 10), leafMat);
+        leaf3.position.y = 12;
+        leaf3.castShadow = true;
+        
+        tree.add(trunk, leaf1, leaf2, leaf3);
+
+        // Kovanlı ağaçlar için sarı halo ekle
+        if(hasHive) {
+            const haloGeo = new THREE.SphereGeometry(8, 16, 16);
+            const haloMat = new THREE.MeshBasicMaterial({
+                color: 0xFFD700,
+                transparent: true,
+                opacity: 0.08,
+                side: THREE.BackSide
+            });
+            const halo = new THREE.Mesh(haloGeo, haloMat);
+            halo.position.y = 7;
+            tree.add(halo);
+        }
+        
+        tree.position.set(x, 0, z);
+        tree.scale.setScalar(scale);
+        scene.add(tree);
+        trees.push(tree);
+    }
+
+    function createRock(x, z, scale = 1) {
+        const rockGeo = new THREE.DodecahedronGeometry(1.8 * scale, 0);
+        const rockMat = new THREE.MeshStandardMaterial({
+            color: 0x6a6a6a,
+            roughness: 0.92,
+            metalness: 0.08
+        });
+        const rock = new THREE.Mesh(rockGeo, rockMat);
+        rock.position.set(x, 0.8 * scale, z);
+        rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+        rock.castShadow = true;
+        rock.receiveShadow = true;
+        scene.add(rock);
+        rocks.push(rock);
+    }
+
+    function createBush(x, z) {
+        const bush = new THREE.Group();
+        const bushMat = new THREE.MeshStandardMaterial({
+            color: 0x3d7a3f,
+            roughness: 0.92
+        });
+        for(let i = 0; i < 4; i++) {
+            const sphere = new THREE.Mesh(
+                new THREE.SphereGeometry(0.9 + Math.random() * 0.6, 10, 10),
+                bushMat
+            );
+            sphere.position.set(
+                (Math.random() - 0.5) * 1.8,
+                0.6 + Math.random() * 0.6,
+                (Math.random() - 0.5) * 1.8
+            );
+            sphere.castShadow = true;
+            bush.add(sphere);
+        }
+        bush.position.set(x, 0, z);
+        scene.add(bush);
+        bushes.push(bush);
+    }
+
+    // YİYECEK OLUŞTURMA
+    function spawnFood(type) {
+        const item = new THREE.Group();
+        let x, z;
+        do { 
+            x = (Math.random() - 0.5) * (WORLD_SIZE - 80); 
+            z = (Math.random() - 0.5) * (WORLD_SIZE - 80); 
+        } while(isNearCaveOrLake(x, z));
+
+        const scale = 2.2;
+        
+        if(type === 'meat') {
+            const meatGeo = new THREE.BoxGeometry(2 * scale, 0.8 * scale, 1.5 * scale);
+            const meatMat = new THREE.MeshStandardMaterial({
+                map: createFoodTexture('meat'),
+                roughness: 0.7,
+                metalness: 0.1
+            });
+            const meat = new THREE.Mesh(meatGeo, meatMat);
+            meat.position.y = 1.5;
+            meat.rotation.set(0.2, 0.3, 0.1);
+            meat.castShadow = true;
+            
+            const fatGeo = new THREE.BoxGeometry(2 * scale * 0.3, 0.8 * scale, 1.5 * scale * 0.8);
+            const fatMat = new THREE.MeshStandardMaterial({ color: 0xFFFAF0, roughness: 0.5, metalness: 0.2 });
+            const fat = new THREE.Mesh(fatGeo, fatMat);
+            fat.position.set(1.3 * scale, 1.5, 0);
+            fat.rotation.set(0.2, 0.3, 0.1);
+            fat.castShadow = true;
+            
+            item.add(meat, fat);
+            item.userData = { energy: 30, score: 10, type: 'meat', name: 'Et' };
+            
+        } else if(type === 'fish') {
+            const fishBodyGeo = new THREE.CylinderGeometry(0.3 * scale, 0.5 * scale, 2.2 * scale, 20);
+            const fishMat = new THREE.MeshStandardMaterial({
+                map: createFoodTexture('fish'),
+                roughness: 0.2,
+                metalness: 0.6
+            });
+            const fishBody = new THREE.Mesh(fishBodyGeo, fishMat);
+            fishBody.position.y = 1.5;
+            fishBody.rotation.z = Math.PI / 2;
+            fishBody.castShadow = true;
+            
+            const tailGeo = new THREE.ConeGeometry(0.6 * scale, 0.8 * scale, 4);
+            const tail = new THREE.Mesh(tailGeo, fishMat);
+            tail.position.set(2.5 * scale, 1.5, 0);
+            tail.rotation.z = -Math.PI / 2;
+            tail.castShadow = true;
+            
+            const topFinGeo = new THREE.ConeGeometry(0.35 * scale, 0.6 * scale, 3);
+            const topFin = new THREE.Mesh(topFinGeo, fishMat);
+            topFin.position.set(0.5 * scale, 2.3, 0);
+            topFin.rotation.set(0, 0, Math.PI);
+            topFin.scale.set(1, 0.5, 0.3);
+            
+            const sideFin1 = new THREE.Mesh(topFinGeo, fishMat);
+            sideFin1.position.set(0, 1.5, 0.6 * scale);
+            sideFin1.rotation.set(Math.PI/2, 0, 0);
+            sideFin1.scale.set(0.6, 0.4, 0.2);
+            
+            const sideFin2 = new THREE.Mesh(topFinGeo, fishMat);
+            sideFin2.position.set(0, 1.5, -0.6 * scale);
+            sideFin2.rotation.set(-Math.PI/2, 0, 0);
+            sideFin2.scale.set(0.6, 0.4, 0.2);
+            
+            const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+            const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.12 * scale, 8, 8), eyeMat);
+            eye1.position.set(-1.5 * scale, 1.6, 0.4 * scale);
+            const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.12 * scale, 8, 8), eyeMat);
+            eye2.position.set(-1.5 * scale, 1.6, -0.4 * scale);
+            
+            item.add(fishBody, tail, topFin, sideFin1, sideFin2, eye1, eye2);
+            item.userData = { energy: 25, score: 8, type: 'fish', name: 'Balık' };
+            
+        } else if(type === 'honey') {
+            const jarGeo = new THREE.CylinderGeometry(0.6 * scale, 0.65 * scale, 1.4 * scale, 16);
+            const jarMat = new THREE.MeshStandardMaterial({
+                map: createFoodTexture('honey'),
+                roughness: 0.3,
+                metalness: 0.4,
+                transparent: true,
+                opacity: 0.95
+            });
+            const jar = new THREE.Mesh(jarGeo, jarMat);
+            jar.position.y = 1.2;
+            jar.castShadow = true;
+            
+            const lidGeo = new THREE.CylinderGeometry(0.65 * scale, 0.6 * scale, 0.25 * scale, 16);
+            const lidMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.6, metalness: 0.3 });
+            const lid = new THREE.Mesh(lidGeo, lidMat);
+            lid.position.y = 1.95;
+            lid.castShadow = true;
+            
+            item.add(jar, lid);
+            item.userData = { energy: 20, score: 7, type: 'honey', name: 'Bal' };
+        }
+        
+        item.position.set(x, 0, z);
+        item.userData.bobOffset = Math.random() * Math.PI * 2;
+        scene.add(item);
+        items.push(item);
+    }
+
+    function createPlayer() {
+        player = new THREE.Group();
+        const bearMat = new THREE.MeshStandardMaterial({
+            color: 0x5d4037,
+            roughness: 0.92,
+            metalness: 0
+        });
+
+        const body = new THREE.Mesh(new THREE.SphereGeometry(1.5, 20, 20), bearMat);
+        body.position.y = 3;
+        body.castShadow = true;
+        body.receiveShadow = true;
+        player.bodyMesh = body;
+        player.add(body);
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(1.1, 20, 20), bearMat);
+        head.position.set(0, 4.2, 2);
+        head.castShadow = true;
+        player.headMesh = head;
+        player.add(head);
+
+        const earGeo = new THREE.SphereGeometry(0.35, 12, 12);
+        const earL = new THREE.Mesh(earGeo, bearMat);
+        earL.position.set(0.7, 5, 2);
+        earL.castShadow = true;
+        player.earL = earL;
+        const earR = new THREE.Mesh(earGeo, bearMat);
+        earR.position.set(-0.7, 5, 2);
+        earR.castShadow = true;
+        player.earR = earR;
+        player.add(earL, earR);
+
+        const nose = new THREE.Mesh(
+            new THREE.SphereGeometry(0.25, 12, 12),
+            new THREE.MeshBasicMaterial({color: 0x000000})
+        );
+        nose.position.set(0, 4.2, 3);
+        player.add(nose);
+
+        const legGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.6, 16);
+        const addLeg = (x, z) => {
+            const l = new THREE.Mesh(legGeo, bearMat);
+            l.position.set(x, 1.8, z);
+            l.castShadow = true;
+            player.add(l);
+            return l;
+        };
+        player.legs = {
+            fl: addLeg(0.8, 1.5),
+            fr: addLeg(-0.8, 1.5),
+            bl: addLeg(0.8, -1.5),
+            br: addLeg(-0.8, -1.5)
+        };
+
+        player.position.y = 1;
+        scene.add(player);
+    }
+
+    function createWeatherSystems() {
+        const snowGeo = new THREE.BufferGeometry();
+        const snowPos = [];
+        for(let i = 0; i < 5000; i++) {
+            snowPos.push(
+                (Math.random() - 0.5) * 450,
+                Math.random() * 120,
+                (Math.random() - 0.5) * 450
+            );
+        }
+        snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(snowPos, 3));
+        snowSystem = new THREE.Points(
+            snowGeo, 
+            new THREE.PointsMaterial({
+                color: 0xffffff, 
+                size: 0.7, 
+                transparent: true,
+                opacity: 0.9
+            })
+        );
+        snowSystem.visible = false;
+        scene.add(snowSystem);
+    }
+
+    function setupInputs() {
+        const zone = document.getElementById('joystick-zone');
+        const knob = document.getElementById('joystick-knob');
+        let sx, sy;
+        
+        zone.addEventListener('touchstart', e => { 
+            joy.active = true; 
+            sx = e.touches[0].clientX; 
+            sy = e.touches[0].clientY; 
+        });
+        
+        zone.addEventListener('touchmove', e => { 
+            if(!joy.active) return;
+            const dx = e.touches[0].clientX - sx; 
+            const dy = e.touches[0].clientY - sy;
+            const d = Math.min(Math.hypot(dx, dy), 60); 
+            const a = Math.atan2(dy, dx);
+            joy.x = Math.cos(a) * (d / 60); 
+            joy.y = Math.sin(a) * (d / 60);
+            knob.style.transform = `translate(calc(-50% + ${joy.x * 60}px), calc(-50% + ${joy.y * 60}px))`;
+        });
+        
+        zone.addEventListener('touchend', () => { 
+            joy.active = false; 
+            joy.x = 0; 
+            joy.y = 0; 
+            knob.style.transform = `translate(-50%, -50%)`; 
+        });
+
+        window.addEventListener('keydown', e => {
+            if(e.key == 'w' || e.key == 'W') keys.w = true;
+            if(e.key == 's' || e.key == 'S') keys.s = true;
+            if(e.key == 'a' || e.key == 'A') keys.a = true;
+            if(e.key == 'd' || e.key == 'D') keys.d = true;
+        });
+        
+        window.addEventListener('keyup', e => {
+            if(e.key == 'w' || e.key == 'W') keys.w = false;
+            if(e.key == 's' || e.key == 'S') keys.s = false;
+            if(e.key == 'a' || e.key == 'A') keys.a = false;
+            if(e.key == 'd' || e.key == 'D') keys.d = false;
+        });
+    }
+
+    function initMinimap() {
+        minimapCanvas = document.getElementById('minimap');
+        minimapCtx = minimapCanvas.getContext('2d');
+    }
+
+    function updateMinimap() {
+        if(!minimapCtx) return;
+        
+        const w = minimapCanvas.width;
+        const h = minimapCanvas.height;
+        const scale = w / WORLD_SIZE;
+        
+        minimapCtx.clearRect(0, 0, w, h);
+        
+        minimapCtx.fillStyle = '#2d5a27';
+        minimapCtx.fillRect(0, 0, w, h);
+        
+        minimapCtx.fillStyle = '#1e6ba8';
+        waterSources.forEach(lake => {
+            const x = (lake.position.x + WORLD_SIZE/2) * scale;
+            const y = (lake.position.z + WORLD_SIZE/2) * scale;
+            minimapCtx.beginPath();
+            minimapCtx.arc(x, y, 20 * scale, 0, Math.PI * 2);
+            minimapCtx.fill();
+        });
+        
+        minimapCtx.fillStyle = '#505050';
+        caves.forEach(cave => {
+            const x = (cave.position.x + WORLD_SIZE/2) * scale;
+            const y = (cave.position.z + WORLD_SIZE/2) * scale;
+            minimapCtx.beginPath();
+            minimapCtx.arc(x, y, 12 * scale, 0, Math.PI * 2);
+            minimapCtx.fill();
+        });
+
+        // Arı kovanlarını minimap'te göster — turuncu kare + iç nokta
+        beehives.forEach(hive => {
+            const x = (hive.position.x + WORLD_SIZE/2) * scale;
+            const y = (hive.position.z + WORLD_SIZE/2) * scale;
+            // Dış çerçeve
+            minimapCtx.fillStyle = '#FF8C00';
+            minimapCtx.fillRect(x - 4, y - 4, 8, 8);
+            // İç nokta (bal sarısı)
+            minimapCtx.fillStyle = '#FFE000';
+            minimapCtx.beginPath();
+            minimapCtx.arc(x, y, 2, 0, Math.PI * 2);
+            minimapCtx.fill();
+        });
+
+        // Hız iksirlerini minimap'te göster - mor yıldız
+        speedPotions.forEach(potion => {
+            if(!potion.visible) return;
+            const x = (potion.position.x + WORLD_SIZE/2) * scale;
+            const y = (potion.position.z + WORLD_SIZE/2) * scale;
+            minimapCtx.fillStyle = '#9b59b6';
+            minimapCtx.beginPath();
+            minimapCtx.moveTo(x, y - 4);
+            minimapCtx.lineTo(x - 3, y + 2);
+            minimapCtx.lineTo(x + 3, y + 2);
+            minimapCtx.closePath();
+            minimapCtx.fill();
+        });
+        
+        const px = (player.position.x + WORLD_SIZE/2) * scale;
+        const py = (player.position.z + WORLD_SIZE/2) * scale;
+        minimapCtx.fillStyle = '#FFD700';
+        minimapCtx.beginPath();
+        minimapCtx.arc(px, py, 5, 0, Math.PI * 2);
+        minimapCtx.fill();
+        minimapCtx.strokeStyle = '#ffffff';
+        minimapCtx.lineWidth = 2;
+        minimapCtx.stroke();
+    }
+
+    let beeAlertTimer = 0;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        const dt = Math.min(clock.getDelta(), 0.1);
+
+        if(gameActive) {
+            // HIZ İKSİRİ SİSTEMİ
+            let baseSpeed = 18;
+            if(speedBoostActive) {
+                baseSpeed *= 1.5; // %50 artış
+                speedBoostTimer -= dt;
+                if(speedBoostTimer <= 0) {
+                    speedBoostActive = false;
+                    document.getElementById('speed-boost-alert').style.display = 'none';
+                }
+            }
+
+            let mx = joy.x, mz = joy.y;
+            if(!joy.active) {
+                if(keys.w) mz = -1; 
+                if(keys.s) mz = 1;
+                if(keys.a) mx = -1; 
+                if(keys.d) mx = 1;
+            }
+
+            const speed = baseSpeed;
+            const moving = mx !== 0 || mz !== 0;
+
+            if(moving) {
+                player.position.x += mx * speed * dt;
+                player.position.z += mz * speed * dt;
+                
+                const limit = WORLD_SIZE / 2 - 15;
+                player.position.x = Math.max(-limit, Math.min(limit, player.position.x));
+                player.position.z = Math.max(-limit, Math.min(limit, player.position.z));
+                
+                player.rotation.y = Math.atan2(mx, mz);
+                
+                // Bacak animasyonu - hız iksiri aktifse daha hızlı
+                const legSpeed = speedBoostActive ? 15 : 10;
+                const walkSpeed = Date.now() * 0.001 * legSpeed;
+                player.legs.fl.rotation.x = Math.sin(walkSpeed) * 0.5;
+                player.legs.br.rotation.x = Math.sin(walkSpeed) * 0.5;
+                player.legs.fr.rotation.x = -Math.sin(walkSpeed) * 0.5;
+                player.legs.bl.rotation.x = -Math.sin(walkSpeed) * 0.5;
+                
+                walkingSoundTimer += dt;
+                if(walkingSoundTimer > 0.3) {
+                    walkingSoundTimer = 0;
+                    playSound('walk');
+                }
+            } else {
+                Object.values(player.legs).forEach(leg => leg.rotation.x *= 0.9);
+                walkingSoundTimer = 0;
+            }
+
+            const cameraOffset = new THREE.Vector3(0, 25, 35);
+            const targetCamPos = new THREE.Vector3(
+                player.position.x + cameraOffset.x,
+                cameraOffset.y,
+                player.position.z + cameraOffset.z
+            );
+            camera.position.lerp(targetCamPos, 0.1);
+            const lookTarget = player.position.clone();
+            lookTarget.y += 3.5;
+            camera.lookAt(lookTarget);
+
+            // ZORLUK: Her 10 puanda bir açlık, susama ve ısı kaybı hızı artar
+            // 0 puan → çarpan 1.0  |  100 puan → çarpan ~2.35 (oyun hızla zorlaşır)
+            const scoreTier = Math.floor(score / 10); // 0-9 arası basamak
+            const diffMult = 1.0 + scoreTier * 0.15;  // +%15 her 10 puan, max ~+%135 @ 90pt
+            stats.food  -= 1.0 * diffMult * dt;
+            stats.water -= 1.2 * diffMult * dt;
+
+            // BEDEN BOYUTU - AÇLIKLA DEĞİŞİR (yürürken de değişmez)
+            const foodRatio = Math.max(0, Math.min(1, stats.food / 100));
+            // Temel beden ölçeği: açken 0.6x, tokken 1.5x
+            const bodyScale = 0.6 + foodRatio * 0.9;
+            
+            // Gövde ölçeği - yavaş geçiş için lerp
+            const currentBodyScaleX = player.bodyMesh.scale.x;
+            const targetBodyScale = bodyScale;
+            const lerpedScale = currentBodyScaleX + (targetBodyScale - currentBodyScaleX) * 0.05;
+            
+            player.bodyMesh.scale.set(lerpedScale, 0.9 * lerpedScale, lerpedScale * 1.6);
+            
+            // Kafa da küçülüp büyüsün
+            const headScale = 0.7 + foodRatio * 0.5;
+            const currentHeadScale = player.headMesh.scale.x;
+            const lerpedHeadScale = currentHeadScale + (headScale - currentHeadScale) * 0.05;
+            player.headMesh.scale.setScalar(lerpedHeadScale);
+            
+            // Kulaklar da ölçeklensin
+            const earScale = 0.7 + foodRatio * 0.5;
+            player.earL.scale.setScalar(earScale);
+            player.earR.scale.setScalar(earScale);
+            
+            // Gövde zıplaması sadece yürürken
+            if(moving) {
+                const walkSpeed2 = Date.now() * 0.015;
+                player.bodyMesh.position.y = 3 + Math.sin(walkSpeed2 * 2) * 0.12;
+            } else {
+                player.bodyMesh.position.y = 3;
+            }
+
+            // Dinamik yiyecek spawn - %20 daha sık (süre azaltıldı)
+            foodSpawnTimer += dt;
+            if(foodSpawnTimer > 5 + Math.random() * 3) { // 6+4'ten 5+3'e düşürüldü
+                foodSpawnTimer = 0;
+                const foodType = Math.random();
+                if(foodType < 0.5) spawnFood('meat');
+                else if(foodType < 0.8) spawnFood('fish');
+                else spawnFood('honey');
+                playSound('spawn');
+            }
+
+            // HIZ İKSİRİ SPAWN SİSTEMİ
+            potionSpawnTimer += dt;
+            if(potionSpawnTimer > 20 + Math.random() * 20) {
+                potionSpawnTimer = 0;
+                let px, pz;
+                let attempts = 0;
+                do {
+                    px = (Math.random() - 0.5) * (WORLD_SIZE - 100);
+                    pz = (Math.random() - 0.5) * (WORLD_SIZE - 100);
+                    attempts++;
+                } while(isNearCaveOrLake(px, pz) && attempts < 20);
+                
+                if(attempts < 20) {
+                    createSpeedPotion(px, pz);
+                }
+            }
+
+            // HIZ İKSİRİ ANİMASYONU VE TOPLAMA
+            speedPotions.forEach((potion, idx) => {
+                if(!potion.visible) return;
+                
+                // Bob hareketi
+                const bobTime = Date.now() * 0.002 + potion.userData.bobOffset;
+                potion.position.y = Math.sin(bobTime) * 0.4;
+                
+                // Döndürme
+                potion.rotation.y += dt * 2;
+                
+                // Glow pulsing
+                const pulse = Math.sin(Date.now() * 0.003) * 0.5 + 0.5;
+                if(potion.userData.glowMesh) {
+                    potion.userData.glowMesh.material.opacity = 0.5 + pulse * 0.4;
+                }
+                if(potion.userData.haloMesh) {
+                    potion.userData.haloMesh.scale.setScalar(1 + pulse * 0.15);
+                }
+                
+                // Toplama kontrolü
+                if(player.position.distanceTo(potion.position) < 6) {
+                    potion.visible = false;
+                    speedBoostActive = true;
+                    speedBoostTimer = 5; // 5 saniye
+                    playSound('speed_boost');
+                    document.getElementById('speed-boost-alert').style.display = 'block';
+                    
+                    setTimeout(() => {
+                        scene.remove(potion);
+                        speedPotions = speedPotions.filter(p => p !== potion);
+                    }, 100);
+                }
+            });
+
+            // HAVA SİSTEMİ
+            weatherTimer += dt;
+            if(weatherTimer > 20) {
+                isSnowing = !isSnowing;
+                weatherTimer = 0;
+                if(isSnowing) {
+                    snowSystem.visible = true;
+                    scene.background.setHex(0x8899aa);
+                    scene.fog.color.setHex(0x8899aa);
+                    document.getElementById('weather-alert').style.display = 'block';
+                    playSound('wind');
+                } else {
+                    snowSystem.visible = false;
+                    scene.background.setHex(0x87CEEB);
+                    scene.fog.color.setHex(0x87CEEB);
+                    document.getElementById('weather-alert').style.display = 'none';
+                }
+            }
+
+            let inAnyCave = false;
+            caves.forEach(cave => {
+                if(player.position.distanceTo(cave.position) < 18) inAnyCave = true;
+            });
+
+            if(isSnowing) {
+                if(inAnyCave) {
+                    stats.heat = Math.min(100, stats.heat + 20 * dt);
+                } else {
+                    stats.heat -= 5 * diffMult * dt; // 4'ten 5'e (+%25 artış)
+                }
+                
+                const positions = snowSystem.geometry.attributes.position.array;
+                for(let i = 1; i < positions.length; i += 3) {
+                    positions[i] -= 1.2;
+                    if(positions[i] < 0) positions[i] = 120;
+                }
+                snowSystem.geometry.attributes.position.needsUpdate = true;
+            } else {
+                // Fırtına bittikten sonra ısı barı SADECE mağarada dolar
+                if(inAnyCave) {
+                    stats.heat = Math.min(100, stats.heat + 10 * dt);
+                }
+                // Dışarıda ısı barı dolmaz, sadece korunur
+            }
+
+            // ==================== ARI KOVANI SİSTEMİ ====================
+            beehives.forEach(hive => {
+                // Kovan hafifçe sallanıyor
+                const t = Date.now() * 0.001;
+                hive.rotation.z = Math.sin(t + hive.userData.bobPhase) * 0.06;
+
+                // Tabela her zaman kameraya baksın (billboard)
+                if(hive.userData.signMesh) {
+                    hive.userData.signMesh.lookAt(camera.position);
+                }
+
+                // Hale sürekli nefes alıyor (uzaktan görünür)
+                if(hive.userData.haloMesh) {
+                    hive.userData.haloMesh.material.opacity = 0.10 + Math.sin(t * 2 + hive.userData.bobPhase) * 0.08;
+                }
+
+                // Yakındayken pulse glow daha belirgin
+                const distToHive = player.position.distanceTo(hive.position);
+                if(hive.userData.glowMesh) {
+                    if(distToHive < 30) {
+                        hive.userData.glowMesh.material.opacity = 0.22 + Math.sin(t * 4) * 0.15;
+                    } else {
+                        hive.userData.glowMesh.material.opacity = 0.0;
+                    }
+                }
+                
+                // Arı sürüsü tetikle — kovana 12 birimden yakın gelince
+                if(!hive.userData.triggered && distToHive < 12) {
+                    hive.userData.triggered = true;
+                    const swarm = createBeeSwarm(hive.position.clone());
+                    beeSwarms.push(swarm);
+                    playSound('bee');
+                    setTimeout(() => { hive.userData.triggered = false; }, 25000);
+                }
+            });
+
+            // ==================== ARI SÜRÜSÜ GÜNCELLEME ====================
+            let anyBeeChasing = false;
+            beeAlertTimer -= dt;
+            
+            for(let i = beeSwarms.length - 1; i >= 0; i--) {
+                const swarm = beeSwarms[i];
+                if(!swarm.userData) continue;
+                
+                swarm.userData.lifeTime += dt;
+                swarm.userData.stingCooldown -= dt;
+                
+                // Arı sürüsü ömrü dolunca sil
+                if(swarm.userData.lifeTime > swarm.userData.maxLife) {
+                    scene.remove(swarm);
+                    beeSwarms.splice(i, 1);
+                    continue;
+                }
+                
+                // Oyuncuya doğru yavaşça git (çok hızlı değil)
+                const dir = new THREE.Vector3(
+                    player.position.x - swarm.position.x,
+                    0,
+                    player.position.z - swarm.position.z
+                );
+                const dist = dir.length();
+                
+                if(dist > 0.5) {
+                    dir.normalize();
+                    const beeSpeed = 12.075; // +%50 artırıldı (önceki: 8.05)
+                    swarm.position.x += dir.x * beeSpeed * dt;
+                    swarm.position.z += dir.z * beeSpeed * dt;
+                    swarm.position.y = 4 + Math.sin(Date.now() * 0.003) * 1.5;
+                }
+                
+                // Arı animasyonu - her arı uçuyor
+                const t = Date.now() * 0.003;
+                swarm.userData.bees.forEach((bee, idx) => {
+                    bee.userData.phase += dt * 3;
+                    const offset = bee.userData.offset;
+                    bee.position.set(
+                        offset.x + Math.sin(t * bee.userData.speed + idx) * 1.5,
+                        offset.y + Math.sin(t * 2 + idx * 0.7) * 0.5,
+                        offset.z + Math.cos(t * bee.userData.speed + idx) * 1.5
+                    );
+                    // Kanatlar sallansın
+                    bee.children.forEach(child => {
+                        if(child.geometry && child.geometry.type === 'PlaneGeometry') {
+                            child.rotation.z = Math.sin(Date.now() * 0.02) * 0.5;
+                        }
+                    });
+                });
+                
+                anyBeeChasing = true;
+                
+                // Arı ayıya değdi mi? (5 birim)
+                if(dist < 5 && swarm.userData.stingCooldown <= 0) {
+                    swarm.userData.stingCooldown = 2.0; // 2 saniyede bir sokabilir
+                    
+                    // Tüm barları %16.5 azalt (+%10 artırıldı, önceki: %15)
+                    stats.food  = Math.max(0, stats.food  - 16.5);
+                    stats.water = Math.max(0, stats.water - 16.5);
+                    stats.heat  = Math.max(0, stats.heat  - 16.5);
+                    
+                    playSound('bee_sting');
+                    beeAlertTimer = 3;
+                    
+                    if(stats.food <= 0 || stats.water <= 0 || stats.heat <= 0) {
+                        playSound('lose');
+                        endGame(false, 'bee');
+                        return;
+                    }
+                }
+            }
+            
+            // Arı uyarı mesajını göster/gizle
+            document.getElementById('bee-alert').style.display = (anyBeeChasing && beeAlertTimer > 0) ? 'block' : 'none';
+
+            // Yiyecekler
+            items.forEach(item => {
+                const bobTime = Date.now() * 0.002 + item.userData.bobOffset;
+                item.position.y = Math.sin(bobTime) * 0.3;
+                item.rotation.y += dt * 1.5;
+                
+                if(item.visible && player.position.distanceTo(item.position) < 6) {
+                    item.visible = false;
+                    stats.food = Math.min(100, stats.food + item.userData.energy);
+                    
+                    // Skoru artır ama 100'ü geçmesin
+                    score = Math.min(100, score + item.userData.score);
+                    document.getElementById('current-score').innerText = score;
+                    playSound('eat');
+                    
+                    if(score >= 100) {
+                        score = 100; // Tam 100'de sabitle
+                        playSound('win');
+                        endGame(true);
+                        return;
+                    }
+
+                    setTimeout(() => {
+                        if(item) {
+                            scene.remove(item);
+                            items = items.filter(i => i !== item);
+                        }
+                    }, 100);
+                }
+            });
+
+            let drinkingWater = false;
+            waterSources.forEach(lake => {
+                if(player.position.distanceTo(lake.position) < 20 && stats.water < 100) {
+                    stats.water = Math.min(100, stats.water + 18 * dt);
+                    drinkingWater = true;
+                }
+            });
+            
+            if(drinkingWater && Math.random() < 0.05) {
+                playSound('water');
+            }
+
+            updateUI();
+            updateMinimap();
+            
+            if(stats.food <= 0 || stats.water <= 0 || stats.heat <= 0) {
+                playSound('lose');
+                endGame(false);
+            }
+        }
+
+        renderer.render(scene, camera);
+    }
+
+    function updateUI() {
+        document.getElementById('bar-food').style.width = Math.max(0, stats.food) + '%';
+        document.getElementById('bar-water').style.width = Math.max(0, stats.water) + '%';
+        document.getElementById('bar-heat').style.width = Math.max(0, stats.heat) + '%';
+    }
+
+    function endGame(win, cause) {
+        gameActive = false;
+        
+        // Canvas'ı tıklanamaz yap
+        const canvas = document.querySelector('canvas');
+        if (canvas) canvas.classList.add('game-over');
+        
+        document.getElementById('score-panel').classList.add('hidden');
+        document.getElementById('stats-container').classList.add('hidden');
+        document.getElementById('minimap').classList.add('hidden');
+        document.getElementById('help-text').classList.add('hidden');
+        document.getElementById('bee-alert').style.display = 'none';
+        document.getElementById('weather-alert').style.display = 'none';
+        document.getElementById('speed-boost-alert').style.display = 'none';
+        
+        let message = '';
+        if(win) {
+            message = "🏆 100 Puana ulaştın ve vahşi doğada hayatta kaldın!";
+        } else {
+            if(cause === 'bee') message = "🐝 Arılar seni yendi! Arı kovanlarından uzak dur.";
+            else if(stats.food <= 0) message = "🍖 Açlıktan öldün... Daha fazla yiyecek toplamalıydın.";
+            else if(stats.water <= 0) message = "💧 Susuzluktan öldün... Göletlere gitmeliydin.";
+            else message = "❄️ Donarak öldün... Fırtınalarda mağaraya girmeliydsin.";
+        }
+        
+        console.log('🎮 endGame trigger - Modal gösterilecek. Puan:', score, 'Mesaj:', message);
+        showGameOverModal(score, message);
+    }
+
+    function init() {
+        if(/Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            document.getElementById('joystick-zone').style.display = 'block';
+        }
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 100, 400);
+
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 800);
+        camera.position.set(0, 25, 35);
+        camera.lookAt(0, 0, 0);
+
+        renderer = new THREE.WebGLRenderer({ 
+            antialias: true, 
+            alpha: false,
+            powerPreference: "high-performance"
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setClearColor(0x87CEEB);
+        document.body.appendChild(renderer.domElement);
+
+        const ambient = new THREE.AmbientLight(0xffffff, 0.65);
+        scene.add(ambient);
+        
+        const sun = new THREE.DirectionalLight(0xffeedd, 0.85);
+        sun.position.set(150, 200, 150);
+        sun.castShadow = true;
+        sun.shadow.mapSize.width = 2048;
+        sun.shadow.mapSize.height = 2048;
+        sun.shadow.camera.left = -300;
+        sun.shadow.camera.right = 300;
+        sun.shadow.camera.top = 300;
+        sun.shadow.camera.bottom = -300;
+        sun.shadow.camera.far = 600;
+        scene.add(sun);
+
+        const fillLight = new THREE.HemisphereLight(0x87CEEB, 0x4a7c59, 0.5);
+        scene.add(fillLight);
+
+        createWorld();
+        createPlayer();
+        createWeatherSystems();
+        setupInputs();
+        initMinimap();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    }
+
+    function startGame() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('score-panel').classList.remove('hidden');
+        document.getElementById('stats-container').classList.remove('hidden');
+        document.getElementById('minimap').classList.remove('hidden');
+        document.getElementById('help-text').classList.remove('hidden');
+        
+        // Tam ekran moduna geç
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(err => {
+                console.log('Tam ekran hatası:', err);
+            });
+        } else if (elem.webkitRequestFullscreen) { /* Safari */
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) { /* IE11 */
+            elem.msRequestFullscreen();
+        }
+        
+        clock.start();
+        gameActive = true;
+    }
+
+    /* OYUN SONU MODAL KONTROLLERİ */
+    function showGameOverModal(puanKazandigi, aciklama) {
+        console.log('📱 showGameOverModal çağrıldı - puan:', puanKazandigi, 'mesaj:', aciklama);
+        aciklama = aciklama || 'Oyunu tamamladın!';
+        const modal = document.getElementById('gameOverModal');
+        
+        if (!modal) {
+            console.error('❌ gameOverModal element bulunamadı!');
+            return;
+        }
+        
+        // İçeriği güncelle
+        document.getElementById('gameOverTitle').textContent = '🎮 Oyun Bitti!';
+        document.getElementById('gameOverMessage').textContent = aciklama;
+        document.getElementById('earnedPointsDisplay').textContent = puanKazandigi;
+        
+        // Eski class'ları kaldır
+        modal.classList.remove('hidden');
+        
+        // Showing state'ine geç (biraz delay ile animasyon için)
+        setTimeout(() => {
+            modal.classList.add('showing');
+            console.log('✅ Modal showing class eklendi');
+        }, 10);
+        
+        oyunBitti(puanKazandigi);
+    }
+
+    function closeGameOverModal() {
+        const modal = document.getElementById('gameOverModal');
+        if (modal) {
+            modal.classList.remove('showing');
+            modal.classList.add('hidden');
+        }
+        // Canvas'ı tekrar tıklanabilir yap
+        const canvas = document.querySelector('canvas');
+        if (canvas) canvas.classList.remove('game-over');
+    }
+
+    function restartGameFromModal() {
+        closeGameOverModal();
+        location.reload();
+    }
+
+    function oyunBitti(puan) {
+        console.log('🎯 Oyun sonu puanı: ' + puan);
+    }
+
+    function collectScoreAndExit(puan) {
+        console.log('💾 Puan kabul ediliyor ve oyundan çıkılıyor: ' + puan);
+        
+        // Ensure score is sent to Flutter
+        if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
+            window.flutter_inappwebview.callHandler('sendScore', puan);
+            console.log('✅ Puan Flutter\'e gönderildi: ' + puan);
+        }
+        
+        // Close the game and return to app
+        if (window.GameBridge && window.GameBridge.backToApp) {
+            window.GameBridge.backToApp();
+        } else {
+            // Fallback - just navigate back
+            history.back();
+        }
+    }
+
+    function startGame() {
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('score-panel').classList.remove('hidden');
+        document.getElementById('stats-container').classList.remove('hidden');
+        document.getElementById('minimap').classList.remove('hidden');
+        document.getElementById('help-text').classList.remove('hidden');
+        
+        // Tam ekran moduna geç
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen().catch(err => {
+                console.log('Tam ekran hatası:', err);
+            });
+        } else if (elem.webkitRequestFullscreen) { /* Safari */
+            elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) { /* IE11 */
+            elem.msRequestFullscreen();
+        }
+        
+        clock.start();
+        gameActive = true;
+    }
+
+    window.onload = init;
+</script>
+
+<div id="gameOverModal" class="gameOverModal hidden">
+    <div class="gameOverModalContent">
+        <h2 id="gameOverTitle">🎮 Oyun Bitti!</h2>
+        <div class="gameOverInfo">
+            <p id="gameOverMessage">Oyunu tamamladın!</p>
+            <p class="earnedPoints">Kazandığın Puan: <span id="earnedPointsDisplay">0</span></p>
+        </div>
+        <div class="gameOverBtnContainer">
+            <button id="collectScoreBtn" class="gameOverBtn primary">✅ Puanı Al</button>
+            <button id="playAgainBtn" class="gameOverBtn">Tekrar Oyna 🔁</button>
+            <button id="exitBtn" class="gameOverBtn secondary">Ana Menu</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Modal button listeners - DOM ready old, modal after
+    document.addEventListener('DOMContentLoaded', function() {
+        const collectScoreBtn = document.getElementById('collectScoreBtn');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const exitBtn = document.getElementById('exitBtn');
+        
+        if (collectScoreBtn) {
+            collectScoreBtn.addEventListener('click', function () {
+                const earnedPoints = parseInt(document.getElementById('earnedPointsDisplay').textContent || '0');
+                collectScoreAndExit(earnedPoints);
+            });
+        }
+        
+        if (playAgainBtn) {
+            playAgainBtn.addEventListener('click', restartGameFromModal);
+        }
+        
+        if (exitBtn) {
+            exitBtn.addEventListener('click', function () {
+                closeGameOverModal();
+                if (window.GameBridge && window.GameBridge.backToApp) {
+                    window.GameBridge.backToApp();
+                } else {
+                    history.back();
+                }
+            });
+        }
+    });
+    
+    // Fallback - eğer DOMContentLoaded çalışmazsa, direkt çalıştır
+    setTimeout(function() {
+        const collectScoreBtn = document.getElementById('collectScoreBtn');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const exitBtn = document.getElementById('exitBtn');
+        
+        if (collectScoreBtn && !collectScoreBtn.hasListener) {
+            collectScoreBtn.hasListener = true;
+            collectScoreBtn.addEventListener('click', function () {
+                const earnedPoints = parseInt(document.getElementById('earnedPointsDisplay').textContent || '0');
+                collectScoreAndExit(earnedPoints);
+            });
+        }
+        
+        if (playAgainBtn && !playAgainBtn.hasListener) {
+            playAgainBtn.hasListener = true;
+            playAgainBtn.addEventListener('click', restartGameFromModal);
+        }
+        
+        if (exitBtn && !exitBtn.hasListener) {
+            exitBtn.hasListener = true;
+            exitBtn.addEventListener('click', function () {
+                closeGameOverModal();
+                if (window.GameBridge && window.GameBridge.backToApp) {
+                    window.GameBridge.backToApp();
+                } else {
+                    history.back();
+                }
+            });
+        }
+    }, 500);
+</script>
+
+</body>
+</html>

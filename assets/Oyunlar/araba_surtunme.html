@@ -617,15 +617,15 @@
         animate();
 
         function showResult(time) {
-            ui.layer.style.display='none'; ui.result.style.display='flex';
-            document.getElementById("res-time").innerText=time.toFixed(1);
             let score = 100 - (Math.max(0, time - 28) * 3);
             score = Math.floor(Math.max(0, Math.min(100, score)));
-            document.getElementById("res-score").innerText = score;
-            const msg = document.getElementById("res-msg");
-            if(score >= 90) msg.innerText="Harika! Tam bir fen ustasısın.";
-            else if(score >= 70) msg.innerText="Güzel! Biraz daha pratik yapabilirsin.";
-            else msg.innerText="Zeminlere ve araç seçimine dikkat etmelisin.";
+            
+            let msg = "Zeminlere ve araç seçimine dikkat etmelisin.";
+            if(score >= 90) msg = "Harika! Tam bir fen ustasısın. 🏆";
+            else if(score >= 70) msg = "Güzel! Biraz daha pratik yapabilirsin. 🏁";
+            
+            // Modal göster
+            showGameOverModal(score, msg);
         }
     </script>
 <script>

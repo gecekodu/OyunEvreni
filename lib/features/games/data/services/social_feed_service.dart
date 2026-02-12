@@ -314,7 +314,7 @@ class SocialFeedService {
     }
   }
 
-  /// 🎮 HTML Oyunlarını sosyal akışta göster (5 temel oyun)
+  /// 🎮 HTML Oyunlarını sosyal akışta göster (6 temel oyun)
   Future<List<Map<String, dynamic>>> getHtmlGamesForFeed() async {
     try {
       return [
@@ -327,7 +327,7 @@ class SocialFeedService {
           'difficulty': '⭐⭐',
           'playCount': 0,
           'isHtml': true,
-          'htmlFile': 'assets/html_games/example_games/besin_ninja.html',
+          'htmlFile': 'assets/Oyunlar/besin_ninja.html',
         },
         {
           'id': 'lazer-fizik-001',
@@ -338,7 +338,7 @@ class SocialFeedService {
           'difficulty': '⭐⭐⭐',
           'playCount': 0,
           'isHtml': true,
-          'htmlFile': 'assets/html_games/example_games/lazer_fizik.html',
+          'htmlFile': 'assets/Oyunlar/lazer_fizik.html',
         },
         {
           'id': 'matematik-okcusu-001',
@@ -349,7 +349,7 @@ class SocialFeedService {
           'difficulty': '⭐⭐⭐',
           'playCount': 0,
           'isHtml': true,
-          'htmlFile': 'assets/html_games/example_games/matematik_okcusu.html',
+          'htmlFile': 'assets/Oyunlar/matematik_okcusu.html',
         },
         {
           'id': 'araba-surtunme-001',
@@ -360,7 +360,7 @@ class SocialFeedService {
           'difficulty': '⭐⭐',
           'playCount': 0,
           'isHtml': true,
-          'htmlFile': 'assets/html_games/example_games/araba_surtunme.html',
+          'htmlFile': 'assets/Oyunlar/araba_surtunme.html',
         },
         {
           'id': 'gezegen-bul-001',
@@ -371,7 +371,18 @@ class SocialFeedService {
           'difficulty': '⭐⭐',
           'playCount': 0,
           'isHtml': true,
-          'htmlFile': 'assets/html_games/example_games/gezegenibul.html',
+          'htmlFile': 'assets/Oyunlar/gezegen_bul.html',
+        },
+        {
+          'id': 'vahsi-doga-001',
+          'title': '🌲 Vahşi Doğa',
+          'description': 'Vahşi doğada hayatta kal! Yiyecek topla, su iç, ısını koru',
+          'category': 'Yaşam Becerileri',
+          'icon': '🌲',
+          'difficulty': '⭐⭐⭐',
+          'playCount': 0,
+          'isHtml': true,
+          'htmlFile': 'assets/Oyunlar/vahsi_doga.html',
         },
       ];
     } catch (e) {

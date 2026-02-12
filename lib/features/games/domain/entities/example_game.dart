@@ -8,7 +8,8 @@ enum ExampleGameType {
   colorMatch('Renk Eşleştir', '🎨'),
   mathQuiz('Matematik', '🔢'),
   wordChain('Kelime Zinciri', '📝'),
-  planetHunt('Gezegen Bul', '🪐');
+  planetHunt('Gezegen Bul', '🪐'),
+  survival('Vahşi Doğa', '🌲');
 
   final String title;
   final String emoji;

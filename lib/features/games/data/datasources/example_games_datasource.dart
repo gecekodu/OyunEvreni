@@ -70,6 +70,18 @@ class ExampleGamesDatasourceImpl implements ExampleGamesDatasource {
       difficulty: 0.5,
       estimatedDuration: Duration(minutes: 8),
     ),
+    ExampleGame(
+      id: 'vahsi-doga-001',
+      type: ExampleGameType.survival,
+      title: '🌲 Vahşi Doğa',
+      description: 'Vahşi doğada hayatta kal! Yiyecek topla, su iç, ısını koru ve 100 puana ulaş.',
+      htmlContent: 'assets/Oyunlar/vahsi_doga.html',
+      minAge: 10,
+      maxAge: 18,
+      category: 'Yaşam Becerileri',
+      difficulty: 0.7,
+      estimatedDuration: Duration(minutes: 15),
+    ),
   ];
 
   @override

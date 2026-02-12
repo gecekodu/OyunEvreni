@@ -614,7 +614,8 @@
 function showGameOverModal(puanKazandigi, aciklama) {
     aciklama = aciklama || 'Oyunu tamamladın!';
     const modal = document.getElementById('gameOverModal');
-    if (modal) {
+    if (modal && !modal.classList.contains('showing')) { // Zaten açılmışsa tekrar açma
+        modal.classList.add('showing'); // Marker ekle
         document.getElementById('gameOverTitle').textContent = '🎮 Oyun Bitti!';
         document.getElementById('gameOverMessage').textContent = aciklama;
         document.getElementById('earnedPointsDisplay').textContent = puanKazandigi;

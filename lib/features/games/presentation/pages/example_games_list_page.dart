@@ -205,6 +205,8 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
         return [Color(0xFF0097A7), Color(0xFF0288D1)]; // Turkuaz
       case ExampleGameType.planetHunt:
         return [Color(0xFF00897B), Color(0xFF26A69A)]; // Yeşil
+      case ExampleGameType.survival:
+        return [Color(0xFF558B2F), Color(0xFF7CB342)]; // Orman yeşili
     }
   }
 }
