@@ -1584,7 +1584,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  late Future<Map<String, dynamic>> userStats;
   bool _isUploadingPhoto = false;
   String? _profilePhotoUrl;
   String? _selectedAvatarEmoji;
@@ -1597,7 +1596,6 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    userStats = _fetchUserStats();
     _loadProfilePhoto();
     _loadAvatarEmoji();
   }
@@ -1673,54 +1671,58 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Future<Map<String, dynamic>> _fetchUserStats() async {
+  /// 🔴 Get real-time user stats stream
+  Stream<Map<String, dynamic>> _getUserStatsStream() async* {
     final firebaseService = getIt<FirebaseService>();
     final userId = firebaseService.currentUser?.uid ?? 'unknown';
     
     try {
       final firestore = FirebaseFirestore.instance;
       
-      // Kullanıcı genel verileri
-      final userDoc = await firestore.collection('users').doc(userId).get();
-      final userData = userDoc.data() ?? {};
-      
-      // Oyun skorları
-      final scoresSnapshot = await firestore
-          .collection('game_scores')
-          .where('userId', isEqualTo: userId)
-          .get();
-
-        final badgesSnapshot = await firestore
+      // Listen to users document for real-time totalScore
+      yield* firestore
           .collection('users')
           .doc(userId)
-          .collection('badges')
-          .get();
-      
-      final scores = scoresSnapshot.docs;
-      final totalScore = scores.fold<int>(0, (sum, doc) {
-        final score = doc['score'] as int? ?? 0;
-        return sum + score;
+          .snapshots()
+          .asyncMap((userDoc) async {
+        final userData = userDoc.data() ?? {};
+        
+        // Get totalScore from users collection (updated by atomic increment)
+        final totalScore = (userData['totalScore'] as int?) ?? 0;
+        
+        // Get game scores for playCount, uniqueGames, and highestScore
+        final scoresSnapshot = await firestore
+            .collection('game_scores')
+            .where('userId', isEqualTo: userId)
+            .get();
+        
+        // Get badges
+        final badgesSnapshot = await firestore
+            .collection('users')
+            .doc(userId)
+            .collection('badges')
+            .get();
+        
+        final scores = scoresSnapshot.docs;
+        final playCount = scores.length;
+        final uniqueGames = {...scores.map((doc) => doc['gameId'])}.length;
+        final highestScore = scores.isEmpty 
+            ? 0 
+            : scores.map((doc) => (doc['score'] as int?) ?? 0).reduce((a, b) => a > b ? a : b);
+        
+        return {
+          'totalScore': totalScore, // 🔴 Real-time from atomic increment
+          'playCount': playCount,
+          'uniqueGames': uniqueGames,
+          'highestScore': highestScore,
+          'globalRank': userData['globalRank'] ?? '---',
+          'badges': badgesSnapshot.docs.map((d) => d.data()).toList(),
+        };
       });
-      
-      // Oyun sayısı
-      final uniqueGames = {...scores.map((doc) => doc['gameId'])}.length;
-      
-      // En yüksek skor
-      final highestScore = scores.isEmpty 
-          ? 0 
-          : scores.map((doc) => (doc['score'] as int?) ?? 0).reduce((a, b) => a > b ? a : b);
-      
-      return {
-        'totalScore': totalScore,
-        'playCount': scores.length,
-        'uniqueGames': uniqueGames,
-        'highestScore': highestScore,
-        'globalRank': userData['globalRank'] ?? '---',
-        'badges': badgesSnapshot.docs.map((d) => d.data()).toList(),
-      };
     } catch (e) {
-      debugPrint('Hata - İstatistikler yüklenemedi: $e');
-      return {
+      debugPrint('❌ Error - Istatistikler yuklenemedi: $e');
+      // Return empty stats on error
+      yield {
         'totalScore': 0,
         'playCount': 0,
         'uniqueGames': 0,
@@ -1933,11 +1935,11 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 24),
 
-            // İstatistikler (Firestore'dan)
-            FutureBuilder<Map<String, dynamic>>(
-              future: userStats,
+            // İstatistikler (Firestore'dan - Real-Time)
+            StreamBuilder<Map<String, dynamic>>(
+              stream: _getUserStatsStream(),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                   return const Card(
                     child: Padding(
                       padding: EdgeInsets.all(16),

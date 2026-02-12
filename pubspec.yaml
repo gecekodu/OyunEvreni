@@ -46,6 +46,7 @@ dependencies:
 
   # WebView for HTML games
   webview_flutter: ^4.4.0
+  flutter_inappwebview: ^6.0.0
 
   # 🎮 Flame Game Engine
   flame: ^1.15.0

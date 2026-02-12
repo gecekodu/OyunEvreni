@@ -2,7 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../data/services/leaderboard_service.dart';
+import '../../data/services/score_service.dart';
 
 class LeaderboardPage extends StatefulWidget {
   final String? gameId; // Oyun bazlı filtre için
@@ -63,16 +65,29 @@ class _LeaderboardPageState extends State<LeaderboardPage>
 
   /// 🌍 GLOBAL LEADERBOARD
   Widget _buildGlobalLeaderboard() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _leaderboardService.getGlobalLeaderboard(limit: 100),
+    final scoreService = GetIt.instance<ScoreService>();
+    
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: scoreService.getGlobalUserLeaderboard(limit: 100),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.deepOrange),
+            ),
+          );
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Center(
-            child: Text('📋 Sıralamaya ait veri bulunamadı.'),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.show_chart, size: 48, color: Colors.grey),
+                SizedBox(height: 16),
+                Text('📋 Henüz sıralama verisi yok'),
+              ],
+            ),
           );
         }
 
@@ -84,16 +99,23 @@ class _LeaderboardPageState extends State<LeaderboardPage>
           itemBuilder: (context, index) {
             final user = leaderboard[index];
             final rank = index + 1;
-            final score = user['score'] ?? 0;
-            final userName = user['userName'] ?? 'Anonim';
+            final score = user['totalScore'] ?? 0;
+            final userName = user['username'] ?? 'Kullanıcı';
 
             // Madalya emojisi
             String medalEmoji = '';
-            if (rank == 1)
+            Color medalColor = Colors.grey;
+            
+            if (rank == 1) {
               medalEmoji = '🥇';
-            else if (rank == 2)
+              medalColor = Colors.amber;
+            } else if (rank == 2) {
               medalEmoji = '🥈';
-            else if (rank == 3) medalEmoji = '🥉';
+              medalColor = Colors.grey[400]!;
+            } else if (rank == 3) {
+              medalEmoji = '🥉';
+              medalColor = Colors.orange;
+            }
 
             return Container(
               margin: const EdgeInsets.symmetric(vertical: 6),
@@ -110,27 +132,38 @@ class _LeaderboardPageState extends State<LeaderboardPage>
                 ),
               ),
               child: ListTile(
-                leading: Text(
-                  medalEmoji.isEmpty ? '#$rank' : medalEmoji,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                title: Row(
-                  children: [
-                    _buildAvatar(user),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        userName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                leading: Container(
+                  width: 40,
+                  alignment: Alignment.center,
+                  child: medalEmoji.isNotEmpty
+                      ? Text(
+                          medalEmoji,
+                          style: const TextStyle(fontSize: 24),
+                        )
+                      : Text(
+                          '#$rank',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
                         ),
-                      ),
-                    ),
-                  ],
+                ),
+                title: Text(
+                  userName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text(
+                  'Seviyi ${(score ~/ 100) + 1}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade400,
+                  ),
                 ),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(

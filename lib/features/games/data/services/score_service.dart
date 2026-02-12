@@ -157,4 +157,77 @@ class ScoreService {
       return [];
     }
   }
+
+  /// 🏅 HTML oyunlardan Puan Ekle (Atomic Increment)
+  /// Firebase Rules sayesinde eşzamanlı erişim güvenlidir
+  Future<void> addScoreToUserProfile({
+    required String userId,
+    required String userName,
+    required int score,
+    String userAvatar = '',
+  }) async {
+    try {
+      final userRef = _firebaseService.firestore
+          .collection('users')
+          .doc(userId);
+
+      await userRef.set(
+        {
+          'totalScore': FieldValue.increment(score),
+          'lastUpdated': FieldValue.serverTimestamp(),
+          'username': userName,
+          'userAvatar': userAvatar,
+        },
+        SetOptions(merge: true),
+      );
+
+      print('✅ Profil puanı güncellendi: +$score puan (Kullanıcı: $userName)');
+    } catch (e) {
+      print('❌ Profil puan ekleme hatası: $e');
+      rethrow;
+    }
+  }
+
+  /// 👤 Kullanıcının Toplam Puanı Getir
+  Future<int> getUserTotalScore(String userId) async {
+    try {
+      final doc = await _firebaseService.firestore
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        return doc['totalScore'] ?? 0;
+      }
+      return 0;
+    } catch (e) {
+      print('❌ Toplam puan getirme hatası: $e');
+      return 0;
+    }
+  }
+
+  /// 🏆 Global Leaderboard (Toplam Puanlara Göre)
+  Stream<List<Map<String, dynamic>>> getGlobalUserLeaderboard({int limit = 100}) {
+    try {
+      return _firebaseService.firestore
+          .collection('users')
+          .orderBy('totalScore', descending: true)
+          .limit(limit)
+          .snapshots()
+          .map((snapshot) {
+            return snapshot.docs
+                .map((doc) => {
+                      'uid': doc.id,
+                      'username': doc['username'] ?? 'Kullanıcı',
+                      'totalScore': doc['totalScore'] ?? 0,
+                      'userAvatar': doc['userAvatar'] ?? '',
+                      'lastUpdated': doc['lastUpdated'],
+                    })
+                .toList();
+          });
+    } catch (e) {
+      print('❌ Global leaderboard stream hatası: $e');
+      return Stream.value([]);
+    }
+  }
 }

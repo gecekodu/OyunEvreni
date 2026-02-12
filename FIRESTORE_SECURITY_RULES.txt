@@ -1,0 +1,78 @@
+// 🔐 FIRESTORE SECURITY RULES
+// Firebase Console: Firestore Database → Rules kısmına kopyala
+// Tüm kullanıcıları korur, aynı anda binlerce puan işlemini güvenle yönetir
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ✅ USERS KOLEKSİYONU
+    // Her kullanıcı kendi profilini yazabilir
+    // Herkes leaderboard'u okuyabilir
+    match /users/{userId} {
+      allow read: if true;  // Leaderboard görmek için herkese açık
+      allow write: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ✅ SCORES KOLEKSİYONU
+    // Oyun skorlarını tutuyor
+    match /scores/{scoreId} {
+      allow read: if true;  // Herkes skorları görebilir
+      allow create: if request.auth != null;  // Giriş yapmışsa skor kaydedebilir
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // ✅ GAMES KOLEKSİYONU
+    // Oyun tanımlarını tutuyor
+    match /games/{gameId} {
+      allow read: if true;  // Herkes oyunları görebilir
+      allow write: if request.auth != null;  // Admin kontrol edilmeli
+    }
+
+    // ✅ LEADERBOARD KOLEKSİYONU (isteğe bağlı)
+    match /leaderboard/{leaderboardId} {
+      allow read: if true;
+      allow write: if false;  // Sadece backend tarafından yazılır
+    }
+
+    // ✅ USER SESSIONS (isteğe bağlı - öğrenme verisi)
+    match /user_sessions/{sessionId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // ⚠️ HILE KORUMA
+    // Atomic Increment kullanıldığından birçok eşzamanlı yazma işlemi güvenle yönetilir
+    // Firebase Rules sadece erişim kontrolü yapar; veri tutarlılığı Firestore tarafından garantilenir
+  }
+}
+
+/*
+📋 KÜÇ UK İPUCLARI:
+
+1️⃣ TOPLAM PUAN GÜNCELLEMESİ
+   ✅ Adım: HTML oyun puan gönderir → Flutter handle eder → Atomic increment yapar
+   
+2️⃣ LEADERBOARD SORGULAMA
+   ✅ Firestore otomatikman toplam puanın yüksekten düşüğe sıralanmış index kullanır
+   
+3️⃣ HILE RİSKİ
+   ❌ Müşteri tarafı puan değiştirilebilir ANCAK:
+      • Firebase Authentication zorunlu
+      • Rules sadece kendi UID'nize yazmanıza izin verir
+      • Server timestamp otomatikman toplanır
+      
+4️⃣ ÖLÇEKLENME
+   ✅ Atomic increment tümerinde çakışmaları önler
+   ✅ Firestore saniyede milyonlarca işlemi yönetebilir
+
+5️⃣ GELECEK (ADVANCEd)
+   • Firebase Functions ile puan validasyonu
+   • Client tarafı şifreli imza
+   • Bot algılama sistemi
+*/

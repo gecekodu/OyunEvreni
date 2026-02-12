@@ -160,9 +160,18 @@
     font-weight: bold;
     border-radius: 10px;
     cursor: pointer;
-    margin-top: 20px;
+    margin-top: 10px;
+    margin-left: 5px;
+    margin-right: 5px;
     transition: all 0.3s ease;
-    min-width: 200px;
+    min-width: auto;
+    flex: 1;
+}
+
+.gameOverBtn.primary {
+    background: #10b981;
+    color: white;
+    border: 2px solid #10b981;
 }
 
 .gameOverBtn.secondary {
@@ -177,6 +186,14 @@
 
 .gameOverBtn:active {
     transform: scale(0.95);
+}
+
+.gameOverBtnContainer {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
 }
     </style>
 </head>
@@ -638,10 +655,17 @@ function restartGameFromModal() {
 }
 
 function oyunBitti(puan) {
+    console.log('🎯 Oyun sonu puanı: ' + puan);
+    
+    // ✅ Flutter'a puan gönder
+    if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
+        window.flutter_inappwebview.callHandler('sendScore', puan);
+        console.log('✅ Puan Flutter\'e gönderildi: ' + puan);
+    }
+    
+    // Fallback: Eski yöntemler
     if (window.PuanKanali) {
         window.PuanKanali.postMessage(puan.toString());
-    } else {
-        console.log("Flutter baglansi bulunamadi");
     }
 
     if (window.GameBridge && typeof window.GameBridge.sendScore === 'function') {
@@ -653,12 +677,40 @@ function oyunBitti(puan) {
     }
 }
 
+function collectScoreAndExit(puan) {
+    console.log('💾 Puan kabul ediliyor ve oyundan çıkılıyor: ' + puan);
+    
+    // Ensure score is sent to Flutter
+    if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
+        window.flutter_inappwebview.callHandler('sendScore', puan);
+        console.log('✅ Puan Flutter\'e gönderildi: ' + puan);
+    }
+    
+    // Close the game and return to app
+    if (window.GameBridge && window.GameBridge.backToApp) {
+        window.GameBridge.backToApp();
+    } else {
+        // Fallback - just navigate back
+        history.back();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    const collectScoreBtn = document.getElementById('collectScoreBtn');
     const playAgainBtn = document.getElementById('playAgainBtn');
     const exitBtn = document.getElementById('exitBtn');
+    
+    if (collectScoreBtn) {
+        collectScoreBtn.addEventListener('click', function () {
+            const earnedPoints = parseInt(document.getElementById('earnedPointsDisplay').textContent || '0');
+            collectScoreAndExit(earnedPoints);
+        });
+    }
+    
     if (playAgainBtn) {
         playAgainBtn.addEventListener('click', restartGameFromModal);
     }
+    
     if (exitBtn) {
         exitBtn.addEventListener('click', function () {
             if (window.GameBridge && window.GameBridge.backToApp) {
@@ -677,8 +729,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p id="gameOverMessage">Oyunu tamamladın!</p>
                 <p class="earnedPoints">Kazandığın Puan: <span id="earnedPointsDisplay">0</span></p>
             </div>
-            <button id="playAgainBtn" class="gameOverBtn">Tekrar Oyna 🔁</button>
-            <button id="exitBtn" class="gameOverBtn secondary">Ana Menu</button>
+            <div class="gameOverBtnContainer">
+                <button id="collectScoreBtn" class="gameOverBtn primary">✅ Puanı Al</button>
+                <button id="playAgainBtn" class="gameOverBtn">Tekrar Oyna 🔁</button>
+                <button id="exitBtn" class="gameOverBtn secondary">Ana Menu</button>
+            </div>
         </div>
     </div>
 
