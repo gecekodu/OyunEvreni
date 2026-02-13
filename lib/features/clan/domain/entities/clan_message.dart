@@ -8,6 +8,7 @@ class ClanMessage {
   final String userId;
   final String userName;
   final String? userPhotoUrl;
+  final String? userAvatarEmoji;
   final String message;
   final DateTime timestamp;
   final List<String> reactions; // 👍, ❤️, 😂, vs.
@@ -18,6 +19,7 @@ class ClanMessage {
     required this.userId,
     required this.userName,
     this.userPhotoUrl,
+    this.userAvatarEmoji,
     required this.message,
     required this.timestamp,
     this.reactions = const [],
@@ -31,6 +33,7 @@ class ClanMessage {
       userId: data['userId'] ?? '',
       userName: data['userName'] ?? 'Kullanıcı',
       userPhotoUrl: data['userPhotoUrl'],
+      userAvatarEmoji: data['userAvatarEmoji'],
       message: data['message'] ?? '',
       timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
       reactions: List<String>.from(data['reactions'] ?? []),
@@ -43,6 +46,7 @@ class ClanMessage {
       'userId': userId,
       'userName': userName,
       'userPhotoUrl': userPhotoUrl,
+      'userAvatarEmoji': userAvatarEmoji,
       'message': message,
       'timestamp': Timestamp.fromDate(timestamp),
       'reactions': reactions,
@@ -55,6 +59,7 @@ class ClanMessage {
     String? userId,
     String? userName,
     String? userPhotoUrl,
+    String? userAvatarEmoji,
     String? message,
     DateTime? timestamp,
     List<String>? reactions,
@@ -65,6 +70,7 @@ class ClanMessage {
       userId: userId ?? this.userId,
       userName: userName ?? this.userName,
       userPhotoUrl: userPhotoUrl ?? this.userPhotoUrl,
+      userAvatarEmoji: userAvatarEmoji ?? this.userAvatarEmoji,
       message: message ?? this.message,
       timestamp: timestamp ?? this.timestamp,
       reactions: reactions ?? this.reactions,

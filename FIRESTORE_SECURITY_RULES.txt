@@ -38,6 +38,30 @@ service cloud.firestore {
       allow write: if request.auth != null;  // Authenticated kullanıcılar yazabilir
     }
 
+    // ✅ CLANS KOLEKSİYONU
+    match /clans/{clanId} {
+      allow read: if true;  // Herkes klan listesini görebilir
+      allow create: if request.auth != null;  // Giriş yapmışsa klan oluşturabilir
+      allow update: if request.auth != null;  // Klan lideri güncelleyebilir (kontrol gerekebilir)
+      allow delete: if request.auth != null;  // Klan lideri silebilir (kontrol gerekebilir)
+    }
+
+    // ✅ KLAN SÖHBETİ
+    match /clan_messages/{messageId} {
+      allow read: if request.auth != null;  // Giriş yapmışsa mesajları okuyabilir
+      allow create: if request.auth != null;  // Giriş yapmışsa mesaj yazabilir
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;  // Sadece yazarı güncelleyebilir
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;  // Sadece yazarı silebilir
+    }
+
+    // ✅ KLAN SÖHBETİ (Klan alt koleksiyonu)
+    match /clans/{clanId}/messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
     // ✅ USER SESSIONS (isteğe bağlı - öğrenme verisi)
     match /user_sessions/{sessionId} {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;

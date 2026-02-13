@@ -15,6 +15,7 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
   late final ExampleGamesRepository _repository;
   List<ExampleGame> _games = [];
   bool _isLoading = true;
+  final Set<int> _pressedCards = {};
 
   @override
   void initState() {
@@ -99,7 +100,7 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
                         final game = _games[index];
                         return Padding(
                           padding: EdgeInsets.only(bottom: 16),
-                          child: _buildGameCard(game),
+                          child: _buildGameCard(game, index),
                         );
                       },
                       childCount: _games.length,
@@ -111,76 +112,94 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
     );
   }
 
-  Widget _buildGameCard(ExampleGame game) {
+  Widget _buildGameCard(ExampleGame game, int index) {
+    final isPressed = _pressedCards.contains(index);
     return Card(
       elevation: 12,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: InkWell(
-        onTap: () => _launchGame(game),
-        splashColor: Colors.white.withOpacity(0.4),
-        highlightColor: Colors.white.withOpacity(0.25),
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          height: 150,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: _getGradientColors(game.type),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressedCards.add(index)),
+        onTapCancel: () => setState(() => _pressedCards.remove(index)),
+        onTapUp: (_) => setState(() => _pressedCards.remove(index)),
+        child: InkWell(
+          onTap: () => _launchGame(game),
+          splashColor: Colors.white.withOpacity(0.4),
+          highlightColor: Colors.white.withOpacity(0.25),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            height: 150,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: _getGradientColors(game.type),
+              ),
             ),
-          ),
-          child: Stack(
-            children: [
-              // Oyun görseli
-              if (game.imagePath != null)
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.asset(
-                      game.imagePath!,
-                      fit: BoxFit.cover,
+            child: Stack(
+              children: [
+                // Oyun görseli
+                if (game.imagePath != null)
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        game.imagePath!,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+
+                // Dokunma efekti
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 120),
+                  opacity: isPressed ? 1 : 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white.withOpacity(0.15),
                     ),
                   ),
                 ),
 
-              // Kategori etiketi (sol taraf dikey)
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  width: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.85),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      bottomLeft: Radius.circular(20),
-                    ),
-                    border: Border(
-                      right: BorderSide(
-                        color: Color(0xFFFFD700),
-                        width: 2,
+                // Kategori etiketi (sol taraf dikey)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.85),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        bottomLeft: Radius.circular(20),
+                      ),
+                      border: Border(
+                        right: BorderSide(
+                          color: Color(0xFFFFD700),
+                          width: 2,
+                        ),
                       ),
                     ),
-                  ),
-                  child: Center(
-                    child: RotatedBox(
-                      quarterTurns: -1,
-                      child: Text(
-                        game.category.toUpperCase(),
-                        style: TextStyle(
-                          color: Color(0xFFFFD700),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5,
+                    child: Center(
+                      child: RotatedBox(
+                        quarterTurns: -1,
+                        child: Text(
+                          game.category.toUpperCase(),
+                          style: TextStyle(
+                            color: Color(0xFFFFD700),
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

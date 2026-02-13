@@ -23,6 +23,14 @@ class _ClanChatPageState extends State<ClanChatPage> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
   bool _isLoading = false;
+  late final Stream<List<ClanMessage>> _messagesStream;
+  static const double _inputBarHeight = 72;
+
+  @override
+  void initState() {
+    super.initState();
+    _messagesStream = _chatService.getClanMessagesStream(widget.clan.id);
+  }
 
   @override
   void dispose() {
@@ -94,8 +102,29 @@ class _ClanChatPageState extends State<ClanChatPage> {
           // Mesajlar
           Expanded(
             child: StreamBuilder<List<ClanMessage>>(
-              stream: _chatService.getClanMessagesStream(widget.clan.id),
+              stream: _messagesStream,
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 52, color: Colors.redAccent),
+                        SizedBox(height: 12),
+                        Text(
+                          'Sohbet yuklenemedi',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          'Lutfen tekrar deneyin',
+                          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: CircularProgressIndicator(
@@ -147,7 +176,7 @@ class _ClanChatPageState extends State<ClanChatPage> {
 
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: EdgeInsets.all(12),
+                  padding: EdgeInsets.fromLTRB(12, 12, 12, 12 + _inputBarHeight),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
@@ -164,9 +193,10 @@ class _ClanChatPageState extends State<ClanChatPage> {
           Container(
             padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
+              color: const Color(0xFF1E1638),
               border: Border(
                 top: BorderSide(
-                  color: Colors.grey[300]!,
+                  color: Colors.white12,
                   width: 1,
                 ),
               ),
@@ -179,8 +209,12 @@ class _ClanChatPageState extends State<ClanChatPage> {
                     enabled: !_isLoading,
                     decoration: InputDecoration(
                       hintText: 'Mesaj yaz...',
+                      hintStyle: const TextStyle(color: Colors.white54),
+                      filled: true,
+                      fillColor: const Color(0xFF2A214A),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
                       ),
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: 16,
@@ -188,8 +222,9 @@ class _ClanChatPageState extends State<ClanChatPage> {
                       ),
                       suffixIcon: _messageController.text.isEmpty
                           ? null
-                          : Icon(Icons.check_circle, color: Colors.deepOrange),
+                          : Icon(Icons.check_circle, color: Color(0xFFFFC300)),
                     ),
+                    style: const TextStyle(color: Colors.white),
                     maxLines: null,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => _sendMessage(),
@@ -199,7 +234,7 @@ class _ClanChatPageState extends State<ClanChatPage> {
                 SizedBox(width: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.deepOrange,
+                    color: const Color(0xFFFFC300),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
@@ -213,7 +248,7 @@ class _ClanChatPageState extends State<ClanChatPage> {
                             ),
                           )
                         : Icon(Icons.send),
-                    color: Colors.white,
+                    color: const Color(0xFF1B1532),
                     onPressed: _isLoading ? null : _sendMessage,
                   ),
                 ),
@@ -240,30 +275,43 @@ class _ClanChatPageState extends State<ClanChatPage> {
         crossAxisAlignment: isOwn ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           // Kullanıcı adı ve saat
-          if (!isOwn)
-            Padding(
-              padding: EdgeInsets.only(left: 12, bottom: 4),
-              child: Row(
-                children: [
-                  Text(
-                    message.userName,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    _formatTime(message.timestamp),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ),
+          Padding(
+            padding: EdgeInsets.only(
+              left: isOwn ? 0 : 6,
+              right: isOwn ? 6 : 0,
+              bottom: 4,
             ),
+            child: Row(
+              mainAxisAlignment:
+                  isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
+              children: [
+                if (!isOwn) ...[
+                  _buildAvatar(message),
+                  SizedBox(width: 8),
+                ],
+                Text(
+                  message.userName,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white70,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  _formatTime(message.timestamp),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white54,
+                  ),
+                ),
+                if (isOwn) ...[
+                  SizedBox(width: 8),
+                  _buildAvatar(message),
+                ],
+              ],
+            ),
+          ),
 
           // Mesaj balloon
           GestureDetector(
@@ -271,18 +319,18 @@ class _ClanChatPageState extends State<ClanChatPage> {
             child: Container(
               decoration: BoxDecoration(
                 color: isOwn
-                    ? Colors.deepOrange
-                    : Colors.grey[200],
-                borderRadius: BorderRadius.circular(16),
+                    ? const Color(0xFF3B7BFF)
+                    : const Color(0xFF2A214A),
+                borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
                   ),
                 ],
               ),
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Column(
                 crossAxisAlignment:
                     isOwn ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -291,7 +339,7 @@ class _ClanChatPageState extends State<ClanChatPage> {
                   Text(
                     message.message,
                     style: TextStyle(
-                      color: isOwn ? Colors.white : Colors.black87,
+                      color: Colors.white,
                       fontSize: 14,
                     ),
                   ),
@@ -302,7 +350,7 @@ class _ClanChatPageState extends State<ClanChatPage> {
                       children: message.reactions.map((reaction) {
                         return Container(
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           padding: EdgeInsets.symmetric(
@@ -337,8 +385,8 @@ class _ClanChatPageState extends State<ClanChatPage> {
                       padding: EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: hasReaction
-                            ? Colors.deepOrange.withOpacity(0.2)
-                            : Colors.grey[200],
+                            ? const Color(0xFFFFC300).withOpacity(0.25)
+                            : Colors.white12,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -351,6 +399,39 @@ class _ClanChatPageState extends State<ClanChatPage> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar(ClanMessage message) {
+    final photoUrl = message.userPhotoUrl;
+    final emoji = message.userAvatarEmoji;
+
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: 14,
+        backgroundImage: NetworkImage(photoUrl),
+        backgroundColor: const Color(0xFF2A214A),
+      );
+    }
+
+    if (emoji != null && emoji.isNotEmpty) {
+      return CircleAvatar(
+        radius: 14,
+        backgroundColor: const Color(0xFF2A214A),
+        child: Text(emoji, style: const TextStyle(fontSize: 14)),
+      );
+    }
+
+    final initial = message.userName.isNotEmpty
+      ? message.userName[0].toUpperCase()
+      : '?';
+    return CircleAvatar(
+      radius: 14,
+      backgroundColor: const Color(0xFF2A214A),
+      child: Text(
+        initial,
+        style: const TextStyle(fontSize: 12, color: Colors.white70),
       ),
     );
   }
@@ -376,7 +457,7 @@ class _ClanChatPageState extends State<ClanChatPage> {
               onTap: () async {
                 Navigator.pop(context);
                 try {
-                  await _chatService.deleteMessage(message.id);
+                  await _chatService.deleteMessage(widget.clan.id, message.id);
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Mesaj silindi')),
@@ -399,7 +480,7 @@ class _ClanChatPageState extends State<ClanChatPage> {
 
   Future<void> _addReaction(String messageId, String emoji) async {
     try {
-      await _chatService.addReaction(messageId, emoji);
+      await _chatService.addReaction(widget.clan.id, messageId, emoji);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

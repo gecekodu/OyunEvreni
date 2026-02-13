@@ -31,6 +31,9 @@ import 'features/flame_game/presentation/pages/flame_game_page.dart';
 import 'features/ai_game_engine/presentation/pages/ai_game_creator_page.dart';
 import 'features/ai_game_engine/data/services/ai_game_generator_service.dart';
 import 'features/games/presentation/pages/example_games_list_page.dart';
+import 'features/games/data/datasources/example_games_datasource.dart';
+import 'features/games/domain/entities/example_game.dart';
+import 'features/webview/presentation/pages/webview_page.dart';
 import 'features/games/presentation/pages/leaderboard_page.dart';
 import 'features/clan/presentation/pages/clan_page.dart';
 
@@ -232,11 +235,64 @@ class _AuthCheckScreenState extends State<AuthCheckScreen>
     final user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
+      await _updateLoginStreak(user.uid);
       // User zaten giriş yapmış - Ana sayfaya git
       if (mounted) Navigator.of(context).pushReplacementNamed('/home');
     } else {
       // User giriş yapmamış - Login sayfasına git
       if (mounted) Navigator.of(context).pushReplacementNamed('/login');
+    }
+  }
+
+  Future<void> _updateLoginStreak(String userId) async {
+    try {
+      final usersRef = FirebaseFirestore.instance.collection('users').doc(userId);
+      final userDoc = await usersRef.get();
+      if (!userDoc.exists) return;
+
+      final data = userDoc.data() ?? {};
+      final lastLogin = data['lastLoginDate'] as Timestamp?;
+      final currentStreak = (data['loginStreak'] as num?)?.toInt() ?? 0;
+      final lastRewardDay = (data['lastStreakRewardDay'] as num?)?.toInt() ?? 0;
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      int newStreak;
+      if (lastLogin == null) {
+        newStreak = 1;
+      } else {
+        final last = lastLogin.toDate();
+        final lastDay = DateTime(last.year, last.month, last.day);
+        final diffDays = today.difference(lastDay).inDays;
+
+        if (diffDays == 0) {
+          return;
+        }
+
+        newStreak = diffDays == 1 ? currentStreak + 1 : 1;
+      }
+
+      final milestoneBonus = <int, int>{
+        7: 20,
+        14: 40,
+        30: 80,
+      };
+      final baseReward = 5;
+      final bonus = milestoneBonus[newStreak] ?? 0;
+      final totalReward = baseReward + bonus;
+
+      await usersRef.set({
+        'loginStreak': newStreak,
+        'lastLoginDate': Timestamp.fromDate(now),
+        'lastStreakRewardDay': newStreak,
+        if (newStreak != lastRewardDay) ...{
+          'diamonds': FieldValue.increment(totalReward),
+          'totalScore': FieldValue.increment(totalReward * 10),
+        },
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Giris serisi guncellenemedi: $e');
     }
   }
 
@@ -249,11 +305,11 @@ class _AuthCheckScreenState extends State<AuthCheckScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF0A0E27),
-              const Color(0xFF16213E),
-              const Color(0xFF1A2F5A),
-              const Color(0xFF0F3460),
-              const Color(0xFF2D0052),
+              const Color(0xFF1B1532),
+              const Color(0xFF211A3D),
+              const Color(0xFF2A214A),
+              const Color(0xFF3B2B6F),
+              const Color(0xFF1E1638),
             ],
           ),
         ),
@@ -279,28 +335,32 @@ class _AuthCheckScreenState extends State<AuthCheckScreen>
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Colors.deepOrange.withOpacity(0.8),
-                              Colors.purple.withOpacity(0.6),
-                              Colors.cyan.withOpacity(0.5),
+                              const Color(0xFFFFC300).withOpacity(0.9),
+                              const Color(0xFFFF8A00).withOpacity(0.7),
+                              const Color(0xFF6C5CE7).withOpacity(0.6),
                             ],
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.deepOrange.withOpacity(0.6),
+                              color: const Color(0xFFFFC300).withOpacity(0.5),
                               blurRadius: 30 * pulse,
                               spreadRadius: 5,
                             ),
                             BoxShadow(
-                              color: Colors.purple.withOpacity(0.4),
+                              color: const Color(0xFF6C5CE7).withOpacity(0.4),
                               blurRadius: 20,
                               spreadRadius: 2,
                             ),
                           ],
                         ),
                         child: Center(
-                          child: Text(
-                            '🎮',
-                            style: TextStyle(fontSize: 70),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/images/logo.jpeg',
+                              width: 90,
+                              height: 90,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
@@ -317,25 +377,25 @@ class _AuthCheckScreenState extends State<AuthCheckScreen>
                     return Transform.translate(
                       offset: Offset(offset, 0),
                       child: Text(
-                        'NEMO S',
+                        'NEMOS',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: const Color(0xFFFFC300),
                           fontSize: 52,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 4,
                           shadows: [
                             Shadow(
-                              color: Colors.deepOrange.withOpacity(0.7),
+                              color: const Color(0xFFFFC300).withOpacity(0.6),
                               blurRadius: 30,
                               offset: const Offset(0, 0),
                             ),
                             Shadow(
-                              color: Colors.cyan.withOpacity(0.5),
+                              color: const Color(0xFF6C5CE7).withOpacity(0.5),
                               blurRadius: 20,
                               offset: const Offset(-2, 0),
                             ),
                             Shadow(
-                              color: Colors.purple.withOpacity(0.5),
+                              color: const Color(0xFFFF8A00).withOpacity(0.5),
                               blurRadius: 20,
                               offset: const Offset(2, 0),
                             ),
@@ -357,10 +417,10 @@ class _AuthCheckScreenState extends State<AuthCheckScreen>
                       child: Text(
                         'Eğitici Oyun Platformu',
                         style: TextStyle(
-                          color: Colors.cyan.withOpacity(0.8),
-                          fontSize: 14,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w500,
+                          color: Colors.white70,
+                          fontSize: 15,
+                          letterSpacing: 1.6,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     );
@@ -384,7 +444,7 @@ class _AuthCheckScreenState extends State<AuthCheckScreen>
                                 Container(
                                   height: 8,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: Colors.white.withOpacity(0.12),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
@@ -395,16 +455,16 @@ class _AuthCheckScreenState extends State<AuthCheckScreen>
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
-                                        Colors.deepOrange,
-                                        Colors.red,
-                                        Colors.purple,
-                                        Colors.cyan,
+                                        const Color(0xFFFFC300),
+                                        const Color(0xFFFF8A00),
+                                        const Color(0xFF6C5CE7),
+                                        const Color(0xFF4DD6FF),
                                       ],
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.deepOrange.withOpacity(0.6),
+                                        color: const Color(0xFFFFC300).withOpacity(0.5),
                                         blurRadius: 10,
                                       ),
                                     ],
@@ -625,8 +685,8 @@ class _HomePageState extends State<HomePage> {
             child: NavigationBarTheme(
               data: NavigationBarThemeData(
                 height: 64,
-                backgroundColor: Colors.black.withOpacity(0.9),
-                indicatorColor: Colors.deepOrange,
+                backgroundColor: const Color(0xFF211A3D),
+                indicatorColor: const Color(0xFFFFC300),
                 labelTextStyle: WidgetStateProperty.all(
                   const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
@@ -703,17 +763,17 @@ class _NavSelectedIcon extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: Colors.deepOrange,
+        color: const Color(0xFFFFC300),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.deepOrange.withOpacity(0.4),
+            color: const Color(0xFFFFC300).withOpacity(0.4),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Icon(icon, color: Colors.white, size: 20),
+      child: Icon(icon, color: const Color(0xFF1B1532), size: 20),
     );
   }
 }
@@ -737,19 +797,19 @@ class _GameButtonOffsetIcon extends StatelessWidget {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Colors.amber, Colors.deepOrange],
+                colors: [Color(0xFFFFC300), Color(0xFFFF8A00)],
               ),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.amber.withOpacity(0.6),
+                  color: const Color(0xFFFFC300).withOpacity(0.5),
                   blurRadius: 16,
                   spreadRadius: 2,
                   offset: const Offset(0, 6),
                 ),
               ],
             ),
-            child: Icon(icon, color: Colors.white, size: 28),
+            child: Icon(icon, color: const Color(0xFF1B1532), size: 28),
           )
         : Container(
             width: 52,
@@ -759,14 +819,14 @@ class _GameButtonOffsetIcon extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.amber.withOpacity(0.7),
-                  Colors.deepOrange.withOpacity(0.7),
+                  const Color(0xFFFFC300).withOpacity(0.7),
+                  const Color(0xFFFF8A00).withOpacity(0.7),
                 ],
               ),
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.amber.withOpacity(0.3),
+                  color: const Color(0xFFFFC300).withOpacity(0.3),
                   blurRadius: 8,
                   spreadRadius: 1,
                   offset: const Offset(0, 2),
@@ -816,11 +876,11 @@ class _NavSelectedAvatarIcon extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: Colors.deepOrange,
+        color: const Color(0xFFFFC300),
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.deepOrange.withOpacity(0.4),
+            color: const Color(0xFFFFC300).withOpacity(0.4),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -834,7 +894,7 @@ class _NavSelectedAvatarIcon extends StatelessWidget {
                     radius: 12,
                     backgroundImage: NetworkImage(avatarUrl!),
                   )
-                : const Icon(Icons.person, color: Colors.white, size: 20)),
+                : const Icon(Icons.person, color: Color(0xFF1B1532), size: 20)),
       ),
     );
   }
@@ -849,52 +909,41 @@ class HomeTabView extends StatefulWidget {
 }
 
 class _HomeTabViewState extends State<HomeTabView> {
-  final PageController _sliderController = PageController(viewportFraction: 0.9);
-  Timer? _sliderTimer;
-  int _currentSlide = 0;
   late Future<Map<String, dynamic>> _homeStats;
-
-  final List<_HomeSlide> _slides = const [
-    _HomeSlide(
-      title: '5 Ornek Oyun',
-      subtitle: 'Hemen oyna, puanlarini topla',
-      icon: Icons.games,
-      colors: [Color(0xFFFF6B35), Color(0xFFFFA24A)],
-    ),
-    _HomeSlide(
-      title: 'Canli Puan Sistemi',
-      subtitle: 'Skorlarin aninda kaydolur',
-      icon: Icons.emoji_events,
-      colors: [Color(0xFF4A00E0), Color(0xFF8E2DE2)],
-    ),
-    _HomeSlide(
-      title: 'Raporlar ve Rutelar',
-      subtitle: 'Ilerlemeni takip et',
-      icon: Icons.timeline,
-      colors: [Color(0xFF00B09B), Color(0xFF96C93D)],
-    ),
-  ];
 
   @override
   void initState() {
     super.initState();
     _homeStats = _fetchHomeStats();
-    _sliderTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!mounted || _slides.isEmpty) return;
-      _currentSlide = (_currentSlide + 1) % _slides.length;
-      _sliderController.animateToPage(
-        _currentSlide,
-        duration: const Duration(milliseconds: 450),
-        curve: Curves.easeOutCubic,
-      );
-      setState(() {});
-    });
+  }
+
+  Future<void> _openExampleGame(ExampleGameType type) async {
+    final datasource = ExampleGamesDatasourceImpl();
+    final game = await datasource.getExampleByType(type);
+    if (game == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Oyun bulunamadı')),
+        );
+      }
+      return;
+    }
+
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WebViewPage(
+          gameTitle: game.title,
+          htmlPath: game.htmlContent,
+          gameId: game.id,
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
-    _sliderTimer?.cancel();
-    _sliderController.dispose();
     super.dispose();
   }
 
@@ -950,288 +999,346 @@ class _HomeTabViewState extends State<HomeTabView> {
         : (fallbackName?.isNotEmpty == true ? fallbackName! : 'Oyunsever');
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Hoşgeldin $userName',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade800,
-              ),
-            ),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF1E1638),
+              Color(0xFF221A40),
+              Color(0xFF2A1F4D),
+              Color(0xFF1B1532),
+            ],
           ),
-          const SizedBox(height: 18),
-          FutureBuilder<Map<String, dynamic>>(
-            future: _homeStats,
-            builder: (context, snapshot) {
-              final data = snapshot.data ?? {};
-              final totalScore = (data['totalScore'] as int?) ?? 0;
-              final globalRank = data['globalRank'] ?? '---';
-              final diamonds = (data['diamonds'] as int?) ?? 0;
-              final trophies = (data['trophies'] as int?) ?? 0;
-              return Column(
-                children: [
-                  Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Genel Puan',
-                                style: TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                totalScore.toString(),
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.deepOrange,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              const Text(
-                                'Global Sira',
-                                style: TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '#$globalRank',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blueAccent,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _HomeStatChip(
-                          title: 'Elmas',
-                          value: diamonds.toString(),
-                          icon: Icons.diamond,
-                          color: Colors.cyan.shade600,
+                      Text(
+                        'Merhaba $userName',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white70,
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _HomeStatChip(
-                          title: 'Kupa',
-                          value: trophies.toString(),
-                          icon: Icons.emoji_events,
-                          color: Colors.amber.shade700,
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Bugun hangi oyunu kesfedecegiz?',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
                     ],
                   ),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: 18),
+                ),
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: const Color(0xFF2A214A),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/logo.jpeg',
+                      width: 36,
+                      height: 36,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            FutureBuilder<Map<String, dynamic>>(
+              future: _homeStats,
+              builder: (context, snapshot) {
+                final data = snapshot.data ?? {};
+                final totalScore = (data['totalScore'] as int?) ?? 0;
+                final globalRank = data['globalRank'] ?? '---';
+                final diamonds = (data['diamonds'] as int?) ?? 0;
+                final trophies = (data['trophies'] as int?) ?? 0;
+                final progress = (totalScore / 10000).clamp(0.0, 1.0);
 
-            // Uygulama Logosu - Animated Sparkle Container
-            _AnimatedSparkleBackground(
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.orangeAccent.withOpacity(0.1),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.orangeAccent.withOpacity(0.3),
-                      blurRadius: 30,
-                      spreadRadius: 8,
+                return Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFF2C214F),
+                            Color(0xFF1F173B),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.08),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.25),
+                            blurRadius: 16,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Toplam Skor',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  totalScore.toString(),
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFFFC300),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Global sira: #$globalRank',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _HomeProgressRing(
+                            value: progress,
+                            label: '${(progress * 100).round()}%',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _HomeStatChip(
+                            title: 'Elmas',
+                            value: diamonds.toString(),
+                            icon: Icons.diamond,
+                            color: const Color(0xFF4DD6FF),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _HomeStatChip(
+                            title: 'Kupa',
+                            value: trophies.toString(),
+                            icon: Icons.emoji_events,
+                            color: const Color(0xFFFFC300),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF6C5CE7),
+                    Color(0xFF3D2E7C),
+                  ],
                 ),
-                padding: const EdgeInsets.all(20),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(75),
-                  child: Image.asset(
-                    'assets/images/logo.jpeg',
-                    width: 150,
-                    height: 150,
-                    fit: BoxFit.cover,
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF6C5CE7).withOpacity(0.35),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
                   ),
-                ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Yeni hedef',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        SizedBox(height: 6),
+                        Text(
+                          '5 oyun oynayip bonus kazan!',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, '/example-games'),
+                    style: TextButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFC300),
+                      foregroundColor: const Color(0xFF1B1532),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text('Oyna'),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             const Text(
-              'NEMOS',
-              style: TextStyle(
-                fontSize: 34,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-                color: Colors.deepOrange,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Öğrenmenin oyun hali',
+              'Hizli erisim',
               style: TextStyle(
                 fontSize: 16,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white70
-                    : Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-                fontStyle: FontStyle.italic,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-            const SizedBox(height: 24),
-
-            SizedBox(
-              height: 170,
-              child: PageView.builder(
-                controller: _sliderController,
-                itemCount: _slides.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentSlide = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  final slide = _slides[index];
-                  return AnimatedBuilder(
-                    animation: _sliderController,
-                    builder: (context, child) {
-                      double scale = 1.0;
-                      if (_sliderController.position.hasPixels) {
-                        final page = _sliderController.page ?? _sliderController.initialPage.toDouble();
-                        final diff = (page - index).abs();
-                        scale = (1 - (diff * 0.08)).clamp(0.92, 1.0);
-                      }
-                      return Transform.scale(scale: scale, child: child);
-                    },
-                    child: _HomeSlideCard(slide: slide),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(_slides.length, (index) {
-                final isActive = index == _currentSlide;
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  width: isActive ? 18 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: isActive ? Colors.deepOrange : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(20),
+              children: [
+                Expanded(
+                  child: _HomeActionCard(
+                    title: 'Oyunlar',
+                    icon: Icons.sports_esports,
+                    colors: const [Color(0xFFFF8A00), Color(0xFFFFC300)],
+                    onTap: () => Navigator.pushNamed(context, '/example-games'),
                   ),
-                );
-              }),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _HomeActionCard(
+                    title: 'Siralama',
+                    icon: Icons.emoji_events,
+                    colors: const [Color(0xFF4DD6FF), Color(0xFF6C5CE7)],
+                    onTap: () => Navigator.pushNamed(context, '/leaderboard'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _HomeActionCard(
+                    title: 'Klan',
+                    icon: Icons.groups,
+                    colors: const [Color(0xFF48D597), Color(0xFF2CB67D)],
+                    onTap: () => Navigator.pushNamed(context, '/clan'),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 28),
-            
-          Text(
-            '👉 Oyunlar sekmesine kaydirarak gecin',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade500,
-              fontStyle: FontStyle.italic,
+            const SizedBox(height: 22),
+            const Text(
+              'Öneriler',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _HomeMiniCard(
+                  title: 'Gezegen Bul',
+                  subtitle: 'Uzay macerasi',
+                  icon: Icons.extension,
+                  colors: const [Color(0xFF3B2B6F), Color(0xFF6C5CE7)],
+                  onTap: () => _openExampleGame(ExampleGameType.planetHunt),
+                ),
+                _HomeMiniCard(
+                  title: 'Skor',
+                  subtitle: 'En iyiler',
+                  icon: Icons.show_chart,
+                  colors: const [Color(0xFF2C3E50), Color(0xFF4DD6FF)],
+                  onTap: () => Navigator.pushNamed(context, '/leaderboard'),
+                ),
+                _HomeMiniCard(
+                  title: 'AI Oyun',
+                  subtitle: 'Kendi oyunun',
+                  icon: Icons.smart_toy,
+                  colors: const [Color(0xFF3E1F47), Color(0xFFFF6FB1)],
+                  onTap: () => Navigator.pushNamed(context, '/ai-game-creator'),
+                ),
+                _HomeMiniCard(
+                  title: 'Profil',
+                  subtitle: 'Ilerlemeni gormek',
+                  icon: Icons.person,
+                  colors: const [Color(0xFF20304A), Color(0xFF48D597)],
+                  onTap: () => Navigator.pushNamed(context, '/profile'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _HomeSlide {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final List<Color> colors;
+class _HomeProgressRing extends StatelessWidget {
+  final double value;
+  final String label;
 
-  const _HomeSlide({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.colors,
-  });
-}
-
-class _HomeSlideCard extends StatelessWidget {
-  final _HomeSlide slide;
-
-  const _HomeSlideCard({required this.slide});
+  const _HomeProgressRing({required this.value, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: slide.colors,
+    return SizedBox(
+      width: 72,
+      height: 72,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CircularProgressIndicator(
+            value: value,
+            strokeWidth: 8,
+            backgroundColor: Colors.white.withOpacity(0.1),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFC300)),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: slide.colors.last.withOpacity(0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
             ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(slide.icon, size: 42, color: Colors.white),
-              const SizedBox(height: 12),
-              Text(
-                slide.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                slide.subtitle,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 13,
-                ),
-              ),
-            ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -1253,22 +1360,22 @@ class _HomeStatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: const Color(0xFF2A214A),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withOpacity(0.25),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: color, size: 18),
+            child: Icon(icon, size: 18, color: color),
           ),
           const SizedBox(width: 10),
           Column(
@@ -1276,15 +1383,14 @@ class _HomeStatChip extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: const TextStyle(fontSize: 12, color: Colors.white70),
               ),
-              const SizedBox(height: 2),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: color,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -1295,6 +1401,125 @@ class _HomeStatChip extends StatelessWidget {
   }
 }
 
+class _HomeActionCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final List<Color> colors;
+  final VoidCallback onTap;
+
+  const _HomeActionCard({
+    required this.title,
+    required this.icon,
+    required this.colors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: colors,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: colors.last.withOpacity(0.35),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: Colors.white, size: 24),
+            const SizedBox(height: 6),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeMiniCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final List<Color> colors;
+  final VoidCallback onTap;
+
+  const _HomeMiniCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.colors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: (MediaQuery.of(context).size.width - 52) / 2,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: colors,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: colors.last.withOpacity(0.3),
+              blurRadius: 14,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: Colors.white, size: 24),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.85),
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 class _QuickActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -1928,14 +2153,21 @@ class _ProfilePageState extends State<ProfilePage> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: isSelected
-                                    ? Colors.deepOrange.withOpacity(0.2)
-                                    : Colors.transparent,
+                                    ? const Color(0xFFFFC300).withOpacity(0.2)
+                                    : const Color(0xFF241B45),
                                 border: Border.all(
                                   color: isSelected
-                                      ? Colors.deepOrange
-                                      : Colors.grey.shade300,
+                                      ? const Color(0xFFFFC300)
+                                      : Colors.white24,
                                   width: isSelected ? 2 : 1,
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.25),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
                               child: Center(
                                 child: Text(
@@ -2008,8 +2240,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
+                            color: const Color(0xFF2A214A),
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.white12),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2019,6 +2252,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
+                                  color: Colors.white,
                                 ),
                               ),
                               Text(
@@ -2026,7 +2260,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
+                                  color: Color(0xFFFFC300),
                                 ),
                               ),
                             ],
@@ -2036,8 +2270,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
+                            color: const Color(0xFF2A214A),
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.white12),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2047,6 +2282,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
+                                  color: Colors.white,
                                 ),
                               ),
                               Text(
@@ -2054,7 +2290,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.orange,
+                                  color: Color(0xFFFFC300),
                                 ),
                               ),
                             ],
@@ -2363,109 +2599,5 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-}
-
-//  🎆 Animated Sparkle Background Widget
-class _AnimatedSparkleBackground extends StatefulWidget {
-  final Widget child;
-
-  const _AnimatedSparkleBackground({required this.child});
-
-  @override
-  State<_AnimatedSparkleBackground> createState() =>
-      _AnimatedSparkleBackgroundState();
-}
-
-class _AnimatedSparkleBackgroundState extends State<_AnimatedSparkleBackground>
-    with TickerProviderStateMixin {
-  late List<_Sparkle> sparkles;
-  late AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    )..repeat();
-
-    sparkles = List.generate(
-      8,
-      (index) => _Sparkle(
-        angle: (index * 360 / 8) * (3.14159 / 180),
-        delay: (index * 0.15),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return CustomPaint(
-              painter: _SparklePainter(
-                progress: _controller.value,
-                sparkles: sparkles,
-              ),
-              child: SizedBox(
-                width: 200,
-                height: 200,
-                child: widget.child,
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _Sparkle {
-  final double angle;
-  final double delay;
-
-  _Sparkle({required this.angle, required this.delay});
-}
-
-class _SparklePainter extends CustomPainter {
-  final double progress;
-  final List<_Sparkle> sparkles;
-
-  _SparklePainter({required this.progress, required this.sparkles});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-
-    for (final sparkle in sparkles) {
-      final adjustedProgress = (progress + sparkle.delay) % 1.0;
-      final distance = 120 * adjustedProgress;
-      final opacity = (1 - adjustedProgress).clamp(0.0, 1.0);
-
-      final sparkleOffset = Offset(
-        center.dx + distance * cos(sparkle.angle),
-        center.dy + distance * sin(sparkle.angle),
-      );
-
-      final paint = Paint()
-        ..color = Colors.amber.withOpacity(opacity * 0.8)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-
-      canvas.drawCircle(sparkleOffset, (4.0 + 3.0 * opacity), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_SparklePainter oldDelegate) => true;
 }
 

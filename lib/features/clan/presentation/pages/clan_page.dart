@@ -78,7 +78,7 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
     // Kullanıcının klanı varsa klan detayını göster
     if (_userClan != null) {
       return DefaultTabController(
-        length: 2,
+        length: 3,
         child: Scaffold(
           appBar: AppBar(
             title: Row(
@@ -94,6 +94,7 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
               tabs: [
                 Tab(text: 'Üyeler'),
                 Tab(text: 'Sohbet'),
+                Tab(text: 'Sıralama'),
               ],
             ),
             actions: [
@@ -127,6 +128,7 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
             children: [
               _buildMembersTab(),
               ClanChatPage(clan: _userClan!),
+              _buildLeaderboardTab(),
             ],
           ),
         ),
@@ -192,8 +194,57 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildStatCard('Üye', '${_userClan!.memberCount}/${_userClan!.maxMembers}'),
-                      _buildStatCard('Puan', _userClan!.totalScore.toString()),
+                      _buildStatCard('Klan Puanı', _userClan!.totalScore.toString()),
                     ],
+                  ),
+                  SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _handleLeaveClan,
+                          icon: Icon(Icons.exit_to_app, size: 18),
+                          label: Text('Klandan Ayrıl'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(color: Colors.white.withOpacity(0.6)),
+                            padding: EdgeInsets.symmetric(vertical: 10),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _handleChangeClan,
+                          icon: Icon(Icons.swap_horiz, size: 18),
+                          label: Text('Klan Değiştir'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.deepOrange,
+                            padding: EdgeInsets.symmetric(vertical: 10),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Üye Sıralaması Başlığı
+            Padding(
+              padding: EdgeInsets.fromLTRB(16, 24, 16, 12),
+              child: Row(
+                children: [
+                  Icon(Icons.leaderboard, color: Colors.deepOrange, size: 24),
+                  SizedBox(width: 8),
+                  Text(
+                    'Üye Sıralaması',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepOrange,
+                    ),
                   ),
                 ],
               ),
@@ -201,23 +252,16 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
 
             // Üye Listesi
             Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Klan Üyeleri',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 12),
                   ..._clanMembers.asMap().entries.map((entry) {
                     final index = entry.key;
                     final member = entry.value;
                     return _buildMemberCard(member, index + 1);
-                  }),
+                  }).toList(),
+                  SizedBox(height: 16),
                 ],
               ),
             ),
@@ -449,25 +493,71 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
         }
 
         final clans = snapshot.data!;
-        return ListView.builder(
-          padding: EdgeInsets.all(16),
-          itemCount: clans.length,
-          itemBuilder: (context, index) {
-            final clan = clans[index];
-            final rank = index + 1;
-            return _buildLeaderboardCard(clan, rank);
-          },
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF1E1638),
+                Color(0xFF221A40),
+                Color(0xFF2A1F4D),
+              ],
+            ),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                // Klan Sıralaması Başlığı
+                Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: Row(
+                    children: [
+                      Icon(Icons.emoji_events, color: Color(0xFFFFC300), size: 24),
+                      SizedBox(width: 8),
+                      Text(
+                        'Klan Sıralaması',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFFC300),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Klanlar Listesi
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                  child: Column(
+                    children: [
+                      ...clans.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final clan = entry.value;
+                        return _buildLeaderboardCard(clan, index + 1);
+                      }).toList(),
+                      SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
   }
 
   Widget _buildLeaderboardCard(Clan clan, int rank) {
-    Color rankColor = Colors.deepOrange;
+    Color rankColor = const Color(0xFF6C5CE7);
     if (rank == 1) {
-      rankColor = Colors.amber;
-    } else if (rank == 2) rankColor = Colors.grey;
-    else if (rank == 3) rankColor = Colors.brown;
+      rankColor = const Color(0xFFFFC300);
+    } else if (rank == 2) {
+      rankColor = const Color(0xFFB0B3FF);
+    } else if (rank == 3) {
+      rankColor = const Color(0xFFFF8A00);
+    }
 
     return Card(
       margin: EdgeInsets.only(bottom: 12),
@@ -478,8 +568,8 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
             ? BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    rankColor.withOpacity(0.1),
-                    Colors.white,
+                    rankColor.withOpacity(0.25),
+                    Color(0xFF1E1638),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -506,12 +596,15 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
               Expanded(
                 child: Text(
                   clan.name,
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
             ],
           ),
-          subtitle: Text('${clan.memberCount} üye'),
+          subtitle: Text(
+            '${clan.memberCount} üye',
+            style: TextStyle(color: Colors.white70),
+          ),
           trailing: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -521,12 +614,12 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepOrange,
+                  color: Color(0xFFFFC300),
                 ),
               ),
               Text(
                 'puan',
-                style: TextStyle(fontSize: 10, color: Colors.grey),
+                style: TextStyle(fontSize: 10, color: Colors.white70),
               ),
             ],
           ),
@@ -704,7 +797,7 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
     );
   }
 
-  void _showLeaveDialog() {
+  void _showLeaveDialog({bool openExplorer = false}) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -721,6 +814,13 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
                 Navigator.pop(context);
                 await _clanService.leaveClan(_userClan!.id);
                 await _loadUserClan();
+                if (openExplorer && mounted) {
+                  setState(() {
+                    _userClan = null;
+                    _clanMembers = [];
+                  });
+                  _tabController.index = 0;
+                }
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Klandan ayrıldın')),
@@ -740,6 +840,14 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
         ],
       ),
     );
+  }
+
+  void _handleLeaveClan() {
+    _showLeaveDialog();
+  }
+
+  void _handleChangeClan() {
+    _showLeaveDialog(openExplorer: true);
   }
 
   void _showDeleteDialog() {

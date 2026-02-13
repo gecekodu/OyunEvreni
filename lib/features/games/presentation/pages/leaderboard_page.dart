@@ -22,9 +22,23 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
       appBar: AppBar(
         title: const Text('🏆 Genel Sıralama'),
         elevation: 0,
-        backgroundColor: Colors.deepOrange.withOpacity(0.1),
+        backgroundColor: const Color(0xFF211A3D),
+        foregroundColor: Colors.white,
       ),
-      body: _buildGlobalLeaderboard(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF1E1638),
+              Color(0xFF221A40),
+              Color(0xFF2A1F4D),
+            ],
+          ),
+        ),
+        child: _buildGlobalLeaderboard(),
+      ),
     );
   }
 
@@ -36,7 +50,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.deepOrange),
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFC300)),
             ),
           );
         }
@@ -46,13 +60,13 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.show_chart, size: 64, color: Colors.grey),
+                const Icon(Icons.show_chart, size: 64, color: Colors.white54),
                 const SizedBox(height: 16),
                 Text(
                   'Henüz sıralama verisi yok',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey.shade400,
+                    color: Colors.white70,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -60,7 +74,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   'Oyunları oynayarak puan topla!',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade500,
+                    color: Colors.white54,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -88,25 +102,25 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
 
     // Madalya emojisi ve renk
     String medalEmoji = '';
-    Color medalColor = Colors.grey;
-    Color bgColor = Colors.deepOrange.withOpacity(0.08);
-    Color borderColor = Colors.deepOrange.withOpacity(0.3);
+    Color medalColor = const Color(0xFF6C5CE7);
+    Color bgColor = const Color(0xFF2A214A);
+    Color borderColor = Colors.white.withOpacity(0.08);
     
     if (rank == 1) {
       medalEmoji = '🥇';
-      medalColor = Colors.amber;
-      bgColor = Colors.amber.withOpacity(0.12);
-      borderColor = Colors.amber.withOpacity(0.5);
+      medalColor = const Color(0xFFFFC300);
+      bgColor = const Color(0xFF3A2B6A);
+      borderColor = const Color(0xFFFFC300).withOpacity(0.6);
     } else if (rank == 2) {
       medalEmoji = '🥈';
-      medalColor = Colors.grey[400]!;
-      bgColor = Colors.grey.withOpacity(0.08);
-      borderColor = Colors.grey.withOpacity(0.3);
+      medalColor = const Color(0xFFB0B3FF);
+      bgColor = const Color(0xFF2C234B);
+      borderColor = Colors.white24;
     } else if (rank == 3) {
       medalEmoji = '🥉';
-      medalColor = Colors.orange;
-      bgColor = Colors.orange.withOpacity(0.1);
-      borderColor = Colors.orange.withOpacity(0.4);
+      medalColor = const Color(0xFFFF8A00);
+      bgColor = const Color(0xFF30224F);
+      borderColor = const Color(0xFFFF8A00).withOpacity(0.5);
     }
 
     return Padding(
@@ -116,13 +130,13 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [bgColor, bgColor.withOpacity(0.5)],
+            colors: [bgColor, const Color(0xFF1E1638)],
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: borderColor),
           boxShadow: [
             BoxShadow(
-              color: medalColor.withOpacity(0.1),
+              color: medalColor.withOpacity(0.2),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -134,7 +148,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: medalColor.withOpacity(0.15),
+              color: medalColor.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             alignment: Alignment.center,
@@ -148,7 +162,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600,
+                      color: Colors.white70,
                     ),
                   ),
           ),
@@ -165,10 +179,10 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.deepOrange.withOpacity(0.25),
+              color: const Color(0xFFFFC300).withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.deepOrange.withOpacity(0.6),
+                color: const Color(0xFFFFC300).withOpacity(0.6),
               ),
             ),
             child: Column(
@@ -179,14 +193,14 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.deepOrange,
+                    color: Color(0xFFFFC300),
                   ),
                 ),
                 Text(
                   'puan',
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.deepOrange.withOpacity(0.8),
+                    color: Colors.white70,
                   ),
                 ),
               ],
