@@ -193,10 +193,10 @@ class _ClanChatPageState extends State<ClanChatPage> {
           Container(
             padding: EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E1638),
+              color: const Color(0xFFFFF9F2),
               border: Border(
                 top: BorderSide(
-                  color: Colors.white12,
+                  color: const Color(0xFFFFD8A8),
                   width: 1,
                 ),
               ),
@@ -209,9 +209,9 @@ class _ClanChatPageState extends State<ClanChatPage> {
                     enabled: !_isLoading,
                     decoration: InputDecoration(
                       hintText: 'Mesaj yaz...',
-                      hintStyle: const TextStyle(color: Colors.white54),
+                      hintStyle: const TextStyle(color: Color(0xFF8A6A3A)),
                       filled: true,
-                      fillColor: const Color(0xFF2A214A),
+                      fillColor: const Color(0xFFFFF1DB),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
@@ -222,9 +222,9 @@ class _ClanChatPageState extends State<ClanChatPage> {
                       ),
                       suffixIcon: _messageController.text.isEmpty
                           ? null
-                          : Icon(Icons.check_circle, color: Color(0xFFFFC300)),
+                          : Icon(Icons.check_circle, color: Color(0xFFFF7A00)),
                     ),
-                    style: const TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Color(0xFF2B210F)),
                     maxLines: null,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => _sendMessage(),
@@ -234,7 +234,7 @@ class _ClanChatPageState extends State<ClanChatPage> {
                 SizedBox(width: 8),
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFC300),
+                    color: const Color(0xFFFF7A00),
                     shape: BoxShape.circle,
                   ),
                   child: IconButton(
@@ -248,7 +248,7 @@ class _ClanChatPageState extends State<ClanChatPage> {
                             ),
                           )
                         : Icon(Icons.send),
-                    color: const Color(0xFF1B1532),
+                    color: Colors.white,
                     onPressed: _isLoading ? null : _sendMessage,
                   ),
                 ),
@@ -294,15 +294,7 @@ class _ClanChatPageState extends State<ClanChatPage> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white70,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Text(
-                  _formatTime(message.timestamp),
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white54,
+                    color: const Color(0xFF6B4C1A),
                   ),
                 ),
                 if (isOwn) ...[
@@ -317,14 +309,17 @@ class _ClanChatPageState extends State<ClanChatPage> {
           GestureDetector(
             onLongPress: isOwn ? () => _showMessageOptions(message) : null,
             child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
               decoration: BoxDecoration(
                 color: isOwn
-                    ? const Color(0xFF3B7BFF)
-                    : const Color(0xFF2A214A),
+                    ? const Color(0xFFFFB65C)
+                    : const Color(0xFFEAF6FF),
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withOpacity(0.08),
                     blurRadius: 6,
                     offset: Offset(0, 3),
                   ),
@@ -339,8 +334,19 @@ class _ClanChatPageState extends State<ClanChatPage> {
                   Text(
                     message.message,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: const Color(0xFF2B210F),
                       fontSize: 14,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Align(
+                    alignment: isOwn ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Text(
+                      _formatTime(message.timestamp),
+                      style: TextStyle(
+                        color: const Color(0xFF8A6A3A),
+                        fontSize: 10,
+                      ),
                     ),
                   ),
                   if (message.reactions.isNotEmpty) ...[
@@ -350,7 +356,7 @@ class _ClanChatPageState extends State<ClanChatPage> {
                       children: message.reactions.map((reaction) {
                         return Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: const Color(0xFFFFF1DB),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           padding: EdgeInsets.symmetric(
@@ -385,8 +391,8 @@ class _ClanChatPageState extends State<ClanChatPage> {
                       padding: EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: hasReaction
-                            ? const Color(0xFFFFC300).withOpacity(0.25)
-                            : Colors.white12,
+                            ? const Color(0xFFFFB65C).withOpacity(0.35)
+                            : const Color(0xFFFFF1DB),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -411,14 +417,14 @@ class _ClanChatPageState extends State<ClanChatPage> {
       return CircleAvatar(
         radius: 14,
         backgroundImage: NetworkImage(photoUrl),
-        backgroundColor: const Color(0xFF2A214A),
+        backgroundColor: const Color(0xFFFFF1DB),
       );
     }
 
     if (emoji != null && emoji.isNotEmpty) {
       return CircleAvatar(
         radius: 14,
-        backgroundColor: const Color(0xFF2A214A),
+        backgroundColor: const Color(0xFFFFF1DB),
         child: Text(emoji, style: const TextStyle(fontSize: 14)),
       );
     }
@@ -428,10 +434,10 @@ class _ClanChatPageState extends State<ClanChatPage> {
       : '?';
     return CircleAvatar(
       radius: 14,
-      backgroundColor: const Color(0xFF2A214A),
+      backgroundColor: const Color(0xFFFFF1DB),
       child: Text(
         initial,
-        style: const TextStyle(fontSize: 12, color: Colors.white70),
+        style: const TextStyle(fontSize: 12, color: Color(0xFF8A6A3A)),
       ),
     );
   }

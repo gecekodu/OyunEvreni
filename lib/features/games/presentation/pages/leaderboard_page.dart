@@ -22,8 +22,8 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
       appBar: AppBar(
         title: const Text('🏆 Genel Sıralama'),
         elevation: 0,
-        backgroundColor: const Color(0xFF211A3D),
-        foregroundColor: Colors.white,
+        backgroundColor: const Color(0xFFFFF0D6),
+        foregroundColor: const Color(0xFF2B210F),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -31,9 +31,9 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color(0xFF1E1638),
-              Color(0xFF221A40),
-              Color(0xFF2A1F4D),
+              Color(0xFFFFF7E6),
+              Color(0xFFFFE7C7),
+              Color(0xFFFFF3DC),
             ],
           ),
         ),
@@ -50,7 +50,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFC300)),
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF7A00)),
             ),
           );
         }
@@ -66,7 +66,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   'Henüz sıralama verisi yok',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.white70,
+                    color: Color(0xFF6B4C1A),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -74,7 +74,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   'Oyunları oynayarak puan topla!',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.white54,
+                    color: Color(0xFF8A6A3A),
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -97,30 +97,48 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
   }
 
   Widget _buildLeaderboardItem(Map<String, dynamic> user, int rank) {
-    final userName = user['username'] ?? 'Kullanıcı';
+    // Kullanıcı adını al - birden fazla fallback ile
+    String userName = user['username'] as String? ?? 
+                      user['displayName'] as String? ?? 
+                      user['userName'] as String? ?? 
+                      user['name'] as String? ?? 
+                      'Oyuncu';
+    
+    // Eğer hala generic bir isimse, email'den veya uid'den oluştur
+    if (userName == 'Oyuncu' || userName == 'Kullanıcı') {
+      final email = user['email'] as String?;
+      final uid = user['uid'] as String?;
+      
+      if (email != null && email.isNotEmpty) {
+        userName = email.split('@').first;
+      } else if (uid != null && uid.isNotEmpty) {
+        userName = 'Oyuncu${uid.substring(0, 6)}';
+      }
+    }
+    
     final totalScore = user['totalScore'] ?? 0;
 
     // Madalya emojisi ve renk
     String medalEmoji = '';
-    Color medalColor = const Color(0xFF6C5CE7);
-    Color bgColor = const Color(0xFF2A214A);
-    Color borderColor = Colors.white.withOpacity(0.08);
+    Color medalColor = const Color(0xFFFF9AD5);
+    Color bgColor = const Color(0xFFFFF4DF);
+    Color borderColor = const Color(0xFFFFD8A8);
     
     if (rank == 1) {
       medalEmoji = '🥇';
-      medalColor = const Color(0xFFFFC300);
-      bgColor = const Color(0xFF3A2B6A);
-      borderColor = const Color(0xFFFFC300).withOpacity(0.6);
+      medalColor = const Color(0xFFFFC46B);
+      bgColor = const Color(0xFFFFE7C7);
+      borderColor = const Color(0xFFFFC46B).withOpacity(0.6);
     } else if (rank == 2) {
       medalEmoji = '🥈';
-      medalColor = const Color(0xFFB0B3FF);
-      bgColor = const Color(0xFF2C234B);
-      borderColor = Colors.white24;
+      medalColor = const Color(0xFF9AD5FF);
+      bgColor = const Color(0xFFEAF6FF);
+      borderColor = const Color(0xFF9AD5FF).withOpacity(0.6);
     } else if (rank == 3) {
       medalEmoji = '🥉';
-      medalColor = const Color(0xFFFF8A00);
-      bgColor = const Color(0xFF30224F);
-      borderColor = const Color(0xFFFF8A00).withOpacity(0.5);
+      medalColor = const Color(0xFFFF9E7A);
+      bgColor = const Color(0xFFFFEFE0);
+      borderColor = const Color(0xFFFF9E7A).withOpacity(0.6);
     }
 
     return Padding(
@@ -130,7 +148,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [bgColor, const Color(0xFF1E1638)],
+            colors: [bgColor, const Color(0xFFFFF7E6)],
           ),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: borderColor),
@@ -162,7 +180,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white70,
+                      color: const Color(0xFF6B4C1A),
                     ),
                   ),
           ),
@@ -171,7 +189,7 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: Colors.white,
+                color: Color(0xFF2B210F),
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -179,10 +197,10 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFC300).withOpacity(0.2),
+                color: const Color(0xFFFFF1DB),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xFFFFC300).withOpacity(0.6),
+                  color: const Color(0xFFFFC46B).withOpacity(0.6),
               ),
             ),
             child: Column(
@@ -193,14 +211,14 @@ class _LeaderboardPageState extends State<LeaderboardPage> {
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFFFFC300),
+                      color: Color(0xFFFF7A00),
                   ),
                 ),
                 Text(
                   'puan',
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.white70,
+                      color: Color(0xFF8A6A3A),
                   ),
                 ),
               ],

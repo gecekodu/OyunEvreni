@@ -13,7 +13,7 @@
             background: #2c3e50;
             color: white;
             user-select: none;
-            touch-action: none; /* Mobilde kaydırmayı engeller */
+            touch-action: pan-x pan-y; /* Butonların çalışması için değiştirildi */
         }
 
         /* --- YATAY EKRAN UYARISI --- */
@@ -34,6 +34,19 @@
         @media screen and (orientation: portrait) {
             #rotate-warning { display: flex; }
             #game-container { display: none; }
+        }
+        
+        /* Rotate animasyonu */
+        @keyframes rotate-phone {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-15deg); }
+            75% { transform: rotate(15deg); }
+        }
+        
+        .rotate-icon {
+            font-size: 15vh;
+            animation: rotate-phone 2s ease-in-out infinite;
+            margin-bottom: 2vh;
         }
 
         /* --- OYUN KAPLAYICISI --- */
@@ -246,9 +259,10 @@
 <body>
 
     <div id="rotate-warning">
-        <div style="font-size: 10vh;">🔄</div>
-        <h1>Lütfen Ekranı Çevirin</h1>
-        <p>Bu oyun sadece yatay modda oynanabilir.</p>
+        <div class="rotate-icon">📱</div>
+        <div style="font-size: 8vh; margin-bottom: 2vh;">🔄</div>
+        <p style="font-size: 3.5vh; margin-top: 0;">Telefonu yatay çevirin</p>
+        <p style="font-size: 2.5vh; color: #95a5a6; margin-top: 1vh;">Oyun yatay modda oynanır</p>
     </div>
 
     <div id="game-container">
@@ -798,6 +812,7 @@ document.addEventListener('DOMContentLoaded', function() {
             z-index: 10001;
             display: flex;
             gap: 8px;
+            pointer-events: auto;
         }
         .app-ctrl-btn {
             background: rgba(0, 0, 0, 0.6);
@@ -807,8 +822,14 @@ document.addEventListener('DOMContentLoaded', function() {
             padding: 10px 12px;
             font-size: 16px;
             cursor: pointer;
+            pointer-events: auto;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
-        .app-ctrl-btn:active { transform: scale(0.96); }
+        .app-ctrl-btn:active { 
+            transform: scale(0.96);
+            background: rgba(0, 0, 0, 0.8);
+        }
         .pause-overlay {
             position: fixed;
             top: 0;
@@ -820,6 +841,7 @@ document.addEventListener('DOMContentLoaded', function() {
             align-items: center;
             justify-content: center;
             z-index: 10002;
+            pointer-events: auto;
         }
         .pause-overlay.hidden { display: none; }
         .pause-card {
@@ -831,6 +853,7 @@ document.addEventListener('DOMContentLoaded', function() {
             text-align: center;
             width: 80%;
             max-width: 320px;
+            pointer-events: auto;
         }
         .pause-btn {
             margin-top: 12px;
@@ -842,6 +865,13 @@ document.addEventListener('DOMContentLoaded', function() {
             cursor: pointer;
             background: #27ae60;
             color: #fff;
+            pointer-events: auto;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .pause-btn:active {
+            transform: scale(0.98);
+            opacity: 0.8;
         }
         .pause-btn.secondary { background: #34495e; }
         .badge-toast {
@@ -875,6 +905,42 @@ document.addEventListener('DOMContentLoaded', function() {
     <script>
         (function () {
             function postUi(payload) {
+                // Flutter InAppWebView ile haberleşme
+                if (window.flutter_inappwebview) {
+                    try {
+                        if (payload.type === 'back') {
+                            // Geri butonu - oyundan çık
+                            window.history.back();
+                        } else if (payload.type === 'enterFullscreen') {
+                            // Tam ekran aç
+                            var elem = document.documentElement;
+                            if (elem.requestFullscreen) {
+                                elem.requestFullscreen();
+                            } else if (elem.webkitRequestFullscreen) {
+                                elem.webkitRequestFullscreen();
+                            } else if (elem.mozRequestFullScreen) {
+                                elem.mozRequestFullScreen();
+                            } else if (elem.msRequestFullscreen) {
+                                elem.msRequestFullscreen();
+                            }
+                        } else if (payload.type === 'exitFullscreen') {
+                            // Tam ekrandan çık
+                            if (document.exitFullscreen) {
+                                document.exitFullscreen();
+                            } else if (document.webkitExitFullscreen) {
+                                document.webkitExitFullscreen();
+                            } else if (document.mozCancelFullScreen) {
+                                document.mozCancelFullScreen();
+                            } else if (document.msExitFullscreen) {
+                                document.msExitFullscreen();
+                            }
+                        }
+                        return true;
+                    } catch (e) {
+                        console.error('postUi error:', e);
+                    }
+                }
+                // GameUi fallback (eski sistem)
                 if (window.GameUi && window.GameUi.postMessage) {
                     window.GameUi.postMessage(JSON.stringify(payload));
                     return true;
@@ -945,8 +1011,38 @@ document.addEventListener('DOMContentLoaded', function() {
             if (fullBtn) fullBtn.addEventListener('click', function () {
                 isFull = !isFull;
                 fullBtn.textContent = isFull ? '⤡' : '⛶';
-                if (isFull) window.GameBridge.enterFullscreen();
-                else window.GameBridge.exitFullscreen();
+                
+                // Tam ekran toggle
+                var elem = document.documentElement;
+                if (isFull) {
+                    // Tam ekrana geç
+                    var fsPromise = (elem.requestFullscreen && elem.requestFullscreen()) || 
+                                   (elem.webkitRequestFullscreen && elem.webkitRequestFullscreen()) || 
+                                   (elem.mozRequestFullScreen && elem.mozRequestFullScreen()) || 
+                                   (elem.msRequestFullscreen && elem.msRequestFullscreen());
+                    
+                    // Yatay moda geç
+                    if (fsPromise && screen.orientation && screen.orientation.lock) {
+                        fsPromise.then(function() {
+                            screen.orientation.lock('landscape').catch(function(err) {
+                                console.log('Orientation lock hatası (normal):', err);
+                            });
+                        }).catch(function(err) {
+                            console.log('Fullscreen hatası:', err);
+                        });
+                    }
+                } else {
+                    // Tam ekrandan çık
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
+                }
             });
             if (pauseBtn) pauseBtn.addEventListener('click', function () { setPaused(!isPausedLocal); });
             if (pauseResume) pauseResume.addEventListener('click', function () { setPaused(false); });

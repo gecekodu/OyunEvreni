@@ -1,6 +1,7 @@
 // 🔐 LOGIN PAGE - Giriş Yapma Sayfası
 
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/futuristic_animations.dart';
 import '../../../../core/services/firebase_service.dart';
 import '../../../../main.dart';
 
@@ -72,7 +73,7 @@ class _LoginPageState extends State<LoginPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+            colors: [Color(0xFF0F1027), Color(0xFF2C2A6B), Color(0xFF00D4FF)],
           ),
         ),
         child: SafeArea(
@@ -83,9 +84,18 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo ve Başlık
-                  const Text(
-                    '🎮',
-                    style: TextStyle(fontSize: 80),
+                  GlowContainer(
+                    glowColor: const Color(0xFF00D4FF),
+                    blurRadius: 28,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Image.asset(
+                        'assets/images/logo.jpeg',
+                        width: 96,
+                        height: 96,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   const Text(

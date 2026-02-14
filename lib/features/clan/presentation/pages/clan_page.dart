@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/clan.dart';
 import '../../data/services/clan_service.dart';
+import '../../data/services/clan_chat_service.dart';
 import 'clan_chat_page.dart';
 
 class ClanPage extends StatefulWidget {
@@ -13,15 +14,18 @@ class ClanPage extends StatefulWidget {
 
 class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin {
   final _clanService = ClanService();
+  final _chatService = ClanChatService();
   late TabController _tabController;
   bool _isLoading = true;
   Clan? _userClan;
   List<Map<String, dynamic>> _clanMembers = [];
+  int _initialClanTab = 0;
+  bool _showWelcomeToast = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 2, initialIndex: _initialClanTab, vsync: this);
     _loadUserClan();
   }
 
@@ -51,6 +55,7 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
             setState(() {
               _userClan = null;
               _isLoading = false;
+              _initialClanTab = 0;
             });
           }
         }
@@ -77,8 +82,19 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
 
     // Kullanıcının klanı varsa klan detayını göster
     if (_userClan != null) {
+      if (_showWelcomeToast) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _tabController.animateTo(1);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Sohbete hos geldin!')),
+          );
+          setState(() => _showWelcomeToast = false);
+        });
+      }
       return DefaultTabController(
         length: 3,
+        initialIndex: _initialClanTab,
         child: Scaffold(
           appBar: AppBar(
             title: Row(
@@ -297,18 +313,73 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
   Widget _buildMemberCard(Map<String, dynamic> member, int rank) {
     final isLeader = member['isLeader'] as bool;
     
-    return Card(
-      margin: EdgeInsets.only(bottom: 8),
+    Color getRankColor() {
+      if (rank == 1) return Color(0xFFFFD700); // Gold
+      if (rank == 2) return Color(0xFFC0C0C0); // Silver
+      if (rank == 3) return Color(0xFFCD7F32); // Bronze
+      return Color(0xFF00D4FF); // Cyan
+    }
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF1A1A2E),
+            Color(0xFF16213E),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: rank <= 3 ? getRankColor().withOpacity(0.5) : Color(0xFF00D4FF).withOpacity(0.2),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: getRankColor().withOpacity(0.2),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: rank <= 3 
-              ? (rank == 1 ? Colors.amber : rank == 2 ? Colors.grey : Colors.brown)
-              : Colors.deepOrange,
-          child: Text(
-            '#$rank',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                getRankColor(),
+                getRankColor().withOpacity(0.6),
+              ],
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: getRankColor().withOpacity(0.4),
+                blurRadius: 12,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              '#$rank',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.5),
+                    offset: Offset(0, 2),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -316,19 +387,36 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
           children: [
             Text(
               member['userName'] as String,
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                fontSize: 16,
+              ),
             ),
             if (isLeader) ...[
               SizedBox(width: 8),
-              Icon(Icons.star, color: Colors.amber, size: 16),
+              Icon(Icons.star, color: Color(0xFFFFD700), size: 20),
             ],
           ],
         ),
-        trailing: Text(
-          '${member['score']} puan',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.deepOrange,
+        trailing: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF8BFF6B),
+                Color(0xFF00D4FF),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '${member['score']} puan',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 14,
+            ),
           ),
         ),
       ),
@@ -740,6 +828,19 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
     );
   }
 
+  Future<void> _sendJoinWelcomeMessage(Clan clan) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final userName = user?.displayName ?? user?.email ?? 'Kullanici';
+      await _chatService.sendMessage(
+        clanId: clan.id,
+        message: '🎉 $userName klana katildi! Hos geldin!',
+      );
+    } catch (e) {
+      debugPrint('Hos geldin mesaji gonderilemedi: $e');
+    }
+  }
+
   void _showJoinDialog(Clan clan) {
     if (clan.isFull) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -772,15 +873,16 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
               try {
                 Navigator.pop(context);
                 await _clanService.joinClan(clan.id);
-                // Ensure UI rebuilds
-                setState(() {});
+                await _sendJoinWelcomeMessage(clan);
+                setState(() {
+                  _initialClanTab = 1;
+                  _showWelcomeToast = true;
+                });
                 await _loadUserClan();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Klana katıldın!')),
                   );
-                  // Force rebuild to show chat tab
-                  setState(() {});
                 }
               } catch (e) {
                 if (mounted) {
@@ -818,6 +920,7 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
                   setState(() {
                     _userClan = null;
                     _clanMembers = [];
+                    _initialClanTab = 0;
                   });
                   _tabController.index = 0;
                 }
@@ -843,10 +946,60 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
   }
 
   void _handleLeaveClan() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (_userClan != null && user != null && _userClan!.leaderId == user.uid) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Lider Klanı'),
+          content: Text('Lider olduğun için klanı terk edemezsin. Klanı silmek ister misin?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _showDeleteDialog();
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text('Klanı Sil'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     _showLeaveDialog();
   }
 
   void _handleChangeClan() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (_userClan != null && user != null && _userClan!.leaderId == user.uid) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Lider Klanı'),
+          content: Text('Lider olduğun için klanı terk edemezsin. Klanı silmek ister misin?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _showDeleteDialog();
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text('Klanı Sil'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     _showLeaveDialog(openExplorer: true);
   }
 

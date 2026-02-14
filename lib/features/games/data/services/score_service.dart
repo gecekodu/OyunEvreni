@@ -179,9 +179,13 @@ class ScoreService {
           .collection('users')
           .doc(userId);
 
+      // Her 100 puan için 1 elmas ver
+      final diamondsToAdd = (score / 100).floor();
+
       await userRef.set(
         {
           'totalScore': FieldValue.increment(score),
+          'diamonds': FieldValue.increment(diamondsToAdd),
           'lastUpdated': FieldValue.serverTimestamp(),
           'username': userName,
           'userAvatar': userAvatar,
@@ -189,14 +193,49 @@ class ScoreService {
         SetOptions(merge: true),
       );
 
-      print('✅ Profil puanı güncellendi: +$score puan (Kullanıcı: $userName)');
+      print('✅ Profil puanı güncellendi: +$score puan, +$diamondsToAdd elmas (Kullanıcı: $userName)');
+      
+      // 🏰 Kullanıcının klanı varsa klan puanını güncelle
+      await _updateUserClanScore(userId, score);
     } catch (e) {
       print('❌ Profil puan ekleme hatası: $e');
       rethrow;
     }
   }
 
-  /// 🏆 Genel Sıralama Collection'ını Güncelle
+  /// � Kullanıcının klan puanını güncelle
+  Future<void> _updateUserClanScore(String userId, int scoreToAdd) async {
+    try {
+      // Kullanıcının klanını bul
+      final userDoc = await _firebaseService.firestore
+          .collection('users')
+          .doc(userId)
+          .get();
+      
+      final userData = userDoc.data();
+      if (userData == null || userData['clanId'] == null) {
+        print('ℹ️ Kullanıcının klanı yok, klan puanı güncellenmedi');
+        return;
+      }
+      
+      final clanId = userData['clanId'] as String;
+      
+      // Klan puanını atomik olarak artır
+      await _firebaseService.firestore
+          .collection('clans')
+          .doc(clanId)
+          .update({
+        'totalScore': FieldValue.increment(scoreToAdd),
+      });
+      
+      print('✅ Klan puanı güncellendi: +$scoreToAdd puan (Klan ID: $clanId)');
+    } catch (e) {
+      print('⚠️ Klan puan güncelleme hatası (kritik değil): $e');
+      // Klan puanı güncellemesi başarısız olsa bile kullanıcı puanı kaydedildi
+    }
+  }
+
+  /// �🏆 Genel Sıralama Collection'ını Güncelle
 
   /// 👤 Kullanıcının Toplam Puanı Getir
   Future<int> getUserTotalScore(String userId) async {
@@ -230,13 +269,23 @@ class ScoreService {
                 .map((doc) {
                   final data = doc.data();
                   final totalScore = (data['totalScore'] ?? 0) as num;
-                  final username = data['username'] ?? data['displayName'] ?? data['email'] ?? 'Kullanıcı';
+                    final rawEmail = data['email'] as String?;
+                    final emailName = rawEmail?.split('@').first;
+                    final username = data['username'] ??
+                      data['displayName'] ??
+                      data['userName'] ??
+                      data['name'] ??
+                      emailName ??
+                      'Kullanıcı';
                   
                   print('👤 Kullanıcı: $username, Puan: $totalScore, UID: ${doc.id}');
                   
                   return {
                     'uid': doc.id,
                     'username': username,
+                    'email': data['email'],
+                    'displayName': data['displayName'],
+                    'userName': data['userName'],
                     'totalScore': totalScore.toInt(),
                     'userAvatar': data['userAvatar'] ?? '',
                     'updatedAt': data['lastUpdated'],

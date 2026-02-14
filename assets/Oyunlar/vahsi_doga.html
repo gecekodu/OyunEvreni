@@ -2218,6 +2218,7 @@
         
         // Eski class'ları kaldır
         modal.classList.remove('hidden');
+        modal.style.display = 'flex';
         
         // Showing state'ine geç (biraz delay ile animasyon için)
         setTimeout(() => {
@@ -2233,6 +2234,7 @@
         if (modal) {
             modal.classList.remove('showing');
             modal.classList.add('hidden');
+            modal.style.display = 'none';
         }
         // Canvas'ı tekrar tıklanabilir yap
         const canvas = document.querySelector('canvas');
@@ -2246,6 +2248,18 @@
 
     function oyunBitti(puan) {
         console.log('🎯 Oyun sonu puanı: ' + puan);
+        if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
+            window.flutter_inappwebview.callHandler('sendScore', puan);
+            console.log('✅ Puan Flutter\'e gönderildi: ' + puan);
+        }
+
+        if (window.PuanKanali) {
+            window.PuanKanali.postMessage(puan.toString());
+        }
+
+        if (window.GameBridge && typeof window.GameBridge.sendScore === 'function') {
+            window.GameBridge.sendScore(puan, { source: 'gameOver' });
+        }
     }
 
     function collectScoreAndExit(puan) {

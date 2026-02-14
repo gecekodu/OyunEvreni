@@ -43,6 +43,7 @@ dependencies:
 
   # Gemini API & Google AI
   google_generative_ai: ^0.4.0
+  google_fonts: ^6.2.1
 
   # WebView for HTML games
   webview_flutter: ^4.4.0
@@ -62,6 +63,7 @@ dependencies:
   image_picker: ^1.2.1
   firebase_database: ^11.3.10
   timeago: ^3.6.1  # Relative time formatting (örn: "5 dakika önce")
+  shared_preferences: ^2.2.2  # Tema ve ayar kaydetme
 
 dev_dependencies:
   flutter_test:

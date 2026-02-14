@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/datasources/example_games_datasource.dart';
 import '../../data/repositories/example_games_repository_impl.dart';
 import '../../domain/entities/example_game.dart';
-import '../../../webview/presentation/pages/webview_page.dart';
+import '../../../webview/presentation/pages/enhanced_webview_page.dart';
 
 class ExampleGamesListPage extends StatefulWidget {
   const ExampleGamesListPage({super.key});
@@ -49,9 +49,9 @@ class _ExampleGamesListPageState extends State<ExampleGamesListPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => WebViewPage(
-          gameTitle: game.title,
-          htmlPath: game.htmlContent,
+        builder: (context) => EnhancedWebviewPage(
+          gameName: game.title,
+          gameUrl: game.htmlContent,
           gameId: game.id,
         ),
       ),

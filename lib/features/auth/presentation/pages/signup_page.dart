@@ -1,6 +1,7 @@
 // 📝 SIGNUP PAGE - Kayıt Olma Sayfası
 
 import 'package:flutter/material.dart';
+import '../../../../core/widgets/futuristic_animations.dart';
 import '../../../../core/services/firebase_service.dart';
 import '../../../../main.dart';
 
@@ -13,7 +14,7 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -23,7 +24,7 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -45,8 +46,17 @@ class _SignupPageState extends State<SignupPage> {
       if (!mounted) return;
 
       if (user != null) {
-        // Kullanıcı adını güncelle
-        await firebaseService.updateDisplayName(_nameController.text.trim());
+        // Kullanıcı adını Firestore'a kaydet
+        await firebaseService.firestore.collection('users').doc(user.uid).set({
+          'username': _usernameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'displayName': _usernameController.text.trim(),
+          'createdAt': DateTime.now(),
+          'totalScore': 0,
+          'diamonds': 0,
+        });
+        
+        await firebaseService.updateDisplayName(_usernameController.text.trim());
         
         if (!mounted) return;
         Navigator.of(context).pushReplacementNamed('/home');
@@ -81,7 +91,7 @@ class _SignupPageState extends State<SignupPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+            colors: [Color(0xFF0F1027), Color(0xFF2C2A6B), Color(0xFFFF4D9A)],
           ),
         ),
         child: SafeArea(
@@ -92,9 +102,18 @@ class _SignupPageState extends State<SignupPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo ve Başlık
-                  const Text(
-                    '🎮',
-                    style: TextStyle(fontSize: 70),
+                  GlowContainer(
+                    glowColor: const Color(0xFFFF4D9A),
+                    blurRadius: 24,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(22),
+                      child: Image.asset(
+                        'assets/images/logo.jpeg',
+                        width: 88,
+                        height: 88,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   const Text(
@@ -129,12 +148,12 @@ class _SignupPageState extends State<SignupPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Name Field
+                            // Kullanıcı Adı Field
                             TextFormField(
-                              controller: _nameController,
+                              controller: _usernameController,
                               decoration: InputDecoration(
-                                labelText: 'Ad Soyad',
-                                hintText: 'Adınız',
+                                labelText: 'Kullanıcı Adı',
+                                hintText: 'Örn: oyuncu123',
                                 prefixIcon: const Icon(Icons.person_outline),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -144,10 +163,16 @@ class _SignupPageState extends State<SignupPage> {
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Ad soyad gerekli';
+                                  return 'Kullanıcı adı gerekli';
                                 }
                                 if (value.length < 3) {
-                                  return 'Ad en az 3 karakter olmalı';
+                                  return 'En az 3 karakter olmalı';
+                                }
+                                if (value.length > 20) {
+                                  return 'En fazla 20 karakter olmalı';
+                                }
+                                if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+                                  return 'Sadece harf, rakam ve _ kullanın';
                                 }
                                 return null;
                               },

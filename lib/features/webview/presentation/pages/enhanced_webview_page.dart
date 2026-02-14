@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get_it/get_it.dart';
+import 'package:flutter/services.dart';
 import '../../../../features/games/data/services/score_service.dart';
 
 class EnhancedWebviewPage extends StatefulWidget {
@@ -23,17 +25,40 @@ class EnhancedWebviewPage extends StatefulWidget {
 }
 
 class _EnhancedWebviewPageState extends State<EnhancedWebviewPage> {
-  late InAppWebViewController _webViewController;
+  InAppWebViewController? _webViewController;
   late ScoreService _scoreService;
   late FirebaseAuth _auth;
   int _totalScoreThisSession = 0;
   bool _isLoading = true;
+  bool _isSubmittingScore = false;  // Puan gönderme kontrolü
+  String? _htmlData;
 
   @override
   void initState() {
     super.initState();
     _scoreService = GetIt.instance<ScoreService>();
     _auth = FirebaseAuth.instance;
+    _loadGameContent();
+  }
+
+  Future<void> _loadGameContent() async {
+    if (widget.gameUrl.startsWith('assets/')) {
+      try {
+        debugPrint('🎮 Oyun asset\'i yükleniyor: ${widget.gameUrl}');
+        final html = await rootBundle.loadString(widget.gameUrl);
+        debugPrint('✅ HTML yüklendi: ${html.length} karakter');
+        if (mounted) {
+          setState(() {
+            _htmlData = html;
+          });
+        }
+      } catch (e) {
+        debugPrint('❌ Asset yükleme hatası: $e');
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+    }
   }
 
   @override
@@ -84,22 +109,34 @@ class _EnhancedWebviewPageState extends State<EnhancedWebviewPage> {
         ),
         body: Stack(
           children: [
-            InAppWebView(
-              initialSettings: InAppWebViewSettings(
-                useShouldOverrideUrlLoading: true,
-                useOnLoadResource: true,
-                mediaPlaybackRequiresUserGesture: false,
-                allowContentAccess: true,
-                allowFileAccess: true,
-              ),
-              initialUrlRequest: URLRequest(
-                url: WebUri(widget.gameUrl),
-              ),
-              onWebViewCreated: (controller) async {
-                _webViewController = controller;
-                
-                // ✅ Puan gönderme handler'ı tanımlama
-                controller.addJavaScriptHandler(
+            if (_htmlData != null)
+              InAppWebView(
+                initialSettings: InAppWebViewSettings(
+                  useShouldOverrideUrlLoading: true,
+                  useOnLoadResource: true,
+                  mediaPlaybackRequiresUserGesture: false,
+                  allowContentAccess: true,
+                  allowFileAccess: true,
+                  allowFileAccessFromFileURLs: true,
+                  allowUniversalAccessFromFileURLs: true,
+                  javaScriptEnabled: true,
+                  domStorageEnabled: true,
+                ),
+                onWebViewCreated: (controller) async {
+                  _webViewController = controller;
+                  debugPrint('📱 WebView oluşturuldu: ${widget.gameName}');
+                  
+                  // HTML content yükle
+                  debugPrint('🎲 HTML yükleniyor (${_htmlData!.length} karakter)...');
+                  await controller.loadData(
+                    data: _htmlData!,
+                    mimeType: 'text/html',
+                    encoding: 'utf-8',
+                  );
+                  debugPrint('✅ HTML WebView\'a yüklendi');
+                  
+                  // ✅ Puan gönderme handler'ı tanımlama
+                  controller.addJavaScriptHandler(
                   handlerName: 'sendScore',
                   callback: (args) {
                     _handleScoreFromGame(args);
@@ -118,21 +155,25 @@ class _EnhancedWebviewPageState extends State<EnhancedWebviewPage> {
                 controller.addJavaScriptHandler(
                   handlerName: 'gameStarted',
                   callback: (args) {
-                    print('🎮 Oyun başladı: ${widget.gameName}');
+                    debugPrint('🎮 Oyun başladı: ${widget.gameName}');
                     setState(() => _totalScoreThisSession = 0);
                   },
                 );
               },
               onLoadStop: (controller, url) {
+                debugPrint('✅ Sayfa yüklendi: $url');
                 setState(() => _isLoading = false);
                 _injectGameScript();
               },
               onLoadError: (controller, url, code, message) {
+                debugPrint('❌ WebView hatası: $message (Code: $code, URL: $url)');
                 setState(() => _isLoading = false);
-                print('❌ WebView hatası: $message');
+              },
+              onConsoleMessage: (controller, consoleMessage) {
+                debugPrint('🖥️ Console: ${consoleMessage.message}');
               },
             ),
-            if (_isLoading)
+            if (_htmlData == null || _isLoading)
               Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -158,39 +199,228 @@ class _EnhancedWebviewPageState extends State<EnhancedWebviewPage> {
   }
 
   /// 🎮 HTML oyundan puan alındığında çağrılır
-  void _handleScoreFromGame(List<dynamic> args) {
+  void _handleScoreFromGame(List<dynamic> args) async {
     try {
       int score = args[0] as int;
       
       setState(() {
-        _totalScoreThisSession += score;
+        _totalScoreThisSession = score;
       });
 
-      print('⭐ Oyundan puan alındı: +$score (Toplam: $_totalScoreThisSession)');
+      print('⭐ Oyundan puan alındı: $score');
 
-      // Anlık puan bildirgesi göster
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Harika! +$score puan kazandın!'),
-              const Icon(Icons.star, color: Colors.orange),
-            ],
-          ),
-          duration: const Duration(seconds: 2),
-          backgroundColor: Colors.green.shade700,
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      // Kullanıcı bilgilerini al
+      final user = _auth.currentUser;
+      if (user != null) {
+        final userName = user.displayName ?? user.email?.split('@').first ?? 'Oyuncu';
+        
+        await _scoreService.addScoreToUserProfile(
+          userId: user.uid,
+          userName: userName,
+          score: score,
+          userAvatar: user.photoURL ?? '',
+        );
 
-      // Gerçek zamanlı Firebase güncellemesi
-      _updateScoreInRealtimeMode(score);
+        final rankData = await _getUserRankData(user.uid);
+        final totalScore = rankData['totalScore'] ?? score;
+        final rank = rankData['rank'] ?? 'Başlangıç';
+        
+        _showGameOverDialog(score, totalScore, rank);
+      }
     } catch (e) {
       print('❌ Puan işleme hatası: $e');
     }
+  }
+  
+  Future<Map<String, dynamic>> _getUserRankData(String userId) async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      
+      if (userDoc.exists) {
+        final data = userDoc.data();
+        final totalScore = (data?['totalScore'] as num?)?.toInt() ?? 0;
+        
+        // Global rank'i hesapla (basit versiyonu)
+        final allUsers = await FirebaseFirestore.instance
+            .collection('users')
+            .where('totalScore', isGreaterThan: totalScore)
+            .get();
+        
+        final globalRank = allUsers.docs.length + 1;
+        
+        return {
+          'totalScore': totalScore,
+          'rank': globalRank > 0 ? '#$globalRank' : 'Başlangıç',
+        };
+      }
+    } catch (e) {
+      debugPrint('Rank verileri alinamadi: $e');
+    }
+    return {'totalScore': 0, 'rank': 'Başlangıç'};
+  }
+
+  void _showGameOverDialog(int earnedPoints, int totalPoints, String rank) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  '🎮 Oyun Bitti!',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Kazandığın Puan',
+                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '+$earnedPoints',
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text('Toplam Puan', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            const SizedBox(height: 4),
+                            Text(
+                              '$totalPoints',
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            const Text('Rütben', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            const SizedBox(height: 4),
+                            Text(
+                              rank,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.purple),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                
+                Column(
+                  children: [
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green.shade600,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.check_circle, color: Colors.white),
+                        label: const Text(
+                          'Puanı Al',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              _webViewController?.reload();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.replay, color: Colors.white),
+                            label: const Text('Tekrar Oyna', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurple,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.home, color: Colors.white),
+                            label: const Text('Ana Menü', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   /// 🏁 Oyun tamamlandığında
@@ -248,7 +478,7 @@ class _EnhancedWebviewPageState extends State<EnhancedWebviewPage> {
               onPressed: () {
                 // Tekrar oyna - bir daha oyun reload et
                 Navigator.pop(context);
-                _webViewController.reload();
+                _webViewController?.reload();
               },
               style: TextButton.styleFrom(
                 foregroundColor: Colors.grey,
@@ -256,20 +486,63 @@ class _EnhancedWebviewPageState extends State<EnhancedWebviewPage> {
               child: const Text('Tekrar Oyna'),
             ),
             ElevatedButton.icon(
-              onPressed: () async {
-                // Puanı al ve profile git
-                Navigator.pop(context); // Dialog kapat
+              onPressed: _isSubmittingScore ? null : () async {
+                // Çift tıklama önleme
+                if (_isSubmittingScore) return;
+                setState(() => _isSubmittingScore = true);
                 
-                // Puanı Firebase'e kaydet
-                await _recordFinalScore(finalScore);
-                
-                // Profile'e navigate et
-                if (mounted) {
-                  Navigator.pop(context); // WebView'dan çık
+                try {
+                  // Puanı Firebase'e kaydet
+                  await _recordFinalScore(finalScore);
+                  
+                  // Dialog kapat
+                  if (mounted) {
+                    Navigator.pop(context);
+                    
+                    // Başarı mesajı göster
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text('Tebrikler! Puan eklendi ✨'),
+                          ],
+                        ),
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    
+                    // Ana sayfaya dön
+                    await Future.delayed(const Duration(milliseconds: 500));
+                    if (mounted) {
+                      Navigator.pop(context); // WebView'dan çık
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    setState(() => _isSubmittingScore = false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Hata: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               },
-              icon: const Icon(Icons.check_circle),
-              label: const Text('Puanı Al'),
+              icon: _isSubmittingScore 
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.check_circle),
+              label: Text(_isSubmittingScore ? 'Kaydediliyor...' : 'Puanı Al'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
@@ -375,7 +648,7 @@ class _EnhancedWebviewPageState extends State<EnhancedWebviewPage> {
 
   /// 📝 HTML oyuna etkinlik scripti enjekte et
   void _injectGameScript() {
-    _webViewController.evaluateJavascript(source: '''
+    _webViewController?.evaluateJavascript(source: '''
       // Flutter ile iletişim kurmak için global fonksiyon
       window.flutter_send_score = function(score) {
         if (window.flutter_inappwebview) {
@@ -401,7 +674,7 @@ class _EnhancedWebviewPageState extends State<EnhancedWebviewPage> {
 
   @override
   void dispose() {
-    _webViewController.clearCache();
+    _webViewController?.clearCache();
     super.dispose();
   }
 }
