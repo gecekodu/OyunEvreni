@@ -37,6 +37,7 @@ import 'features/games/domain/entities/example_game.dart';
 import 'features/webview/presentation/pages/webview_page.dart';
 import 'features/games/presentation/pages/leaderboard_page.dart';
 import 'features/clan/presentation/pages/clan_page.dart';
+import 'features/clan/data/services/clan_service.dart';
 import 'core/widgets/futuristic_animations.dart';
 
 // GetIt - Dependency Injection
@@ -126,6 +127,7 @@ void _setupDependencies(
     ScoreService(firebaseService: firebaseService),
   );
   getIt.registerSingleton<LeaderboardService>(LeaderboardService());
+  getIt.registerSingleton<ClanService>(ClanService());
 
   // 🤖 AI Game Generator Service
   getIt.registerSingleton<AIGameGeneratorService>(
@@ -230,6 +232,7 @@ class _MyAppState extends State<MyApp> {
         '/ai-game-creator': (context) => const AIGameCreatorPage(),
         '/example-games': (context) => const ExampleGamesListPage(),
         '/clan': (context) => const ClanPage(),
+        '/admin-reset-scores': (context) => const AdminResetScoresPage(),
       },
     );
   }
@@ -1012,12 +1015,9 @@ class HomeTabView extends StatefulWidget {
 }
 
 class _HomeTabViewState extends State<HomeTabView> {
-  late Future<Map<String, dynamic>> _homeStats;
-
   @override
   void initState() {
     super.initState();
-    _homeStats = _fetchHomeStats();
   }
 
   Future<void> _openExampleGame(ExampleGameType type) async {
@@ -1050,44 +1050,61 @@ class _HomeTabViewState extends State<HomeTabView> {
     super.dispose();
   }
 
-  Future<Map<String, dynamic>> _fetchHomeStats() async {
+  Stream<Map<String, dynamic>> _getHomeStatsStream() async* {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      return {
+      yield {
         'totalScore': 0,
         'globalRank': '---',
         'diamonds': 0,
         'trophies': 0,
+        'loginStreak': 0,
       };
+      return;
     }
 
     try {
-      final leaderboardService = getIt<LeaderboardService>();
       final firestore = FirebaseFirestore.instance;
-      final totalScore = await leaderboardService.getUserTotalScore(user.uid);
-      final globalRank = await leaderboardService.getUserGlobalRank(user.uid);
-      final userDoc = await firestore.collection('users').doc(user.uid).get();
-      final userData = userDoc.data() ?? {};
-      final diamonds = (userData['diamonds'] as num?)?.toInt() ?? 0;
-      final badgesSnapshot = await firestore
+      final leaderboardService = getIt<LeaderboardService>();
+
+      // Listen to users document for real-time totalScore, diamonds, loginStreak
+      yield* firestore
           .collection('users')
           .doc(user.uid)
-          .collection('badges')
-          .get();
-      final trophies = badgesSnapshot.docs.length;
-      return {
-        'totalScore': totalScore.toInt(),
-        'globalRank': globalRank > 0 ? globalRank : '---',
-        'diamonds': diamonds,
-        'trophies': trophies,
-      };
+          .snapshots()
+          .asyncMap((userDoc) async {
+        final userData = userDoc.data() ?? {};
+        final diamonds = (userData['diamonds'] as num?)?.toInt() ?? 0;
+        final loginStreak = (userData['loginStreak'] as num?)?.toInt() ?? 0;
+        final totalScore = (userData['totalScore'] as num?)?.toInt() ?? 0;
+        
+        // Get global rank
+        final globalRank = await leaderboardService.getUserGlobalRank(user.uid);
+        
+        // Get badges/trophies count
+        final badgesSnapshot = await firestore
+            .collection('users')
+            .doc(user.uid)
+            .collection('badges')
+            .get();
+        final trophies = badgesSnapshot.docs.length;
+
+        return {
+          'totalScore': totalScore,
+          'globalRank': globalRank > 0 ? globalRank : '---',
+          'diamonds': diamonds,
+          'trophies': trophies,
+          'loginStreak': loginStreak,
+        };
+      });
     } catch (e) {
       debugPrint('Ana sayfa istatistikleri yuklenemedi: $e');
-      return {
+      yield {
         'totalScore': 0,
         'globalRank': '---',
         'diamonds': 0,
         'trophies': 0,
+        'loginStreak': 0,
       };
     }
   }
@@ -1236,14 +1253,15 @@ class _HomeTabViewState extends State<HomeTabView> {
               ],
             ),
             const SizedBox(height: 24),
-            FutureBuilder<Map<String, dynamic>>(
-              future: _homeStats,
+            StreamBuilder<Map<String, dynamic>>(
+              stream: _getHomeStatsStream(),
               builder: (context, snapshot) {
                 final data = snapshot.data ?? {};
                 final totalScore = (data['totalScore'] as int?) ?? 0;
                 final globalRank = data['globalRank'] ?? '---';
                 final diamonds = (data['diamonds'] as int?) ?? 0;
                 final trophies = (data['trophies'] as int?) ?? 0;
+                final loginStreak = (data['loginStreak'] as int?) ?? 0;
                 final progress = (totalScore / 10000).clamp(0.0, 1.0);
 
                 return Column(
@@ -1283,7 +1301,7 @@ class _HomeTabViewState extends State<HomeTabView> {
                                     Icon(Icons.emoji_events, color: Color(0xFFFFD700), size: 20),
                                     SizedBox(width: 8),
                                     Text(
-                                      'Toplam Skor',
+                                      'Toplam Puan',
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Colors.white70,
@@ -1355,15 +1373,11 @@ class _HomeTabViewState extends State<HomeTabView> {
                         ),
                       ],
                     ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-            
-            // 🔥 Giriş Serisi Widget'ı
-            if (_loginStreak > 0)
-              Container(
+                    const SizedBox(height: 24),
+                    
+                    // 🔥 Giriş Serisi Widget'ı
+                    if (loginStreak > 0)
+                      Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
@@ -1409,7 +1423,7 @@ class _HomeTabViewState extends State<HomeTabView> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '$_loginStreak Gün Üst Üste!',
+                            '$loginStreak Gün Üst Üste!',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -1426,7 +1440,10 @@ class _HomeTabViewState extends State<HomeTabView> {
                   ],
                 ),
               ),
-            
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -3047,6 +3064,153 @@ class _ProfilePageState extends State<ProfilePage> {
             fontWeight: FontWeight.bold,
             fontSize: 12,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 🔧 Admin - Tüm kullanıcı puanlarını sıfırla
+class AdminResetScoresPage extends StatefulWidget {
+  const AdminResetScoresPage({super.key});
+
+  @override
+  State<AdminResetScoresPage> createState() => _AdminResetScoresPageState();
+}
+
+class _AdminResetScoresPageState extends State<AdminResetScoresPage> {
+  bool _isResetting = false;
+  String? _message;
+
+  Future<void> _resetScores() async {
+    setState(() => _isResetting = true);
+    try {
+      final leaderboardService = getIt<LeaderboardService>();
+      await leaderboardService.resetAllUsersTotalScore();
+      
+      setState(() {
+        _message = '✅ Tüm kullanıcıların toplam puanları başarıyla sıfırlandı!';
+        _isResetting = false;
+      });
+    } catch (e) {
+      setState(() {
+        _message = '❌ Hata: $e';
+        _isResetting = false;
+      });
+    }
+  }
+
+  Future<void> _recalculateClanScores() async {
+    setState(() => _isResetting = true);
+    try {
+      final clanService = getIt<ClanService>();
+      await clanService.recalculateAllClanScores();
+      
+      setState(() {
+        _message = '✅ Tüm klan puanları başarıyla yeniden hesaplandı!';
+        _isResetting = false;
+      });
+    } catch (e) {
+      setState(() {
+        _message = '❌ Hata: $e';
+        _isResetting = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('🔧 Admin - Puan Sıfırla'),
+        backgroundColor: AppTheme.primaryColor,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_message != null)
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  _message!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            const SizedBox(height: 20),
+            if (!_isResetting)
+              Wrap(
+                spacing: 16,
+                runSpacing: 16,
+                alignment: WrapAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('⚠️ Emin misiniz?'),
+                          content: const Text(
+                            'TÜM kullanıcıların toplam puanları SIFIRLANACAK.\nBu işlem geri alınamaz!',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('İPTAL'),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                              ),
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _resetScores();
+                              },
+                              child: const Text('SIFIRLA'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.warning),
+                    label: const Text('Tüm Puanları Sıfırla'),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('⚠️ Emin misiniz?'),
+                          content: const Text(
+                            'Tüm klan puanları üyelerinin toplam puanlarından yeniden hesaplanacak.'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('İPTAL'),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                              ),
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _recalculateClanScores();
+                              },
+                              child: const Text('HESAPLA'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.groups),
+                    label: const Text('Klan Puanlarını Hesapla'),
+                  ),
+                ],
+              )
+            else
+              const CircularProgressIndicator(),
+          ],
         ),
       ),
     );

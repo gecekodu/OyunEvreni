@@ -33,7 +33,7 @@ class _WebViewPageState extends State<WebViewPage>
   int lastScore = 0;
   String lastRank = 'Başlangıç';
   bool _isFullscreen = false;
-  bool _gameOverDialogShown = false; // Çift dialog gösterilmesini önle
+  bool _isSubmittingScore = false; // Birden fazla submit'i önle
 
   @override
   void initState() {
@@ -413,10 +413,6 @@ class _WebViewPageState extends State<WebViewPage>
   }
 
   void _showGameOverDialog(int earnedPoints, int totalPoints, String rank) {
-    // Çift gösterilmesini önle
-    if (_gameOverDialogShown) return;
-    _gameOverDialogShown = true;
-
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -531,77 +527,134 @@ class _WebViewPageState extends State<WebViewPage>
                 const SizedBox(height: 24),
                 
                 // Butonlar
-                Column(
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          Navigator.of(context).pop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green.shade600,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                StatefulBuilder(
+                  builder: (context, setState) => Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isSubmittingScore ? null : () async {
+                            // Çift tıklama önle
+                            if (_isSubmittingScore) return;
+                            
+                            setState(() => _isSubmittingScore = true);
+                            
+                            try {
+                              // Kısa delay ekle işlemlerin tamamlanması için
+                              await Future.delayed(const Duration(milliseconds: 500));
+                              
+                              if (mounted) {
+                                // Dialog kapat
+                                Navigator.of(context).pop();
+                                
+                                // Başarı mesajı göster
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.check_circle, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('Tebrikler! Puan eklendi ✨'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                                
+                                // İçeriği sabitlemek için bekle ve ana sayfaya dön
+                                await Future.delayed(const Duration(milliseconds: 800));
+                                if (mounted) {
+                                  Navigator.of(context).pop(); // WebView'dari çık ve ana sayfaya dön
+                                }
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                setState(() => _isSubmittingScore = false);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Hata: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _isSubmittingScore ? Colors.grey : Colors.green.shade600,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                        ),
-                        icon: const Icon(Icons.check_circle, color: Colors.white),
-                        label: const Text(
-                          'Puanı Al',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          icon: _isSubmittingScore
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Icon(Icons.check_circle, color: Colors.white),
+                          label: Text(
+                            _isSubmittingScore ? 'Kaydediliyor...' : 'Puanı Al',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              // Oyunu yeniden yükle
-                              controller.reload();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _isSubmittingScore ? null : () {
+                                Navigator.of(context).pop();
+                                // Oyunu yeniden yükle
+                                controller.reload();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isSubmittingScore ? Colors.grey : Colors.orange,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              icon: const Icon(Icons.replay, color: Colors.white),
+                              label: const Text(
+                                'Tekrar Oyna',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                               ),
                             ),
-                            icon: const Icon(Icons.replay, color: Colors.white),
-                            label: const Text(
-                              'Tekrar Oyna',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              Navigator.of(context).pop(); // WebView'u kapat
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _isSubmittingScore ? null : () {
+                                Navigator.of(context).pop();
+                                Navigator.of(context).pop(); // WebView'u kapat
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isSubmittingScore ? Colors.grey : Colors.deepPurple,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              icon: const Icon(Icons.home, color: Colors.white),
+                              label: const Text(
+                                'Ana Menü',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                               ),
                             ),
-                            icon: const Icon(Icons.home, color: Colors.white),
-                            label: const Text(
-                              'Ana Menü',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

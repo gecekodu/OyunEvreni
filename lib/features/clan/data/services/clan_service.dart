@@ -89,6 +89,9 @@ class ClanService {
       'clanId': clanId,
       'clanRole': 'member',
     });
+
+    // 🏰 Klan puanı güncelle (yeni üyeyi ekle)
+    await updateClanScore(clanId);
   }
 
   /// Klandan ayrıl
@@ -116,6 +119,9 @@ class ClanService {
       'clanId': FieldValue.delete(),
       'clanRole': FieldValue.delete(),
     });
+
+    // 🏰 Klan puanı güncelle (üyeyi sil)
+    await updateClanScore(clanId);
   }
 
   /// Klanı sil (sadece lider)
@@ -229,6 +235,33 @@ class ClanService {
     await _clansRef.doc(clanId).update({
       'totalScore': totalScore,
     });
+  }
+
+  /// Tüm klanların puanlarını yeniden hesapla (admin işlemi)
+  Future<void> recalculateAllClanScores() async {
+    try {
+      final clansSnapshot = await _clansRef.get();
+      
+      for (final clanDoc in clansSnapshot.docs) {
+        final clanId = clanDoc.id;
+        final members = await getClanMembers(clanId);
+        final totalScore = members.fold<int>(
+          0,
+          (sum, member) => sum + (member['score'] as int),
+        );
+        
+        await _clansRef.doc(clanId).update({
+          'totalScore': totalScore,
+        });
+        
+        print('✅ Klan puanı yeniden hesaplandı: $clanId -> $totalScore puan');
+      }
+      
+      print('✅ TÜM KLAN PUANLARI YENİDEN HESAPLANDI!');
+    } catch (e) {
+      print('❌ Klan puanları oluşturma hatası: $e');
+      rethrow;
+    }
   }
 
   /// Belirli bir klanı ID ile getir

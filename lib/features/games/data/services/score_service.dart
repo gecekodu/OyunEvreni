@@ -220,15 +220,44 @@ class ScoreService {
       
       final clanId = userData['clanId'] as String;
       
-      // Klan puanını atomik olarak artır
+      // Klanının tüm üyelerini bul ve toplam puanlarını hesapla
+      final clanDoc = await _firebaseService.firestore
+          .collection('clans')
+          .doc(clanId)
+          .get();
+      
+      if (!clanDoc.exists) {
+        print('⚠️ Klan bulunamadı: $clanId');
+        return;
+      }
+      
+      final clanData = clanDoc.data() as Map<String, dynamic>;
+      final memberIds = List<String>.from(clanData['memberIds'] ?? []);
+      
+      // Tüm üyelerin totalScore'larını al ve topla
+      int totalClanScore = 0;
+      for (final memberId in memberIds) {
+        final memberUserDoc = await _firebaseService.firestore
+            .collection('users')
+            .doc(memberId)
+            .get();
+        
+        if (memberUserDoc.exists) {
+          final memberData = memberUserDoc.data() as Map<String, dynamic>;
+          final memberScore = (memberData['totalScore'] ?? 0) as int;
+          totalClanScore += memberScore;
+        }
+      }
+      
+      // Klan toplam puanını güncelleyen üyelerin toplam puanı ile ayarla
       await _firebaseService.firestore
           .collection('clans')
           .doc(clanId)
           .update({
-        'totalScore': FieldValue.increment(scoreToAdd),
+        'totalScore': totalClanScore,
       });
       
-      print('✅ Klan puanı güncellendi: +$scoreToAdd puan (Klan ID: $clanId)');
+      print('✅ Klan puanı yeniden hesaplandı: $totalClanScore puan (Klan ID: $clanId, Üye sayısı: ${memberIds.length})');
     } catch (e) {
       print('⚠️ Klan puan güncelleme hatası (kritik değil): $e');
       // Klan puanı güncellemesi başarısız olsa bile kullanıcı puanı kaydedildi

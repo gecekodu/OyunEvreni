@@ -47,3 +47,4 @@ app.*.map.json
 # Git Automation Logs
 .git-automation/sync-log.txt
 .git-automation/process-id.txt
+node_modules

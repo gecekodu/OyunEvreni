@@ -171,6 +171,33 @@ class LeaderboardService {
     }
   }
 
+  /// 🔁 Yönetici işlemi: Tüm kullanıcıların `totalScore` alanını sıfırlar.
+  /// Dikkat: Bu bir kalıcı, toplu güncellemedir — yalnızca gerektiğinde çalıştırın.
+  Future<void> resetAllUsersTotalScore({int batchSize = 450}) async {
+    try {
+      final snapshot = await _firestore.collection('users').get();
+
+      WriteBatch batch = _firestore.batch();
+      int ops = 0;
+
+      for (var doc in snapshot.docs) {
+        batch.update(doc.reference, {'totalScore': 0});
+        ops++;
+
+        if (ops >= batchSize) {
+          await batch.commit();
+          batch = _firestore.batch();
+          ops = 0;
+        }
+      }
+
+      if (ops > 0) await batch.commit();
+      print('Tüm kullanıcıların totalScore alanı sıfırlandı. (${snapshot.docs.length} kullanıcı)');
+    } catch (e) {
+      print('resetAllUsersTotalScore hata: $e');
+    }
+  }
+
   /// 🏅 Kullanıcının global sıraması
   Future<int> getUserGlobalRank(String userId) async {
     try {

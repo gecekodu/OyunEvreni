@@ -1,0 +1,19 @@
+{
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs18",
+    "codebase": "default"
+  },
+  "hosting": {
+    "public": "web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
+  },
+  "firestore": {
+    "rules": "FIRESTORE_SECURITY_RULES.txt",
+    "indexes": "firestore.indexes.json"
+  }
+}

@@ -356,64 +356,121 @@ class _EnhancedWebviewPageState extends State<EnhancedWebviewPage> {
                 ),
                 const SizedBox(height: 24),
                 
-                Column(
-                  children: [
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          Navigator.of(context).pop();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green.shade600,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        icon: const Icon(Icons.check_circle, color: Colors.white),
-                        label: const Text(
-                          'Puanı Al',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                StatefulBuilder(
+                  builder: (context, setState) => Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isSubmittingScore ? null : () async {
+                            // Çift tıklama önle
+                            if (_isSubmittingScore) return;
+                            
+                            setState(() => _isSubmittingScore = true);
+                            
+                            try {
+                              // Puanı Firebase'e kaydet
+                              await _recordFinalScore(earnedPoints);
+                              
+                              if (mounted) {
+                                // Dialog kapat
+                                Navigator.of(context).pop();
+                                
+                                // Başarı mesajı göster
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Row(
+                                      children: [
+                                        Icon(Icons.check_circle, color: Colors.white),
+                                        SizedBox(width: 8),
+                                        Text('Tebrikler! Puan eklendi ✨'),
+                                      ],
+                                    ),
+                                    backgroundColor: Colors.green,
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                                
+                                // İçeriği sabitlemek için bekle ve çık
+                                await Future.delayed(const Duration(milliseconds: 800));
+                                if (mounted) {
+                                  Navigator.of(context).pop(); // WebView'dan çık ve ana sayfaya dön
+                                }
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                setState(() => _isSubmittingScore = false);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Hata: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _isSubmittingScore ? Colors.grey : Colors.green.shade600,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          icon: _isSubmittingScore
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Icon(Icons.check_circle, color: Colors.white),
+                          label: Text(
+                            _isSubmittingScore ? 'Kaydediliyor...' : 'Puanı Al',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              _webViewController?.reload();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _isSubmittingScore ? null : () {
+                                Navigator.of(context).pop();
+                                _webViewController?.reload();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isSubmittingScore ? Colors.grey : Colors.orange,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: const Icon(Icons.replay, color: Colors.white),
+                              label: const Text('Tekrar Oyna', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             ),
-                            icon: const Icon(Icons.replay, color: Colors.white),
-                            label: const Text('Tekrar Oyna', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              Navigator.of(context).pop();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _isSubmittingScore ? null : () {
+                                Navigator.of(context).pop();
+                                Navigator.of(context).pop();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isSubmittingScore ? Colors.grey : Colors.deepPurple,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: const Icon(Icons.home, color: Colors.white),
+                              label: const Text('Ana Menü', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             ),
-                            icon: const Icon(Icons.home, color: Colors.white),
-                            label: const Text('Ana Menü', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

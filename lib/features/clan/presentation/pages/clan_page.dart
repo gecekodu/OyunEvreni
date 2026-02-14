@@ -27,6 +27,8 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
     super.initState();
     _tabController = TabController(length: 2, initialIndex: _initialClanTab, vsync: this);
     _loadUserClan();
+    // 🏰 Tüm klan puanlarını eş zamanlı olarak senkronize et
+    _syncAllClanScores();
   }
 
   @override
@@ -67,6 +69,18 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
           SnackBar(content: Text('Hata: $e')),
         );
       }
+    }
+  }
+
+  /// 🏰 Tüm klan puanlarını senkronize et (Her klanın üyelerinin toplam puanını hesapla)
+  Future<void> _syncAllClanScores() async {
+    try {
+      print('🔄 Tüm klan puanları senkronize ediliyor...');
+      await _clanService.recalculateAllClanScores();
+      print('✅ Tüm klan puanları senkronize edildi!');
+    } catch (e) {
+      print('⚠️ Klan puanları senkronize edilirken hata: $e');
+      // Sessiz fail - kullanıcı tarafında hata gösterilmez
     }
   }
 
@@ -573,11 +587,11 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
       stream: _clanService.getAllClansStream(orderBy: 'totalScore'),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(child: Text('Henüz klan yok'));
+          return const Center(child: Text('Henüz klan yok'));
         }
 
         final clans = snapshot.data!;
@@ -596,14 +610,13 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
           child: SingleChildScrollView(
             child: Column(
               children: [
-                // Klan Sıralaması Başlığı
                 Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                   child: Row(
                     children: [
-                      Icon(Icons.emoji_events, color: Color(0xFFFFC300), size: 24),
-                      SizedBox(width: 8),
-                      Text(
+                      const Icon(Icons.emoji_events, color: Color(0xFFFFC300), size: 24),
+                      const SizedBox(width: 8),
+                      const Text(
                         'Klan Sıralaması',
                         style: TextStyle(
                           fontSize: 20,
@@ -614,10 +627,8 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
                     ],
                   ),
                 ),
-
-                // Klanlar Listesi
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                   child: Column(
                     children: [
                       ...clans.asMap().entries.map((entry) {
@@ -625,7 +636,7 @@ class _ClanPageState extends State<ClanPage> with SingleTickerProviderStateMixin
                         final clan = entry.value;
                         return _buildLeaderboardCard(clan, index + 1);
                       }).toList(),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),

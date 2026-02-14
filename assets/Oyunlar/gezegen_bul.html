@@ -662,6 +662,17 @@ function oyunBitti(puan) {
 function collectScoreAndExit(puan) {
     console.log('💾 Puan kabul ediliyor ve oyundan çıkılıyor: ' + puan);
     
+    // Tam ekrandan çık
+    exitFullscreenMode();
+    
+    // Butonu disable et - çift tıklama preventı
+    const collectBtn = document.getElementById('collectScoreBtn');
+    if (collectBtn) {
+        collectBtn.disabled = true;
+        collectBtn.textContent = '⏳ İşleniyor...';
+        collectBtn.style.opacity = '0.6';
+    }
+    
     // Ensure score is sent to Flutter
     if (window.flutter_inappwebview && typeof window.flutter_inappwebview.callHandler === 'function') {
         window.flutter_inappwebview.callHandler('sendScore', puan);
@@ -674,6 +685,24 @@ function collectScoreAndExit(puan) {
     } else {
         // Fallback - just navigate back
         history.back();
+    }
+}
+
+// Tam ekrandan çıkma fonksiyonu
+function exitFullscreenMode() {
+    try {
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else if (document.webkitFullscreenElement) {
+            document.webkitExitFullscreen();
+        } else if (document.mozFullScreenElement) {
+            document.mozCancelFullScreen();
+        } else if (document.msFullscreenElement) {
+            document.msExitFullscreen();
+        }
+        console.log('✅ Tam ekran modu kapatıldı');
+    } catch (err) {
+        console.log('⚠️ Tam ekran kapatılırken hata:', err);
     }
 }
 
