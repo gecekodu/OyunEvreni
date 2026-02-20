@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "319430039491",
+    "firebase_url": "https://oyunevreni-48a7a-default-rtdb.firebaseio.com",
     "project_id": "oyunevreni-48a7a",
     "storage_bucket": "oyunevreni-48a7a.firebasestorage.app"
   },
@@ -12,7 +13,20 @@
           "package_name": "com.example.oyun_olustur"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "319430039491-83aob3hm23046jbli8get2eikco9r1l6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.oyun_olustur",
+            "certificate_hash": "6388087cb743c6e498e66fed27bfb7229dd2b73b"
+          }
+        },
+        {
+          "client_id": "319430039491-dlhil0tc6s32isftb2an1i7n8hv5ke7p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB6KhuzV-Pf_j4iGaIxj7cb1IloNWb-V38"
@@ -20,7 +34,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "319430039491-dlhil0tc6s32isftb2an1i7n8hv5ke7p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "319430039491-cjgaaase3ktu8jmicraktv20cd2c4r3l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.oyunOlustur"
+              }
+            }
+          ]
         }
       }
     }

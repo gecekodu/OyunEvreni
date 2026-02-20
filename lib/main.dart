@@ -1228,31 +1228,7 @@ class _HomeTabViewState extends State<HomeTabView> {
                 ),
               ],
             ),
-            const SizedBox(height: 30),
-            // Hoşgeldin Mesajı
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Merhaba $userName',
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '🎮 Hangi oyunu oynayacaksın?',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Color(0xFFB9D8FF),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             StreamBuilder<Map<String, dynamic>>(
               stream: _getHomeStatsStream(),
               builder: (context, snapshot) {
@@ -1458,10 +1434,10 @@ class _HomeTabViewState extends State<HomeTabView> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _HomeActionCard(
-                    title: 'Klan',
-                    icon: Icons.groups,
-                    colors: const [Color(0xFF8BFF6B), Color(0xFFB4FF9A)],
-                    onTap: () => Navigator.pushNamed(context, '/clan'),
+                    title: 'Sıralama',
+                    icon: Icons.trending_up,
+                    colors: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                    onTap: () => Navigator.pushNamed(context, '/leaderboard'),
                   ),
                 ),
               ],
